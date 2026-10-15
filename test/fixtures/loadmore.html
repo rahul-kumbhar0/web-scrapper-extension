@@ -1,0 +1,9 @@
+<!doctype html><html><head><title>Jobs</title></head><body>
+<h1>Jobs</h1><ul id="jobs" class="job-list"></ul><button id="more" class="btn">Load more</button>
+<script>
+let n = 0;
+function add(k){ const ul=document.getElementById('jobs'); for(let i=0;i<k;i++){ n++; const li=document.createElement('li'); li.className='job';
+ li.innerHTML=`<h4 class="job-title">Engineer ${n}</h4><span class="company">Company ${n%5}</span><span class="location">City ${n%3}</span><a href="/jobs/${n}">Apply</a>`; ul.append(li);} 
+ if(n>=24) document.getElementById('more').remove(); }
+add(8); document.getElementById('more').onclick=()=>setTimeout(()=>add(8),200);
+</script></body></html>

@@ -1,7 +1,8 @@
-node_modules/
-.DS_Store
-*.zip
 *.crx
 *.pem
+*.zip
+.DS_Store
+node_modules/
+test/*.png
 test/last-export.xlsx
 test/sidepanel.png

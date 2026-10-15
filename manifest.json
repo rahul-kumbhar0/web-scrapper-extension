@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Web Scraper Extension",
-  "version": "0.1.0",
-  "description": "Scrape emails, phones, links, images, tables and prices from any site, across pages. Export to CSV, Excel, JSON or Sheets.",
+  "version": "0.2.0",
+  "description": "Point-and-click scraping: lists, pages, emails, socials, images, Shopify, sitemaps. AI with Claude. Export CSV, Excel, Sheets.",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
@@ -10,7 +10,8 @@
     "storage",
     "unlimitedStorage",
     "sidePanel",
-    "identity"
+    "identity",
+    "downloads"
   ],
   "host_permissions": [
     "<all_urls>"

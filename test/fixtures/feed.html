@@ -1,0 +1,9 @@
+<!doctype html><html><head><title>Places - Maps-like feed</title>
+<style>body{margin:0}#side{width:360px;height:400px;overflow-y:auto}.place{height:90px;border-bottom:1px solid #ddd}</style></head><body>
+<div id="side"><div role="feed" id="feed"></div></div>
+<script>
+let n=0; const feed=document.getElementById('feed');
+function add(){ for(let i=0;i<6 && n<30;i++){ n++; const d=document.createElement('div'); d.className='place';
+ d.innerHTML=`<a href="https://www.google.com/maps/place/Cafe+${n}" aria-label="Cafe ${n}"></a><div class="title">Cafe ${n}</div><span role="img" aria-label="4.${n%10} stars">4.${n%10}</span><div class="addr">${n} Main St</div>`; feed.append(d);} }
+add(); document.getElementById('side').addEventListener('scroll', e => { const s=e.target; if (s.scrollTop + s.clientHeight >= s.scrollHeight - 5) setTimeout(add, 150); });
+</script></body></html>

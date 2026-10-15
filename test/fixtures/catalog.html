@@ -1,0 +1,24 @@
+<!doctype html><html><head><title>Catalog</title>
+<style>.grid{display:grid;grid-template-columns:repeat(3,200px);gap:10px}.card{border:1px solid #ccc;padding:8px}</style></head>
+<body><header><a href="/">Home</a><a href="/about.html">About</a><a href="/contact.html">Contact</a></header>
+<h1>Catalog</h1>
+<div id="grid" class="grid"></div>
+<nav class="pagination"><button class="pager-next" id="next">Next</button></nav>
+<script>
+const all = Array.from({length: 25}, (_, i) => ({ n: i + 1, name: 'Product ' + (i + 1), price: (10 + i).toFixed(2), rating: (3 + (i % 3)) + '.5', sale: i % 4 === 0 }));
+let page = 0;
+function render() {
+  const g = document.getElementById('grid');
+  g.innerHTML = all.slice(page * 10, page * 10 + 10).map(p => `
+    <div class="card product">
+      <a class="thumb" href="/p/item-${p.n}.html"><img src="/img/${p.n}.jpg" alt="${p.name}"></a>
+      <h3 class="name"><a href="/p/item-${p.n}.html">${p.name}</a></h3>
+      <div class="meta"><span class="price">$${p.price}</span> <span class="rating">${p.rating} ★</span></div>
+      ${p.sale ? '<span class="badge">Sale</span>' : ''}
+      <button class="add">Add to cart</button>
+    </div>`).join('');
+  document.getElementById('next').disabled = (page + 1) * 10 >= all.length;
+}
+document.getElementById('next').onclick = () => { setTimeout(() => { page++; render(); }, 200); };
+render();
+</script></body></html>
