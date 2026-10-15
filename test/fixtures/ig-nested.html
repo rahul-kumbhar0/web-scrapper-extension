@@ -13,8 +13,11 @@ function more() {
     n++;
     const a = document.createElement('a');
     a.className = 'x1i10hfl xjbqb8w';
-    a.href = `/p/POST${n}/`;
-    a.innerHTML = `<div class="_aagu"><img class="x5yr21d xu96u03" data-src="/img/${n}.jpg" data-alt="Claude tip #${n} — comment CLAUDE #claudeai"></div>`;
+    // Like Instagram: Reels are often linked as /p/ with a "Clip" icon; some as /reel/. Carousels have their own icon.
+    const kind = n % 3 === 0 ? 'reel' : n % 4 === 0 ? 'carousel' : 'post';
+    a.href = kind === 'reel' && n % 2 ? `/reel/REEL${n}/` : `/p/POST${n}/`;
+    const icon = kind === 'reel' ? '<svg aria-label="Clip" class="x1lliihq"></svg>' : kind === 'carousel' ? '<svg aria-label="Carousel" class="x1lliihq"></svg>' : '';
+    a.innerHTML = `<div class="_aagu"><img class="x5yr21d xu96u03" data-src="/img/${n}.jpg" data-alt="Claude tip #${n} — comment CLAUDE #claudeai"></div>${icon}`;
     g.append(a);
     io.observe(a);
   }

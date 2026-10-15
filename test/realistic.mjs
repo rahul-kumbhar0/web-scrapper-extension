@@ -98,8 +98,11 @@ try {
 
   await step('Instagram-like: lazy captions + infinite scroll → 60 posts with captions', async () => {
     const t = await tool('browser_open', { url: `${BASE}/ig.html`, new_tab: true, wait_ms: 300 });
-    const r = await tool('list_extract', { tab_id: t.tab_id, item_selector: "main a[href*='/p/']", fields: [{ name: 'link', selector: ':scope', attr: 'href' }, { name: 'caption', selector: 'img', attr: 'alt' }], pagination: { mode: 'scroll', max_pages: 40, delay_ms: 200 }, max_rows_returned: 100 });
-    console.log(`    ${r.total_rows} rows, ${r.rows.filter((x) => x.caption).length} with captions`);
+    const r = await tool('list_extract', { tab_id: t.tab_id, pagination: { mode: 'scroll', max_pages: 40, delay_ms: 200 }, max_rows_returned: 100 });
+    const types = r.rows.reduce((o, x) => ({ ...o, [x.type]: (o[x.type] || 0) + 1 }), {});
+    console.log(`    ${r.total_rows} rows, ${r.rows.filter((x) => x.caption).length} with captions · ${JSON.stringify(types)}`);
+    assert.deepEqual(types, { post: 30, carousel: 10, reel: 20 }, 'reels / carousels / posts labelled');
+    assert.ok(r.rows.some((x) => x.type === 'reel' && /\/reel\//.test(x.link)) && r.rows.some((x) => x.type === 'reel' && /\/p\//.test(x.link)), 'reels via /reel/ links and via the Clip icon');
     assert.equal(r.total_rows, 60);
     assert.equal(r.rows.filter((x) => !x.caption).length, 0, 'posts without caption');
   });
@@ -108,6 +111,18 @@ try {
     const r = await tool('list_extract', { tab_id: t.tab_id, pagination: { mode: 'scroll', max_pages: 10, delay_ms: 200 }, max_rows_returned: 100 });
     console.log(`    preset ${r.preset} · ${r.total_rows} rows, ${r.rows.filter((x) => x.caption).length} with captions · ${r.scroll_steps} steps`);
     assert.equal(r.total_rows, 60);
+  });
+
+  await step('Instagram Reel page → likes, comments, author, date as numbers', async () => {
+    const r = await tool('page_extract', { urls: [`${BASE}/ig-reel.html`], fields: ['ig_type', 'ig_likes', 'ig_comments', 'ig_author', 'ig_date', 'ig_caption'].map((b) => ({ name: b, builtin: b })) });
+    const row = r.rows[0];
+    console.log(`    ${JSON.stringify(row)}`);
+    assert.equal(row.ig_type, 'reel');
+    assert.equal(row.ig_likes, '248000');
+    assert.equal(row.ig_comments, '2219');
+    assert.equal(row.ig_author, 'base.learn');
+    assert.equal(row.ig_date, 'October 11, 2026');
+    assert.match(row.ig_caption, /learn how we make these videos/);
   });
 
   await step('Meta-style class names never become column names', async () => {

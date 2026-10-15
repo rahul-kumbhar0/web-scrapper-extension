@@ -720,9 +720,10 @@
       name: 'Instagram posts',
       match: (doc) => (/instagram\.com$/.test(host(doc)) || !!doc.querySelector('meta[property="al:ios:app_name"][content="Instagram"]')) &&
         qsa(doc, 'a[href*="/p/"], a[href*="/reel/"]').length > 2,
-      itemSelector: 'main a[href*="/p/"], main a[href*="/reel/"]',
+      itemSelector: 'main a[href*="/p/"], main a[href*="/reel/"], main a[href*="/reels/"]',
       fields: [
         { name: 'link', path: ':scope', attr: 'href' },
+        { name: 'type', path: 'svg[aria-label]', attr: 'aria-label' },
         { name: 'caption', path: 'img', attr: 'alt' },
         { name: 'image', path: 'img', attr: 'src' },
       ],
@@ -769,6 +770,12 @@
     },
     'LinkedIn jobs': (r) => { r.title = r.title.replace(/\s+with verification$/i, ''); r.link = r.link && stripQuery(r.link); return r; },
     'LinkedIn jobs (public)': (r) => { r.link = r.link && stripQuery(r.link); return r; },
+    // Tiles carry a small icon: "Clip"/"Reel"/"Video" for Reels, "Carousel" for multi-photo posts.
+    'Instagram posts': (r) => {
+      const icon = (r.type || '').toLowerCase();
+      r.type = /\/reels?\//.test(r.link) || /clip|reel|video/.test(icon) ? 'reel' : /carousel/.test(icon) ? 'carousel' : 'post';
+      return r;
+    },
   };
 
   function presetFor(doc = document) {
@@ -984,6 +991,13 @@
     published: (doc) => meta(doc, 'meta[property="article:published_time"]') || jsonLd(doc).find((o) => o.datePublished)?.datePublished || doc.querySelector('time[datetime]')?.getAttribute('datetime') || '',
     language: (doc) => doc.documentElement.lang || '',
     word_count: (doc) => String(readable(doc).words),
+    // Instagram post / Reel pages: "1,234 likes, 56 comments - user on October 4, 2026: "caption"."
+    ig_likes: (doc) => igStats(doc).likes,
+    ig_comments: (doc) => igStats(doc).comments,
+    ig_author: (doc) => igStats(doc).author,
+    ig_date: (doc) => igStats(doc).date,
+    ig_caption: (doc) => igStats(doc).caption,
+    ig_type: (doc) => (/\/reels?\//.test(baseOf(doc)) || meta(doc, 'meta[property="og:type"]') === 'video' || doc.querySelector('meta[property="og:video"]') ? 'reel' : 'post'),
     // Google Maps place pages (stable aria / data-item-id hooks, not hashed class names)
     maps_name: (doc) => textOf(doc.querySelector('h1')),
     maps_rating: (doc) => (doc.querySelector('[role="img"][aria-label*="star" i]')?.getAttribute('aria-label') || '').match(/[\d.,]+/)?.[0] || '',
@@ -995,6 +1009,20 @@
     maps_hours: (doc) => clean(doc.querySelector('[aria-label*="hours" i][aria-label*="day" i]')?.getAttribute('aria-label') || '', 600),
     main_text: (doc) => readable(doc).text.slice(0, 20000),
   };
+
+  // "15K likes, 56K comments - divyam.explains on September 20, 2026: "caption"." → numbers, author, date
+  const igNum = (x) => {
+    if (!x) return '';
+    const m = String(x).replace(/,/g, '').match(/^([\d.]+)\s*([KkMm])?$/);
+    if (!m) return x;
+    return String(Math.round(parseFloat(m[1]) * (m[2] ? (/k/i.test(m[2]) ? 1e3 : 1e6) : 1)));
+  };
+  function igStats(doc) {
+    const d = meta(doc, 'meta[name="description" i]') || meta(doc, 'meta[property="og:description"]');
+    const m = d.match(/^\s*([\d.,]+\s*[KkMm]?)\s+likes?,\s*([\d.,]+\s*[KkMm]?)\s+comments?\s*-\s*([\w.]+)\s+on\s+([^:]+?):\s*"?([\s\S]*?)"?\.?\s*$/i);
+    if (!m) return { likes: '', comments: '', author: '', date: '', caption: '' };
+    return { likes: igNum(m[1].trim()), comments: igNum(m[2].trim()), author: m[3], date: m[4].trim(), caption: m[5].trim() };
+  }
 
   // schema.org JSON-LD objects on the page (products, organizations, articles…)
   function jsonLd(doc = document) {

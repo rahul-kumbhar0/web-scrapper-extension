@@ -12,15 +12,17 @@ const BUILTINS = [
   { group: 'Page metadata', items: ['title', 'h1', 'description', 'canonical', 'og_image', 'author', 'published', 'language', 'word_count'] },
   { group: 'Contacts', items: ['emails', 'phones', 'socials'] },
   { group: 'Product', items: ['price'] },
+  { group: 'Instagram post / Reel', items: ['ig_type', 'ig_likes', 'ig_comments', 'ig_author', 'ig_date', 'ig_caption'] },
   { group: 'Google Maps place', items: ['maps_name', 'maps_rating', 'maps_reviews', 'maps_category', 'maps_address', 'maps_phone', 'maps_website', 'maps_hours'] },
   { group: 'Content', items: ['main_text'] },
 ];
 const PRESETS = {
   metadata: ['title', 'description', 'h1', 'canonical', 'og_image', 'author', 'published', 'language'],
   contacts: ['title', 'emails', 'phones', 'socials'],
+  instagram: ['ig_type', 'ig_author', 'ig_date', 'ig_likes', 'ig_comments', 'ig_caption'],
   maps: ['maps_name', 'maps_rating', 'maps_reviews', 'maps_category', 'maps_address', 'maps_phone', 'maps_website', 'maps_hours'],
 };
-const label = (b) => b.replace(/^maps_/, '').replace(/_/g, ' ');
+const label = (b) => b.replace(/^(maps|ig)_/, '').replace(/_/g, ' ');
 
 export default {
   id: 'page',
@@ -134,7 +136,7 @@ export default {
           h('button', { type: 'button', class: 'btn secondary', onclick: testHere }, 'Test here')),
         h('div', { class: 'row wrap' },
           h('span', { class: 'muted small' }, 'Presets:'),
-          ...Object.entries({ metadata: 'Page metadata', contacts: 'Contacts', maps: 'Google Maps place' }).map(([k, v]) =>
+          ...Object.entries({ metadata: 'Page metadata', contacts: 'Contacts', instagram: 'Instagram stats', maps: 'Google Maps place' }).map(([k, v]) =>
             h('button', { type: 'button', class: 'btn tiny', onclick: () => { PRESETS[k].forEach(addBuiltin); if (k === 'maps') mode.input.value = 'browser'; renderFields(); } }, v))),
         fieldsBox, previewBox),
       card('3. Options', mode.el, h('div', { class: 'row' }, conc.el, wait.el)),

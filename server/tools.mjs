@@ -110,7 +110,7 @@ export const TOOLS = [
         urls: { type: 'array', items: { type: 'string' } },
         fields: {
           type: 'array',
-          description: 'Each: {name, selector, attr ("text" default, "href", "src", "html" or any attribute), multiple (join all matches)} or {name, builtin}. Built-ins: title, h1, description, canonical, og_image, author, published, language, word_count, emails, phones, socials, price, main_text, maps_name, maps_rating, maps_reviews, maps_category, maps_address, maps_phone, maps_website, maps_hours.',
+          description: 'Each: {name, selector, attr ("text" default, "href", "src", "html" or any attribute), multiple (join all matches)} or {name, builtin}. Built-ins: title, h1, description, canonical, og_image, author, published, language, word_count, emails, phones, socials, price, main_text, ig_type, ig_likes, ig_comments, ig_author, ig_date, ig_caption (Instagram post/Reel pages: likes & comments as numbers), maps_name, maps_rating, maps_reviews, maps_category, maps_address, maps_phone, maps_website, maps_hours.',
           items: { type: 'object', properties: { name: { type: 'string' }, selector: { type: 'string' }, attr: { type: 'string' }, multiple: { type: 'boolean' }, builtin: { type: 'string' } }, required: ['name'] },
         },
         mode: { type: 'string', enum: ['fast', 'browser'], default: 'fast', description: 'fast = fetch HTML (no JS). browser = open each page in a background tab (JS sites, Google Maps).' },
