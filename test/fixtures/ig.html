@@ -1,0 +1,29 @@
+<!doctype html><html><head><title>Instagram</title><meta property="al:ios:app_name" content="Instagram">
+<style>body{margin:0}main{width:600px}.grid{display:flex;flex-wrap:wrap}.grid a{width:200px;height:250px;display:block}</style></head>
+<body><main role="main"><div class="x1qjc9v5 grid" id="grid"></div></main>
+<script>
+// Mimics Instagram search: images/captions load only when on screen; more tiles appended near the bottom.
+let n = 0;
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) if (e.isIntersecting) { const img = e.target.querySelector('img'); if (!img.alt) { img.alt = img.dataset.alt; img.src = img.dataset.src; } }
+}, { rootMargin: '100px' });
+function more() {
+  const g = document.getElementById('grid');
+  for (let k = 0; k < 12 && n < 60; k++) {
+    n++;
+    const a = document.createElement('a');
+    a.className = 'x1i10hfl xjbqb8w';
+    a.href = `/p/POST${n}/`;
+    a.innerHTML = `<div class="_aagu"><img class="x5yr21d xu96u03" data-src="/img/${n}.jpg" data-alt="Claude tip #${n} — comment CLAUDE #claudeai"></div>`;
+    g.append(a);
+    io.observe(a);
+  }
+}
+let loading = false;
+addEventListener('scroll', () => {
+  if (loading || innerHeight + scrollY < document.body.scrollHeight - 300) return;
+  loading = true;
+  setTimeout(() => { more(); loading = false; }, 300);
+});
+more();
+</script></body></html>

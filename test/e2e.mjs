@@ -107,7 +107,7 @@ try {
     const cols = await tableCols();
     console.log(`    columns: ${cols.join(', ')}`);
     assert.equal(await tableRowCount(), 25);
-    for (const c of ['name', 'price', 'rating', 'image']) assert.ok(cols.includes(c), `missing column ${c}`);
+    for (const c of ['title', 'price', 'rating', 'image']) assert.ok(cols.includes(c), `missing column ${c}`);
     assert.ok((await tableText()).includes('Product 25'));
   });
 
@@ -121,7 +121,7 @@ try {
     await sp.waitForSelector('.list-summary strong:text("10 items found")');
     // untick a column, rename another
     await (await fieldRow('rating')).locator('input[type=checkbox]').uncheck();
-    const name = (await fieldRow('name')).locator('input.name-input');
+    const name = (await fieldRow('title')).locator('input.name-input');
     await name.fill('product');
     await name.dispatchEvent('change');
     await btn('Extract list').click();
@@ -180,7 +180,7 @@ try {
     await dialog().getByRole('button', { name: 'OK' }).click();
     assert.ok((await tableCols()).includes('employer'));
 
-    await sp.locator('table.data th', { hasText: 'job title' }).click();
+    await sp.locator('table.data th', { hasText: /^title/ }).click();
     await sp.locator('.menu button', { hasText: 'Sort Z → A' }).click();
     assert.equal(await sp.locator('table.data tbody tr').first().locator('td').nth(1).textContent(), 'Engineer 24');
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Web Scraper Extension",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Point-and-click scraping: lists, pages, emails, socials, images, Shopify, sitemaps. AI with Claude. Export CSV, Excel, Sheets.",
   "minimum_chrome_version": "116",
   "permissions": [

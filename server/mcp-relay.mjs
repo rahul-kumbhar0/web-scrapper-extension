@@ -21,7 +21,7 @@ const CALL_TIMEOUT_MS = Number(process.env.CALL_TIMEOUT_MS || 240000);
 const POLL_WAIT_MS = 25000;
 const CONNECT_GRACE_MS = 8000; // how long a tool call waits for an offline extension to show up
 const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
-const VERSION = '0.3.1';
+const VERSION = '0.4.0';
 const TOKEN_RE = /^[A-Za-z0-9_-]{24,128}$/;
 
 // ---------- per-token state ----------

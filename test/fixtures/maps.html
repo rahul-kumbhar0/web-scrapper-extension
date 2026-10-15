@@ -1,0 +1,30 @@
+<!doctype html><html><head><title>cafes in Pune - Google Maps</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;font:14px sans-serif}[role=region]{height:640px;width:400px;overflow:hidden}[role=feed]{height:600px;overflow-y:auto}.Nv2PK{height:110px;border-bottom:1px solid #eee}</style></head>
+<body><div class="m6QErb DxyBCb kA9KIf dS8AEf" role="region"><div class="m6QErb DxyBCb kA9KIf dS8AEf ecceSd" role="feed" aria-label="Results for cafes in Pune" id="feed"></div></div>
+<script>
+// Mimics Google Maps: the results feed (not the window) scrolls; more results load near its bottom.
+const TOTAL = 40;
+let n = 0;
+const box = document.getElementById('feed');
+const feed = document.getElementById('feed');
+function more() {
+  for (let k = 0; k < 7 && n < TOTAL; k++) {
+    n++;
+    const sep = document.createElement('div'); sep.className = 'TFQHme'; feed.append(sep);
+    const d = document.createElement('div');
+    d.innerHTML = `<div class="Nv2PK THOPZb CpccDe" jsaction="mouseover:pane"><a class="hfpxzc" aria-label="Cafe ${n}" href="https://www.google.com/maps/place/Cafe+${n}/data=!4m7"></a>
+      <div class="bfdHYd Ppzolf OFBs3e"><div class="UaQhfb fontBodyMedium"><div class="NrDZNb"><div class="qBF1Pd fontHeadlineSmall">Cafe ${n}</div></div>
+      <div class="W4Efsd"><span class="ZkP5Je" role="img" aria-label="4.${n % 10} stars ${100 + n} Reviews"><span class="MW4etd" aria-hidden="true">4.${n % 10}</span><span class="UY7F9" aria-hidden="true">(${(100 + n).toLocaleString()})</span></span> · ₹200–400</div>
+      <div class="W4Efsd"><div class="W4Efsd"><span><span>Coffee shop</span></span><span> · <span>${n} FC Road</span></span></div><div class="W4Efsd"><span><span style="color:green">Open</span> · Closes 11 pm</span></div></div></div></div></div>`;
+    feed.append(d);
+  }
+  if (n >= TOTAL && !document.getElementById('end')) { const e = document.createElement('div'); e.id = 'end'; e.textContent = "You've reached the end of the list."; feed.append(e); }
+}
+let loading = false;
+box.addEventListener('scroll', () => {
+  if (loading || box.scrollTop + box.clientHeight < box.scrollHeight - 200) return;
+  loading = true;
+  setTimeout(() => { more(); loading = false; }, 400);
+});
+more();
+</script></body></html>

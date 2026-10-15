@@ -6,12 +6,13 @@ import { makeSheet, setDataset } from '../state.js';
 import { pick } from '../picker.js';
 import { card, numberField, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab, clickAndWait, sleep } from '../../lib/tab.js';
+import { runList } from '../../lib/list-runner.js';
 
 const MODES = [
-  { value: 'none', label: 'This page only' },
+  { value: 'none', label: 'This page only (scrolls through it)' },
   { value: 'next', label: 'Click “Next” page' },
   { value: 'loadmore', label: 'Click “Load more”' },
-  { value: 'scroll', label: 'Infinite scroll' },
+  { value: 'scroll', label: 'Infinite scroll (feeds, Maps, Instagram)' },
 ];
 
 export default {
@@ -43,7 +44,10 @@ export default {
       index = i;
       if (!list.length) { config = null; toast('No repeating list found here. Try clicking a different item.', 'error'); renderAll(); return; }
       const c = list[index];
-      config = { itemSelector: c.itemSelector, fields: c.fields.map((f) => ({ ...f, enabled: true })), pagination };
+      if (c.pagination && pagination.mode === 'none') {
+        pagination = { ...pagination, mode: c.pagination.mode, selector: c.pagination.selector || '', max: c.pagination.mode === 'scroll' ? 60 : c.pagination.max || 5 };
+      }
+      config = { itemSelector: c.itemSelector, fields: c.fields.map((f) => ({ ...f, enabled: true })), preset: c.preset, pagination };
       renderAll();
       highlightCurrent();
       runPreview();
@@ -78,7 +82,7 @@ export default {
       const c = candidates[index];
       fill(summary, 
         h('div', { class: 'row' },
-          h('strong', { class: 'grow' }, c ? `${plural(c.count, 'item')} found` : 'Saved list'),
+          h('strong', { class: 'grow' }, c ? `${plural(c.count, 'item')} found` : 'Saved list', config.preset ? h('span', { class: 'badge preset' }, `Preset: ${config.preset}`) : null),
           candidates.length > 1 ? h('button', { type: 'button', class: 'btn tiny', title: 'Try another list on this page', onclick: () => setCandidates(candidates, (index + 1) % candidates.length) }, `Try another (${index + 1}/${candidates.length})`) : null,
           h('button', { type: 'button', class: 'btn tiny', onclick: highlightCurrent }, 'Show')),
         h('code', { class: 'selector', title: 'Item selector (editable)', contentEditable: 'true', spellcheck: false,
@@ -148,43 +152,15 @@ export default {
       await runJob('Extracting list…', async (signal, progress) => {
         const tab = await getActiveTab();
         await callInTab(tab.id, 'clearHighlight').catch(() => {});
-        const rows = [];
-        const seen = new Set();
-        let cols = null;
-        let first = null;
-        const max = cfg.pagination.mode === 'none' ? 1 : Math.max(1, cfg.pagination.max || 1);
-        let stalls = 0;
-        for (let step = 0; step < max + 1 && !signal.aborted; step++) {
-          const res = await callInTab(tab.id, 'extractList', cfg);
-          first ??= res;
-          cols ??= res.cols;
-          let added = 0;
-          for (const vals of res.data) {
-            const key = vals.join('\u0001');
-            if (seen.has(key)) continue;
-            seen.add(key);
-            rows.push(Object.fromEntries(res.cols.map((c, i) => [c, vals[i]])));
-            added++;
-          }
-          progress(`${plural(rows.length, 'row')} · ${cfg.pagination.mode === 'none' ? 'done' : `step ${step + 1} of ${max}`}`, step + 1, max);
-          if (cfg.pagination.mode === 'none' || step >= max - 1) break;
-
-          // Advance: next page / load more / scroll, then wait for the list to change.
-          const fp = await callInTab(tab.id, 'fingerprint', cfg.itemSelector);
-          if (cfg.pagination.mode === 'scroll') {
-            await callInTab(tab.id, 'scrollStep', cfg.itemSelector);
-            const changed = await callInTab(tab.id, 'waitForChange', cfg.itemSelector, fp, 5000);
-            stalls = changed || added ? 0 : stalls + 1;
-            if (stalls >= 2) break;
-          } else {
-            const changed = await clickAndWait(tab.id, cfg.pagination.selector, cfg.itemSelector);
-            if (!changed) break; // no more pages
-          }
-          if (cfg.pagination.delayMs) await sleep(cfg.pagination.delayMs);
-        }
-        const title = first?.title || 'List';
-        await setDataset({ title, url: first?.url, source: 'List Extractor', sheets: [makeSheet('List', rows, cols || [])] });
-        toast(`Extracted ${plural(rows.length, 'row')}.`, 'ok');
+        const r = await runList(cfg, {
+          call: (method, ...a) => callInTab(tab.id, method, ...a),
+          clickAndWait: (btn, items) => clickAndWait(tab.id, btn, items),
+          sleep,
+          signal,
+          onProgress: (n, steps, mode) => progress(`${plural(n, 'row')}${mode === 'none' ? '' : ` · ${steps} scroll steps`}`),
+        });
+        await setDataset({ title: r.title, url: r.url, source: 'List Extractor', sheets: [makeSheet('List', r.rows, r.cols)] });
+        toast(`Extracted ${plural(r.rows.length, 'row')}${r.pages > 1 ? ` from ${r.pages} pages` : ''}.`, 'ok');
         ctx.go('table');
       });
     }

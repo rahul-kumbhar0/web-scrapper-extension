@@ -33,10 +33,26 @@
     while ((n = walker.nextNode())) yield n;
   }
 
-  // "Stable" classes: skip state classes and generated hashes (css-1x2y3z, sc-AbCdE, jsx-123…).
+  // Words a human would write: has a vowel and no long consonant runs ("price", "lockup", not "hfpxzc").
+  const wordish = (w) => w.length >= 2 && /[aeiouy]/i.test(w) && !/[bcdfghjklmnpqrstvwxz]{4,}/i.test(w);
+  const classWords = (c) => c.replace(/([a-z])([A-Z])/g, '$1 $2').split(/[-_\s]+/).filter(Boolean);
+  // Generated / obfuscated class names (CSS modules, styled-components, Google & Meta minified classes):
+  // MW4etd, hfpxzc, UaQhfb, x1qjc9v5, LrSqpRBTdYAVrgYpUwCXkCOyGxSxCvvlaQ, sVfgkXaQeJziwXv…
+  function looksHashed(c) {
+    if (/\d/.test(c) && !/^(h|col|grid|span|level|step|page|tab|item|row|lg|md|sm|xl)-?\d+$/i.test(c)) return true;
+    if (/^(css|sc|jsx|emotion|svelte|styled)-/i.test(c) || /^_/.test(c)) return true;
+    if (!/[-_]/.test(c)) {
+      if (c.length >= 20) return true;
+      const caps = (c.match(/[A-Z]/g) || []).length;
+      if (caps >= 2 && c.length <= 9) return true;
+      if (caps >= 3 && caps / c.length > 0.2) return true;
+    }
+    return classWords(c).some((w) => w.length > 2 && !wordish(w));
+  }
+  // "Stable" classes: skip state classes and generated hashes.
   const stableClasses = (el) => [...el.classList].filter((c) =>
-    /^[a-z_-][\w-]*$/i.test(c) && c.length < 40 &&
-    !/\d{3,}|^(css|sc|jsx|emotion|svelte)-|^_|^(is-|has-)?(active|hover|selected|focus|open|visible|hidden|current|loaded|lazy)/i.test(c));
+    /^[a-z_-][\w-]*$/i.test(c) && c.length < 40 && !looksHashed(c) &&
+    !/^(is-|has-)?(active|hover|selected|focus|open|visible|hidden|current|loaded|lazy)$/i.test(c));
 
   const esc = (c) => (globalThis.CSS?.escape ? CSS.escape(c) : c.replace(/([^\w-])/g, '\\$1'));
   const sigOf = (el, maxClasses = 2) => {
@@ -50,6 +66,13 @@
     const doc = el.ownerDocument;
     if (el.id && /^[a-z][\w-]*$/i.test(el.id) && !/\d{3,}/.test(el.id) && qsa(doc, '#' + esc(el.id)).length === 1) {
       return '#' + esc(el.id);
+    }
+    const role = el.getAttribute('role');
+    if (role && /^(feed|list|grid|listbox|table|tablist|main|region)$/.test(role)) {
+      const label = el.getAttribute('aria-label');
+      const byRole = `${el.tagName.toLowerCase()}[role="${role}"]`;
+      if (qsa(doc, byRole).length === 1) return byRole;
+      if (label && !label.includes('"')) { const byLabel = `${byRole}[aria-label="${label}"]`; if (qsa(doc, byLabel).length === 1) return byLabel; }
     }
     const parts = [];
     for (let cur = el; cur && cur !== doc.body && cur !== doc.documentElement && parts.length < 7; cur = cur.parentElement) {
@@ -371,8 +394,28 @@
   const INLINE = new Set(['B', 'I', 'EM', 'STRONG', 'SMALL', 'SUP', 'SUB', 'BR', 'U', 'S', 'MARK', 'ABBR', 'CODE', 'WBR', 'FONT', 'BDI', 'Q']);
   const SKIP = 'script,style,noscript,template,svg,iframe,button[aria-hidden="true"]';
 
-  const nameHint = (el) => el.getAttribute('itemprop') || el.getAttribute('data-testid') ||
-    stableClasses(el).find((c) => !/^(text|font|flex|grid|col|row|d|m[trblxy]?|p[trblxy]?|w|h|bg|border|rounded)-|^(sm|md|lg|xl):/.test(c));
+  const GENERIC_WORDS = /^(container|wrapper|wrap|inner|outer|content|contents|block|root|ember|view|item|items|card|cell|row|col|box|link|links|text|disabled|visually|hidden|main|body|section|component|module|el|elem|element|default|base|ui|js|x|is|has|the|of|font|small|medium|large|bold|regular|light|primary|secondary|full|entity|lockup|artdeco|t|flex|grid|clearfix|truncate|ellipsis|anchor|wide|mobile|desktop|show|hide|label|value|info|meta|detail|details|data|field|list|group|layout|style|styles|top|bottom|left|right|center|line|lines|area|part|piece|unit|tile|panel|pane|holder|outline|plain|normal|base|tiny|xs|sm|md|lg|xl)$/i;
+  const SEMANTIC = [
+    [/headline|heading|title|name|subject/i, 'title'], [/price|amount|cost|fare/i, 'price'], [/rating|stars?|score/i, 'rating'],
+    [/reviews?|ratings?count/i, 'reviews'], [/date|time|posted|ago|published/i, 'date'], [/author|byline|user(name)?|creator/i, 'author'],
+    [/company|employer|brand|vendor|seller|shop|store/i, 'company'], [/location|address|city|place|region/i, 'location'],
+    [/desc|summary|excerpt|snippet|caption|body/i, 'description'], [/phone|tel/i, 'phone'], [/email|mail/i, 'email'],
+    [/category|tag|type|genre/i, 'category'], [/thumb|image|img|photo|picture|avatar|logo/i, 'image'], [/subtitle/i, 'subtitle'], [/caption/i, 'caption'],
+  ];
+  // Readable hint from itemprop / data-testid / meaningful class names (BEM element part preferred).
+  function nameHint(el) {
+    const attr = el.getAttribute('itemprop') || el.getAttribute('data-testid') || el.getAttribute('data-test');
+    if (attr && !looksHashed(attr.replace(/[^\w-]/g, ''))) return classWords(attr).join(' ').toLowerCase();
+    for (const c of stableClasses(el)) {
+      const part = c.includes('__') ? c.split('__').pop().split('--')[0] : c.split('--')[0];
+      const words = classWords(part).filter((w) => !GENERIC_WORDS.test(w) && wordish(w));
+      if (!words.length) continue;
+      const phrase = words.slice(-2).join(' ').toLowerCase();
+      const sem = SEMANTIC.find(([re]) => re.test(phrase));
+      return sem ? sem[1] : phrase;
+    }
+    return '';
+  }
   const tableHeaderFor = (cell) => {
     const table = cell.closest('table');
     const tr = cell.parentElement;
@@ -385,10 +428,28 @@
     if (/^T[DH]$/.test(el.tagName)) { const h = tableHeaderFor(el); if (h) return h; }
     if (el.getAttribute('role') === 'img' && /star|rating/i.test(el.getAttribute('aria-label') || '')) return 'rating';
     // Unclassed links/spans take their name from the parent (h3.name > a → "name").
-    const hint = nameHint(el) || (/^(A|SPAN|STRONG|B|EM)$/.test(el.tagName) && el.parentElement ? nameHint(el.parentElement) : '');
-    if (hint) return hint.replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase().trim();
-    return { a: 'link text', h1: 'heading', h2: 'title', h3: 'title', h4: 'subtitle', p: 'description', img: 'image', time: 'date', span: 'text', div: 'text', li: 'item' }[el.tagName.toLowerCase()] || el.tagName.toLowerCase();
+    return nameHint(el) || (/^(A|SPAN|STRONG|B|EM)$/.test(el.tagName) && el.parentElement ? nameHint(el.parentElement) : '');
   };
+  const TAG_NAMES = { h1: 'title', h2: 'title', h3: 'title', h4: 'subtitle', h5: 'subtitle', p: 'description', time: 'date', img: 'image', strong: 'title', b: 'title' };
+
+  // Name a column from what its values look like (most reliable on sites with obfuscated classes).
+  function nameFromValues(values) {
+    const v = values.filter(Boolean).slice(0, 40);
+    if (!v.length) return '';
+    const share = (re) => v.filter((x) => re.test(x)).length / v.length >= 0.6;
+    if (share(/^\(\s*[\d.,]+\s*[KkMm]?\s*\)$/)) return 'reviews';
+    if (share(/^[0-5]([.,]\d)?\s*(★|stars?|\/\s*5)?$/i)) return 'rating';
+    if (share(/^[\d.,]+\s*[KkMm]?\s*(reviews?|ratings?)$/i)) return 'reviews';
+    if (share(/^[\d.,]+\s*[KkMm]?\s*(views?|plays?)\b/i)) return 'views';
+    if (share(/^[\d.,]+\s*[KkMm]?\s*likes?\b/i)) return 'likes';
+    if (share(/^[\d.,]+\s*[KkMm]?\s*(comments?|replies)\b/i)) return 'comments';
+    if (share(/(^|\s)(US\$|C\$|A\$|[$£€¥₹₩])\s?\d|\d\s?(USD|EUR|GBP|INR)\b/)) return 'price';
+    if (share(/\b(ago|hours?|minutes?|days?|weeks?|months?|years?|yesterday|today|just now)\b|^\d{4}-\d{2}-\d{2}|^\d{1,2}\s\w{3,9}\s\d{4}$/i)) return 'date';
+    if (share(/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i)) return 'email';
+    if (share(/^\+?[\d\s().-]{7,}$/)) return 'phone';
+    if (share(/\((remote|hybrid|on-site|onsite)\)|,\s*(india|usa|uk|canada|germany|france|australia|united states|united kingdom)\b/i)) return 'location';
+    return '';
+  }
 
   // Every data point inside an item: text leaves, link targets, image sources, datetimes.
   function leavesOf(item) {
@@ -421,6 +482,9 @@
       }
       if (el.tagName === 'A' && el.getAttribute('href') && !/^(javascript:|#)/i.test(el.getAttribute('href'))) {
         push(el, 'href', abs(el.getAttribute('href'), el.ownerDocument));
+        // Overlay links (Google Maps cards, image tiles) carry the name only in aria-label.
+        const label = el.getAttribute('aria-label');
+        if (label && !(el.textContent || '').trim()) push(el, 'aria-label', clean(label, 300));
       }
       if (el.tagName === 'IMG') {
         const src = el.currentSrc || el.getAttribute('src') || el.dataset.src || el.dataset.lazySrc;
@@ -459,11 +523,26 @@
       return true;
     });
     const names = new Set();
+    let titled = false;
     return fields.slice(0, 40).map((f) => {
-      let base = fieldNameFrom(f.el);
-      if (f.attr === 'href') base += ' link';
-      else if (f.attr === 'src') base = base === 'image' ? 'image' : `${base} image`;
-      else if (f.attr === 'datetime') base += ' datetime';
+      const values = [...f.values];
+      const hint = fieldNameFrom(f.el);
+      let base;
+      if (f.attr === 'href') base = hint && !/^(title|link)$/.test(hint) ? `${hint} link` : 'link';
+      else if (f.attr === 'src') base = 'image';
+      else if (f.attr === 'datetime') base = 'date';
+      else if (f.attr === 'aria-label') base = 'name';
+      else {
+        const fromValues = nameFromValues(values);
+        const tagName = TAG_NAMES[f.el.tagName.toLowerCase()] || (f.el.closest('h1,h2,h3,h4') ? 'title' : '');
+        base = fromValues || (hint && hint !== 'image' ? hint : '') || tagName;
+        // The first longish text column is usually the item's title.
+        if (!base || base === 'text') {
+          const avg = values.reduce((n, x) => n + x.length, 0) / (values.length || 1);
+          base = !titled && avg >= 6 && avg <= 160 ? 'title' : 'text';
+        }
+      }
+      if (base === 'title') titled = true;
       let name = base;
       for (let i = 2; names.has(name); i++) name = `${base} ${i}`;
       names.add(name);
@@ -505,7 +584,14 @@
     const set = new Set(items);
     const ok = (sel) => { const m = qsa(doc, sel); return m.length === items.length && m.every((x) => set.has(x)); };
     if (shared.length && ok(sig)) return sig;
+    const tag = items[0].tagName.toLowerCase();
+    // A data-* attribute every item carries (data-occludable-job-id, data-asin, data-id…) is the most stable hook.
+    const dataAttrs = [...items[0].attributes].map((a) => a.name)
+      .filter((n) => /^data-[\w-]+$/.test(n) && !/^data-v-|^data-(state|index|testid|test)$/.test(n) && items.every((i) => i.hasAttribute(n)));
+    for (const a of dataAttrs) if (ok(`${tag}[${a}]`)) return `${tag}[${a}]`;
     const parentSel = selectorFor(items[0].parentElement, { unique: true });
+    for (const a of dataAttrs) if (ok(`${parentSel} > ${tag}[${a}]`)) return `${parentSel} > ${tag}[${a}]`;
+    if (!items[0].classList.length && items.every((i) => !i.classList.length) && ok(`${parentSel} > ${tag}:not([class])`)) return `${parentSel} > ${tag}:not([class])`;
     const sel = `${parentSel} > ${sig}`;
     if (ok(sel)) return sel;
     return `${parentSel} > ${items[0].tagName.toLowerCase()}`;
@@ -519,6 +605,12 @@
 
   // From one clicked element: candidate lists at each ancestor level, best first.
   function listsFromElement(el) {
+    const preset = presetFor(el.ownerDocument);
+    if (preset && qsa(el.ownerDocument, preset.itemSelector).some((item) => item.contains(el))) return [preset, ...listsFromGeneric(el)].slice(0, 5);
+    return listsFromGeneric(el);
+  }
+
+  function listsFromGeneric(el) {
     const cands = [];
     for (let cur = el, depth = 0; cur && cur !== cur.ownerDocument.body && depth < 10; cur = cur.parentElement, depth++) {
       const group = similarSiblings(cur);
@@ -532,6 +624,12 @@
 
   // Without a click: scan the page for the best repeating groups (Instant-Data-Scraper style).
   function autoDetectLists(doc = document) {
+    const preset = presetFor(doc);
+    const rest = autoDetectGeneric(doc).filter((c) => !preset || c.itemSelector !== preset.itemSelector);
+    return preset ? [preset, ...rest].slice(0, 6) : rest;
+  }
+
+  function autoDetectGeneric(doc = document) {
     const cands = [];
     for (const parent of qsa(doc.body, '*')) {
       if (parent.children.length < 3 || parent.matches(SKIP)) continue;
@@ -565,24 +663,145 @@
     return { itemSelector, count: items.length, fields: fieldsFor(items), score: 0 };
   }
 
+  // ======================================================================
+  // SITE PRESETS — exact list setups for big sites whose markup is obfuscated.
+  // Recognised by page structure (works on google.de, in.linkedin.com…), checked before auto-detect.
+  // ======================================================================
+
+  const host = (doc) => hostOf(doc).replace(/^www\./, '');
+  const PRESETS = [
+    {
+      name: 'Google Maps results',
+      match: (doc) => qsa(doc, '[role="feed"] a.hfpxzc').length > 0,
+      itemSelector: '[role="feed"] > div:has(a.hfpxzc)',
+      fields: [
+        { name: 'name', path: 'a.hfpxzc', attr: 'aria-label' },
+        { name: 'rating', path: 'span.MW4etd', attr: 'text' },
+        { name: 'reviews', path: 'span.UY7F9', attr: 'text' },
+        { name: 'category', path: '.W4Efsd .W4Efsd:first-child > span:first-child', attr: 'text' },
+        { name: 'address', path: '.W4Efsd .W4Efsd:first-child > span:last-child', attr: 'text' },
+        { name: 'status', path: '.W4Efsd .W4Efsd:nth-child(2)', attr: 'text' },
+        { name: 'details', path: '.UaQhfb', attr: 'text' },
+        { name: 'website', path: 'a[data-value="Website"]', attr: 'href' },
+        { name: 'maps_link', path: 'a.hfpxzc', attr: 'href' },
+      ],
+      pagination: { mode: 'scroll', max: 60 },
+    },
+    {
+      name: 'LinkedIn jobs',
+      match: (doc) => qsa(doc, 'li[data-occludable-job-id]').length > 0,
+      itemSelector: 'li[data-occludable-job-id]',
+      fields: [
+        { name: 'title', path: 'a[href*="/jobs/view/"] strong || .job-card-list__title || a[href*="/jobs/view/"]', attr: 'text' },
+        { name: 'company', path: '.artdeco-entity-lockup__subtitle', attr: 'text' },
+        { name: 'location', path: '.artdeco-entity-lockup__caption', attr: 'text' },
+        { name: 'posted', path: 'time', attr: 'text' },
+        { name: 'job_id', path: ':scope', attr: 'data-occludable-job-id' },
+        { name: 'link', path: 'a[href*="/jobs/view/"]', attr: 'href' },
+      ],
+      pagination: { mode: 'next', selector: 'button[aria-label="View next page"], button.jobs-search-pagination__button--next', max: 5 },
+    },
+    {
+      name: 'LinkedIn jobs (public)',
+      match: (doc) => qsa(doc, 'ul.jobs-search__results-list > li').length > 0,
+      itemSelector: 'ul.jobs-search__results-list > li',
+      fields: [
+        { name: 'title', path: '.base-search-card__title', attr: 'text' },
+        { name: 'company', path: '.base-search-card__subtitle', attr: 'text' },
+        { name: 'location', path: '.job-search-card__location', attr: 'text' },
+        { name: 'posted', path: 'time', attr: 'text' },
+        { name: 'link', path: 'a.base-card__full-link || a', attr: 'href' },
+      ],
+      pagination: { mode: 'scroll', max: 30 },
+    },
+    {
+      name: 'Instagram posts',
+      match: (doc) => (/instagram\.com$/.test(host(doc)) || !!doc.querySelector('meta[property="al:ios:app_name"][content="Instagram"]')) &&
+        qsa(doc, 'a[href*="/p/"], a[href*="/reel/"]').length > 2,
+      itemSelector: 'main a[href*="/p/"], main a[href*="/reel/"]',
+      fields: [
+        { name: 'link', path: ':scope', attr: 'href' },
+        { name: 'caption', path: 'img', attr: 'alt' },
+        { name: 'image', path: 'img', attr: 'src' },
+      ],
+      pagination: { mode: 'scroll', max: 60 },
+    },
+    {
+      name: 'YouTube videos',
+      match: (doc) => qsa(doc, 'ytd-video-renderer, ytd-rich-item-renderer, ytd-grid-video-renderer').length > 0,
+      itemSelector: 'ytd-video-renderer, ytd-rich-item-renderer, ytd-grid-video-renderer',
+      fields: [
+        { name: 'title', path: '#video-title', attr: 'text' },
+        { name: 'channel', path: 'ytd-channel-name a || #channel-name', attr: 'text' },
+        { name: 'meta', path: '#metadata-line span', attr: 'text', multiple: true },
+        { name: 'duration', path: 'ytd-thumbnail-overlay-time-status-renderer #text || badge-shape .yt-badge-shape__text', attr: 'text' },
+        { name: 'link', path: 'a#video-title-link || a#video-title || a#thumbnail', attr: 'href' },
+        { name: 'thumbnail', path: 'img', attr: 'src' },
+      ],
+      pagination: { mode: 'scroll', max: 40 },
+    },
+    {
+      name: 'Amazon search',
+      match: (doc) => qsa(doc, 'div[data-component-type="s-search-result"]').length > 0,
+      itemSelector: 'div[data-component-type="s-search-result"][data-asin]:not([data-asin=""])',
+      fields: [
+        { name: 'title', path: 'h2 span || h2', attr: 'text' },
+        { name: 'price', path: '.a-price:not(.a-text-price) .a-offscreen', attr: 'text' },
+        { name: 'list_price', path: '.a-text-price .a-offscreen', attr: 'text' },
+        { name: 'rating', path: '.a-icon-alt', attr: 'text' },
+        { name: 'reviews', path: 'a[href*="customerReviews"] span || span.s-underline-text', attr: 'text' },
+        { name: 'asin', path: ':scope', attr: 'data-asin' },
+        { name: 'link', path: 'h2 a || a.a-link-normal.s-no-outline', attr: 'href' },
+        { name: 'image', path: 'img.s-image', attr: 'src' },
+      ],
+      pagination: { mode: 'next', selector: 'a.s-pagination-next:not(.s-pagination-disabled)', max: 5 },
+    },
+  ];
+
+  const stripQuery = (u) => { try { const x = new URL(u); x.search = ''; return x.href; } catch { return u; } };
+  const PRESET_POST = {
+    'Google Maps results': (r) => {
+      if (r.address === r.category) r.address = '';
+      if (/^(open|closed|closes|opens)/i.test(r.address)) r.address = '';
+      return r;
+    },
+    'LinkedIn jobs': (r) => { r.title = r.title.replace(/\s+with verification$/i, ''); r.link = r.link && stripQuery(r.link); return r; },
+    'LinkedIn jobs (public)': (r) => { r.link = r.link && stripQuery(r.link); return r; },
+  };
+
+  function presetFor(doc = document) {
+    const p = PRESETS.find((x) => { try { return x.match(doc); } catch { return false; } });
+    if (!p) return null;
+    return { preset: p.name, itemSelector: p.itemSelector, count: qsa(doc, p.itemSelector).length, fields: p.fields.map((f) => ({ ...f, idx: 0 })), pagination: p.pagination, score: 1e9 };
+  }
+
+  const valueOf = (el, attr, doc) => {
+    if (!el) return '';
+    if (attr === 'text') return clean(el.innerText ?? el.textContent, 2000).replace(/^[\s·•|]+|[\s·•|]+$/g, '');
+    if (attr === 'href') return abs(el.getAttribute('href'), doc);
+    if (attr === 'src') return abs(el.currentSrc || el.getAttribute('src') || el.dataset.src || el.dataset.lazySrc || '', doc);
+    return clean(el.getAttribute(attr) || '', 2000);
+  };
+
+  // One field of one item. `path` may list fallbacks: "a.title strong || a.title" (first non-empty wins).
+  function readItemField(item, f, doc) {
+    for (const path of String(f.path || ':scope').split('||').map((x) => x.trim())) {
+      const els = path === ':scope' ? [item] : qsa(item, path);
+      const v = f.multiple
+        ? [...new Set(els.map((e) => valueOf(e, f.attr || 'text', doc)).filter(Boolean))].join(' · ')
+        : valueOf(els[f.idx || 0], f.attr || 'text', doc);
+      if (v) return v;
+    }
+    return '';
+  }
+
   function extractList(config, doc = document) {
     const items = qsa(doc, config.itemSelector);
+    const post = PRESET_POST[config.preset];
     const rows = items.map((item) => {
       const row = {};
-      for (const f of config.fields) {
-        let el = null;
-        if (f.path === ':scope') el = item;
-        else el = qsa(item, f.path)[f.idx || 0];
-        let v = '';
-        if (el) {
-          if (f.attr === 'text') v = clean(el.innerText ?? el.textContent, 2000);
-          else if (f.attr === 'href') v = abs(el.getAttribute('href'), doc);
-          else if (f.attr === 'src') v = abs(el.currentSrc || el.getAttribute('src') || el.dataset.src || '', doc);
-          else v = el.getAttribute(f.attr) || '';
-        }
-        row[f.name] = v;
-      }
-      return row;
+      for (const f of config.fields) row[f.name] = readItemField(item, f, doc);
+      return post ? post(row) : row;
     }).filter((r) => Object.values(r).some(Boolean));
     return { ...pack(rows), count: items.length, url: baseOf(doc), title: doc.title };
   }
@@ -638,36 +857,58 @@
     return true;
   }
 
-  // Scroll the container that actually holds the list (e.g. Google Maps' results feed), else the window.
+  // The element that actually scrolls the list: the nearest scrollable ancestor of the items
+  // (Google Maps' results feed, LinkedIn's job list pane, chat panels…), else the page itself.
+  const canScroll = (el) => {
+    const s = getComputedStyle(el);
+    return /(auto|scroll|overlay)/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 10;
+  };
   function scrollContainerOf(selector) {
-    const first = selector && qsa(document, selector)[0];
-    for (let el = first?.parentElement; el && el !== document.body; el = el.parentElement) {
-      const s = getComputedStyle(el);
-      if (/(auto|scroll)/.test(s.overflowY) && el.scrollHeight > el.clientHeight + 10) return el;
+    const items = selector ? qsa(document, selector) : [];
+    const probe = items[Math.floor(items.length / 2)] || items[0];
+    for (let el = probe?.parentElement; el && el !== document.body && el !== document.documentElement; el = el.parentElement) {
+      if (canScroll(el)) return el;
     }
-    return null;
+    // Lists inside a well-known scrolling region even when no item is rendered yet.
+    const region = qsa(document, '[role="feed"], [role="list"], [role="listbox"]').find(canScroll);
+    return region || null;
   }
 
-  function scrollStep(selector) {
+  // Scroll ONE screen further (not straight to the bottom): virtualised / lazy lists only render
+  // what is on screen, so every step must be collected before moving on.
+  function scrollStep(selector, { fraction = 0.8 } = {}) {
     const box = scrollContainerOf(selector);
-    if (box) {
-      const before = box.scrollTop;
-      box.scrollTop = box.scrollHeight;
-      return { moved: box.scrollTop !== before, height: box.scrollHeight };
+    const el = box || document.scrollingElement || document.documentElement;
+    const view = box ? box.clientHeight : innerHeight;
+    const before = el.scrollTop;
+    const max = el.scrollHeight - view;
+    const next = Math.min(max, before + Math.max(150, view * fraction));
+    el.scrollTop = next;
+    // Some apps listen for wheel / scroll events rather than polling the position.
+    (box || window).dispatchEvent(new Event('scroll', { bubbles: true }));
+    (box || document).dispatchEvent(new WheelEvent('wheel', { deltaY: view * fraction, bubbles: true }));
+    const atBottom = el.scrollTop >= max - 2;
+    if (atBottom && selector) {
+      const items = qsa(document, selector);
+      items[items.length - 1]?.scrollIntoView({ block: 'end' }); // nudges nested scrollers / sentinels
     }
-    const before = window.scrollY;
-    window.scrollTo(0, document.documentElement.scrollHeight);
-    return { moved: window.scrollY !== before, height: document.documentElement.scrollHeight };
+    return { moved: el.scrollTop !== before, atBottom, top: el.scrollTop, height: el.scrollHeight, container: box ? 'panel' : 'page' };
+  }
+
+  function scrollToTop(selector) {
+    const box = scrollContainerOf(selector);
+    (box || document.scrollingElement || document.documentElement).scrollTop = 0;
+    return true;
   }
 
   // Scroll down until the page stops growing (infinite scroll / lazy content).
-  async function autoScroll({ maxSteps = 30, pauseMs = 800, selector } = {}) {
+  async function autoScroll({ maxSteps = 40, pauseMs = 700, selector } = {}) {
     let lastHeight = 0;
     let stable = 0;
-    for (let i = 0; i < maxSteps && stable < 2; i++) {
-      const { height } = scrollStep(selector);
+    for (let i = 0; i < maxSteps && stable < 3; i++) {
+      const { height, atBottom } = scrollStep(selector);
       await new Promise((r) => setTimeout(r, pauseMs));
-      stable = height === lastHeight ? stable + 1 : 0;
+      stable = atBottom && height === lastHeight ? stable + 1 : 0;
       lastHeight = height;
     }
     return lastHeight;
@@ -970,7 +1211,7 @@
     quick, findNextUrl,
     // list extractor
     listsFromElement, autoDetectLists, describeSelector, extractList, fingerprint, waitForChange,
-    findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, autoScroll,
+    findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, scrollToTop, autoScroll, presetFor,
     // page extractor
     extractPage, jsonLd, BUILTIN_FIELDS: Object.keys(BUILTINS),
     // text / contacts / AI

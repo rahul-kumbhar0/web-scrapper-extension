@@ -1,0 +1,46 @@
+<!doctype html><html><head><title>(4) "AI Engineer" Jobs in India | LinkedIn</title>
+<style>body{margin:0;font:14px sans-serif}.pane{height:500px;overflow-y:auto;width:420px;border:1px solid #ccc}
+li{height:120px;list-style:none;border-bottom:1px solid #eee}ul{margin:0;padding:0}</style></head>
+<body><header><a href="/feed/">Home</a></header>
+<main><div class="scaffold-layout__list"><div class="pane" id="pane"><ul id="list"></ul>
+<div class="jobs-search-pagination"><ul class="artdeco-pagination__pages"><li><button aria-label="Page 1">1</button></li><li><button aria-label="Page 2">2</button></li></ul>
+<button class="artdeco-button artdeco-button--muted jobs-search-pagination__button--next" aria-label="View next page" id="next">Next</button></div></div></div></main>
+<script>
+// Mimics LinkedIn: cards are "occluded" (empty) until near the viewport, emptied again when far away.
+const PAGES = [25, 25, 10];
+let page = 0;
+const job = (p, i) => ({ id: String(4479000000 + p * 100 + i), title: `AI Engineer ${p + 1}-${i + 1}`, company: `Company ${(p * 25 + i) % 7}`, loc: i % 2 ? 'Bengaluru, Karnataka, India (On-site)' : 'India (Remote)', posted: `${i + 1} hours ago` });
+function render() {
+  const ul = document.getElementById('list');
+  ul.innerHTML = '';
+  for (let i = 0; i < PAGES[page]; i++) {
+    const j = job(page, i);
+    const li = document.createElement('li');
+    li.className = 'ember-view LrSqpRBTdYAVrgYpUwCXkCOyGxSxCvvlaQ';
+    li.dataset.occludableJobId = j.id;
+    li._job = j;
+    ul.append(li);
+  }
+  document.getElementById('pane').scrollTop = 0;
+  document.getElementById('next').disabled = page >= PAGES.length - 1;
+  occlude();
+}
+function occlude() {
+  const pane = document.getElementById('pane');
+  const top = pane.scrollTop, bottom = top + pane.clientHeight;
+  for (const li of document.querySelectorAll('#list li')) {
+    const near = li.offsetTop + li.offsetHeight > top - 150 && li.offsetTop < bottom + 150;
+    if (near && !li.firstChild) {
+      const j = li._job;
+      li.innerHTML = `<div class="xHsbzhSjceMPqwqry job-card-container"><a class="job-card-container__link disabled ember-view" href="/jobs/view/${j.id}/?trk=x" aria-label="${j.title}"><strong>${j.title}</strong></a>
+        <div class="artdeco-entity-lockup__subtitle"><span class="sVfgkXaQeJziwXv">${j.company}</span></div>
+        <div class="artdeco-entity-lockup__caption"><span>${j.loc}</span></div><time datetime="2026-10-15">${j.posted}</time></div>`;
+    } else if (!near && li.firstChild && Math.abs(li.offsetTop - top) > 900) {
+      li.innerHTML = '';
+    }
+  }
+}
+document.getElementById('pane').addEventListener('scroll', () => requestAnimationFrame(occlude));
+document.getElementById('next').addEventListener('click', () => { if (page < PAGES.length - 1) setTimeout(() => { page++; render(); }, 300); });
+render();
+</script></body></html>

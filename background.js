@@ -84,6 +84,13 @@ const OPS = {
   callInTab: ({ tabId, method, args = [] }) => callInTab(tabId, method, ...args),
   runInNewTab: ({ url, method, args = [], waitMs }) => runInNewTab(url, method, args, { waitMs }),
   clickAndWait: ({ tabId, buttonSelector, itemSelector }) => clickAndWait(tabId, buttonSelector, itemSelector),
+  // Chrome pauses rendering/lazy-loading in hidden tabs: bring the tab (and its window) to the front.
+  async focusTab({ tabId }) {
+    const tab = await chrome.tabs.update(tabId, { active: true });
+    await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
+    await sleep(300);
+    return true;
+  },
   async screenshot({ tabId }) {
     const tab = tabId ? await chrome.tabs.get(tabId) : await getActiveTab();
     if (!tab.active) { await chrome.tabs.update(tab.id, { active: true }); await sleep(400); }

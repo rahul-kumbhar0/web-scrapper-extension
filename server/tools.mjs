@@ -71,12 +71,12 @@ export const TOOLS = [
   },
   {
     name: 'list_detect',
-    description: 'Find the repeating lists on a page (products, search results, listings, table rows…). Returns candidates with item selector, item count, auto-generated fields and sample rows, plus detected Next / Load-more buttons. Use before list_extract.',
+    description: 'Find the repeating lists on a page (products, search results, listings, table rows…). Returns candidates with item selector, item count, auto-generated fields and sample rows, plus detected Next / Load-more buttons. Built-in presets are used automatically for Google Maps results, LinkedIn jobs, Instagram posts, YouTube videos and Amazon search. Use before list_extract.',
     inputSchema: { type: 'object', properties: { ...tabOrUrl } },
   },
   {
     name: 'list_extract',
-    description: 'Extract a list from a page into rows, optionally across pages (click Next, click Load more, or infinite scroll — works in scrollable panels like Google Maps results). Without item_selector, the best auto-detected list is used.',
+    description: 'Extract a list from a page into rows. Scrolls through the list one screen at a time (so lazy/virtualised items like LinkedIn job cards and Instagram captions are captured), merges partially-loaded rows, and can continue across pages: click Next, click Load more, or infinite scroll (also inside panels like the Google Maps results feed). Without item_selector, the site preset or best auto-detected list is used. pagination.mode "auto" picks the preset / detected method.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -93,7 +93,7 @@ export const TOOLS = [
           properties: {
             mode: { type: 'string', enum: ['none', 'next', 'loadmore', 'scroll', 'auto'], default: 'none', description: '"auto" uses a detected Next or Load-more button.' },
             button_selector: { type: 'string' },
-            max_pages: { type: 'integer', default: 5 },
+            max_pages: { type: 'integer', default: 5, description: 'Pages for next/loadmore; for scroll, roughly how many screens×6 scroll steps (it stops early when nothing new loads).' },
             delay_ms: { type: 'integer', default: 1000 },
           },
         },

@@ -6,7 +6,7 @@ A no-code Chrome (Manifest V3) scraper that lives in the side panel: ten point-a
 
 | Tool | What it does |
 |---|---|
-| **List Extractor** | Click one item of any list, grid or table (or press *Auto-detect*) and every similar item becomes a row, with columns generated automatically. Cycle through alternative lists with *Try another*, untick/rename columns. Pagination: click a **Next** button/link, click **Load more**, or **infinite scroll** (including scrollable panels such as Google Maps' results feed). |
+| **List Extractor** | Click one item of any list, grid or table (or press *Auto-detect*) and every similar item becomes a row, with readable columns generated automatically (named from content — title, price, rating, reviews, date… — even on sites with obfuscated class names). **Site presets** for Google Maps, LinkedIn Jobs, Instagram, YouTube and Amazon. Scrolls one screen at a time so lazy/virtualised items are captured, merges half-loaded rows, and paginates via **Next**, **Load more** or **infinite scroll** (including panels such as Google Maps' results feed). |
 | **Page Extractor** | Define fields once (click elements on a sample page, or add built-ins/presets: page metadata, contacts, product price, **Google Maps place**) and extract them from a list of URLs — one row per page. *Fast* mode fetches HTML in the background; *Browser* mode renders each page in a background tab. |
 | **Email Extractor** | Emails from many sites. Deep scan follows links to contact/about/team/impressum pages. Decodes Cloudflare-protected and "name (at) domain (dot) com" addresses, filters junk, optional domain filter and phone numbers. |
 | **Social Link Extractor** | LinkedIn, X, Instagram, Facebook, YouTube, TikTok, GitHub… profiles for a list of sites; one row per site with a column per platform. Ignores share buttons. |
@@ -100,6 +100,7 @@ lib/sitemap.js             sitemap discovery + crawl (.xml, index, .gz)
 lib/ai.js                  Claude: AI extract, AI column (batched), Ask Claude — structured outputs
 lib/export.js              CSV / TSV / JSON / dependency-free XLSX writer
 lib/sheets.js              Google Sheets export
+lib/list-runner.js         list jobs: step-by-step scrolling, row merging, Next / Load more / infinite scroll
 lib/storage.js             settings, history, recipes
 lib/mcp-exec.js            executes Claude's MCP tool calls (runs in offscreen/bridge.html)
 offscreen/                 always-on bridge page: long-polls the relay, parses fetched pages
@@ -116,6 +117,8 @@ Pages fetched in Fast mode use your browser's cookies (`credentials: include`), 
 NODE_PATH=$(npm root -g) node test/e2e.mjs            # everything
 NODE_PATH=$(npm root -g) node test/e2e.mjs "list"     # steps matching a pattern
 NODE_PATH=$(npm root -g) node test/mcp.mjs            # Claude connector: relay + extension + MCP client
+NODE_PATH=$(npm root -g) node test/realistic.mjs      # LinkedIn / Maps / Instagram look-alikes (virtualised lists, lazy loading, obfuscated classes)
+node test/oauth.mjs                                   # relay sign-in flow
 ```
 
 The test loads the unpacked extension in headless Chromium, serves `test/fixtures/` (a JS-paginated catalogue, a load-more list, a Maps-style scrolling feed, product/contact/about pages, sitemaps incl. `.gz`, a fake Shopify store) and drives the real side panel through every tool, the Data Table operations, exports, recipes, history and the Claude features (against a mocked API).

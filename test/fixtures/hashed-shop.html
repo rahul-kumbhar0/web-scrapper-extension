@@ -1,0 +1,11 @@
+<!doctype html><html><head><title>Hashed Shop</title></head><body>
+<div class="x9f619 x1n2onr6"><div class="xYz1aB" id="items"></div></div>
+<script>
+// A shop with fully obfuscated class names (like sites built with CSS-in-JS) and no preset.
+const g = document.getElementById('items');
+for (let i = 1; i <= 12; i++) {
+  g.insertAdjacentHTML('beforeend', `<div class="x1lliihq xkrqix3"><a class="x1i10hfl xjbqb8w" href="/item/${i}"><img class="x5yr21d" src="/img/${i}.jpg" alt="Item ${i}"></a>
+    <span class="qBF1Pd xHsbzhSjce">Wireless Headphones Model ${i}</span><span class="MW4etd">${(3 + (i % 20) / 10).toFixed(1)}</span><span class="UY7F9">(${(i * 137).toLocaleString('en-US')})</span>
+    <span class="xNmB4qr">₹${(999 + i * 100).toLocaleString('en-IN')}</span><span class="x7Ujkq">${i} days ago</span></div>`);
+}
+</script></body></html>
