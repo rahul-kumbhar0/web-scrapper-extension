@@ -16,6 +16,13 @@
   };
   const hostOf = (doc) => { try { return new URL(baseOf(doc)).host; } catch { return ''; } };
   const textOf = (el) => clean(el?.innerText ?? el?.textContent, 5000);
+  // Visible text of a document. Pages fetched in the background (DOMParser) have no layout, so
+  // innerText degrades to textContent and glues adjacent elements together ("a@b.comYouTube");
+  // join their text nodes with spaces instead.
+  const docText = (doc) => {
+    if (doc.defaultView && doc.body?.innerText != null) return doc.body.innerText;
+    return [...textNodes(doc)].map((n) => n.textContent).join(' ');
+  };
 
   function* textNodes(doc) {
     const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, {
@@ -91,7 +98,7 @@
     }
     for (const el of qsa(doc, '[data-cfemail]')) add(decodeCf(el.getAttribute('data-cfemail')), 'cloudflare protected');
     for (const a of qsa(doc, 'a[href*="/cdn-cgi/l/email-protection#"]')) add(decodeCf(a.getAttribute('href').split('#')[1] || ''), 'cloudflare protected');
-    const text = doc.body?.innerText ?? doc.body?.textContent ?? '';
+    const text = doc.body ? docText(doc) : '';
     for (const m of text.match(EMAIL_RE) || []) add(m, 'page text');
     for (const m of text.matchAll(OBFUSCATED_EMAIL_RE)) add(`${m[1]}@${m[2]}.${m[3]}`, 'obfuscated text');
     return [...found].map(([email, source]) => ({ email, source }));
@@ -551,6 +558,13 @@
     return picked.map((c) => describeGroup(c.group, c.score));
   }
 
+  // Auto-generated fields for a user-supplied item selector.
+  function describeSelector(itemSelector, doc = document) {
+    const items = qsa(doc, itemSelector);
+    if (!items.length) throw new Error(`No elements match ${itemSelector}`);
+    return { itemSelector, count: items.length, fields: fieldsFor(items), score: 0 };
+  }
+
   function extractList(config, doc = document) {
     const items = qsa(doc, config.itemSelector);
     const rows = items.map((item) => {
@@ -606,6 +620,21 @@
     // Some sites listen for mousedown/mouseup rather than click.
     for (const type of ['mousedown', 'mouseup']) el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
     el.click();
+    return true;
+  }
+
+  // Type into an input/textarea/contenteditable the way a user would (fires input/change).
+  function fillInput(selector, value) {
+    const el = qsa(document, selector).find(isVisible) || qsa(document, selector)[0];
+    if (!el) return false;
+    el.focus();
+    if (el.isContentEditable) el.textContent = value;
+    else {
+      const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(el, value);
+    }
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }
 
@@ -807,7 +836,7 @@
   }
 
   function pageText(maxChars, doc = document) {
-    const t = (doc.body?.innerText ?? '').replace(/\n{3,}/g, '\n\n').trim();
+    const t = (doc.body ? docText(doc) : '').replace(/\n{3,}/g, '\n\n').trim();
     return { url: baseOf(doc), title: doc.title, text: t.slice(0, maxChars), truncated: t.length > maxChars, length: t.length };
   }
 
@@ -940,8 +969,8 @@
     // quick scan
     quick, findNextUrl,
     // list extractor
-    listsFromElement, autoDetectLists, extractList, fingerprint, waitForChange,
-    findNextButton, findLoadMoreButton, clickElement, scrollStep, autoScroll,
+    listsFromElement, autoDetectLists, describeSelector, extractList, fingerprint, waitForChange,
+    findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, autoScroll,
     // page extractor
     extractPage, jsonLd, BUILTIN_FIELDS: Object.keys(BUILTINS),
     // text / contacts / AI

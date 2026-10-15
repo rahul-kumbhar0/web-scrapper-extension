@@ -26,6 +26,47 @@ Export: CSV, Excel (one sheet per tab), JSON, clipboard, Google Sheets.
 ### Recipes & History
 Any tool's setup can be saved as a **recipe** (optionally with a start page) and re-run in one click; export/import recipes as JSON to share them. The last 30 results are kept in **History**.
 
+## Claude connector (MCP)
+
+Control the scraper from Claude: *"Open this Google Maps search and give me every cafe with rating and phone"*, *"Find the emails of these 20 companies"*, *"Export this Shopify store"*. Claude calls the extension's tools; the work runs in **your** Chrome (with your logins), and results also land in the Data Table.
+
+```
+Claude ──MCP (HTTPS)──▶ relay server ◀──long-poll── extension in your Chrome
+          https://<relay>/mcp/<secret>              (does the scraping, returns results)
+```
+
+Claude's cloud can't reach your browser directly, so a tiny **relay server** (`server/`, zero dependencies) sits in between. It holds no data — it just passes tool calls and results through.
+
+### 1. Deploy the relay (once, free)
+
+**Render (one click):** Render dashboard → **New → Blueprint** → connect this GitHub repo → it reads `render.yaml` and deploys `server/`. You get a URL like `https://web-scraper-mcp.onrender.com`.
+The extension keeps a connection open, which also keeps Render's free instance awake while Chrome is running.
+
+**Anything else with Node 18+ or Docker:** `node server/mcp-relay.mjs` (env `PORT`, default 8787), or `docker build -t web-scraper-mcp server && docker run -p 8787:8787 web-scraper-mcp`. Works on Railway, Fly.io, a VPS… It must be reachable over **HTTPS** for claude.ai.
+
+### 2. Connect the extension
+Side panel → **Settings → Claude connector** → paste the relay URL → tick **Allow Claude to use this browser**. It shows **● Connected** and your personal **MCP link**: `https://<relay>/mcp/<secret>` → **Copy**.
+
+### 3. Add it to Claude
+**claude.ai / Claude Desktop:** Settings → **Connectors** → **Add custom connector** → paste the MCP link → Add. Enable it in a chat (tools menu).
+**Claude Code:** `claude mcp add --transport http web-scraper https://<relay>/mcp/<secret>`
+
+> The secret in the link is the only key to your browser's scraper — don't share it. **Generate new link** in Settings revokes the old one. Turning the switch off disconnects immediately.
+
+### Tools Claude gets
+
+| Tool | |
+|---|---|
+| `browser_tabs`, `browser_open`, `browser_screenshot`, `page_action` (click / scroll / type) | see and drive pages |
+| `page_read` | page as clean Markdown + metadata |
+| `list_detect`, `list_extract` | lists/grids/tables with Next / Load more / infinite scroll (incl. Google Maps feed) |
+| `page_extract` | same fields from many URLs (selectors + built-ins incl. Google Maps place fields) |
+| `find_emails`, `find_social_links` | deep contact crawling over a list of sites |
+| `shopify_products`, `sitemap_urls`, `images_find`, `images_download`, `quick_scan` | the other tools |
+| `data_table_read`, `recipes_list`, `recipe_run` | read results, run your saved recipes |
+
+The relay implements MCP's Streamable HTTP transport (protocol versions 2024-11-05 → 2025-11-25) with plain JSON responses. Tool calls time out after 240 s (`CALL_TIMEOUT_MS`), so ask Claude for big jobs in chunks.
+
 ## Install (development)
 
 1. Open `chrome://extensions`, turn on **Developer mode**.
@@ -60,6 +101,9 @@ lib/ai.js                  Claude: AI extract, AI column (batched), Ask Claude �
 lib/export.js              CSV / TSV / JSON / dependency-free XLSX writer
 lib/sheets.js              Google Sheets export
 lib/storage.js             settings, history, recipes
+lib/mcp-exec.js            executes Claude's MCP tool calls (runs in offscreen/bridge.html)
+offscreen/                 always-on bridge page: long-polls the relay, parses fetched pages
+server/                    MCP relay (Node, zero deps) + Dockerfile; render.yaml at repo root
 sidepanel/                 app shell, tools/*, views/* (table, recipes, history, settings)
 test/                      Playwright end-to-end test + fixture sites
 ```
@@ -71,13 +115,13 @@ Pages fetched in Fast mode use your browser's cookies (`credentials: include`), 
 ```bash
 NODE_PATH=$(npm root -g) node test/e2e.mjs            # everything
 NODE_PATH=$(npm root -g) node test/e2e.mjs "list"     # steps matching a pattern
+NODE_PATH=$(npm root -g) node test/mcp.mjs            # Claude connector: relay + extension + MCP client
 ```
 
 The test loads the unpacked extension in headless Chromium, serves `test/fixtures/` (a JS-paginated catalogue, a load-more list, a Maps-style scrolling feed, product/contact/about pages, sitemaps incl. `.gz`, a fake Shopify store) and drives the real side panel through every tool, the Data Table operations, exports, recipes, history and the Claude features (against a mocked API).
 
 ## Ideas / roadmap
 
-- MCP bridge so Claude Desktop / Claude Code can drive the extension directly (run recipes, read the Data Table).
 - Scheduled re-runs of recipes, change detection.
 - Nested scraping (list → open each item → page fields) as one recipe.
 - Firefox build.

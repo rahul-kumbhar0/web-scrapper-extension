@@ -5,7 +5,7 @@ import { h, fill, toast, runJob, plural } from '../ui.js';
 import { makeSheet, setDataset } from '../state.js';
 import { pick } from '../picker.js';
 import { card, numberField, actions, primary, secondary } from '../widgets.js';
-import { getActiveTab, callInTab, waitForLoad, sleep } from '../../lib/tab.js';
+import { getActiveTab, callInTab, clickAndWait, sleep } from '../../lib/tab.js';
 
 const MODES = [
   { value: 'none', label: 'This page only' },
@@ -177,10 +177,8 @@ export default {
             stalls = changed || added ? 0 : stalls + 1;
             if (stalls >= 2) break;
           } else {
-            const ok = await callInTab(tab.id, 'clickElement', cfg.pagination.selector);
-            if (!ok) break; // no more pages
-            const changed = await afterClick(tab.id, cfg.itemSelector, fp);
-            if (!changed) break;
+            const changed = await clickAndWait(tab.id, cfg.pagination.selector, cfg.itemSelector);
+            if (!changed) break; // no more pages
           }
           if (cfg.pagination.delayMs) await sleep(cfg.pagination.delayMs);
         }
@@ -189,22 +187,6 @@ export default {
         toast(`Extracted ${plural(rows.length, 'row')}.`, 'ok');
         ctx.go('table');
       });
-    }
-
-    // After clicking, either the page navigates (link) or the list re-renders in place (JS).
-    async function afterClick(tabId, selector, fp) {
-      const navigated = await new Promise((resolve) => {
-        const t = setTimeout(() => { chrome.tabs.onUpdated.removeListener(l); resolve(false); }, 1200);
-        function l(id, info) { if (id === tabId && info.status === 'loading') { clearTimeout(t); chrome.tabs.onUpdated.removeListener(l); resolve(true); } }
-        chrome.tabs.onUpdated.addListener(l);
-      });
-      if (navigated) { await waitForLoad(tabId); await sleep(800); return true; }
-      try {
-        return await callInTab(tabId, 'waitForChange', selector, fp, 15000);
-      } catch {
-        await waitForLoad(tabId); // navigation started late and destroyed the page context
-        return true;
-      }
     }
 
     const el = h('div', { class: 'stack' },

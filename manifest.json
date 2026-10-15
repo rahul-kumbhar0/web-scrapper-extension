@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Web Scraper Extension",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Point-and-click scraping: lists, pages, emails, socials, images, Shopify, sitemaps. AI with Claude. Export CSV, Excel, Sheets.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -11,13 +11,15 @@
     "unlimitedStorage",
     "sidePanel",
     "identity",
-    "downloads"
+    "downloads",
+    "offscreen"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "side_panel": {
     "default_path": "sidepanel/sidepanel.html"

@@ -1,0 +1,13 @@
+# One-click deploy of the MCP relay on Render: Dashboard → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: web-scraper-mcp
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: "echo no build needed"
+    startCommand: node mcp-relay.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

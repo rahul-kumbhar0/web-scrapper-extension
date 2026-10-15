@@ -5,7 +5,7 @@ import { state, makeSheet, setDataset } from '../state.js';
 import { card, numberField, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab } from '../../lib/tab.js';
 import { normalizeUrl } from '../../lib/net.js';
-import { discoverSitemaps, crawlSitemaps } from '../../lib/sitemap.js';
+import { discoverSitemaps, crawlSitemaps, urlMatcher } from '../../lib/sitemap.js';
 
 export default {
   id: 'sitemap',
@@ -25,13 +25,7 @@ export default {
 
     getActiveTab().then((t) => { if (!site.value && /^https?:/.test(t.url)) site.value = new URL(t.url).host; }).catch(() => {});
 
-    const matcher = () => {
-      const f = filter.value.trim();
-      if (!f) return () => true;
-      const re = f.match(/^\/(.+)\/([a-z]*)$/);
-      if (re) { try { const r = new RegExp(re[1], re[2] || 'i'); return (u) => r.test(u); } catch { return () => false; } }
-      return (u) => u.toLowerCase().includes(f.toLowerCase());
-    };
+    const matcher = () => urlMatcher(filter.value);
     const filtered = () => { const m = matcher(); return rows.filter((r) => (!sections.size || sections.has(r.section)) && m(r.url)); };
 
     function render() {

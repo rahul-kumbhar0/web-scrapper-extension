@@ -260,7 +260,8 @@ try {
     await btn('Find emails').click();
     await waitToast(/Found 3 emails/);
     const t = await tableText();
-    for (const e of ['support@demoshop.example', 'press@demoshop.example', 'jobs@demoshop.example']) assert.ok(t.includes(e), `missing ${e}`);
+    const found = (await sp.locator('table.data tbody tr td:nth-child(3)').allTextContents()).sort();
+    assert.deepEqual(found, ['jobs@demoshop.example', 'press@demoshop.example', 'support@demoshop.example']);
   });
 
   await step('social: one row per site with platform columns', async () => {

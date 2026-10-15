@@ -111,6 +111,16 @@ chrome.tabs.onActivated.addListener(updateHost);
 chrome.tabs.onUpdated.addListener((_id, info, tab) => { if (tab.active && info.url) updateHost(); });
 onChange(() => { if (currentId === 'home') go('home'); });
 
+// Results written by Claude (via the MCP connector) appear live.
+chrome.storage.onChanged.addListener((changes, area) => {
+  const d = area === 'local' && changes.dataset?.newValue;
+  if (!d || d.updatedBy !== 'claude' || d.updatedAt === state.dataset?.updatedAt) return;
+  state.dataset = d;
+  for (const fn of state.listeners) fn();
+  if (currentId === 'table') go('table');
+  toast(`Claude added results: ${d.title}`, 'ok');
+});
+
 settings = await getSettings();
 await loadDataset();
 updateHost();
