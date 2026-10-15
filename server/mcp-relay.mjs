@@ -13,6 +13,7 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
 import { TOOLS, INSTRUCTIONS } from './tools.mjs';
+import { handleOAuth } from './oauth.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -20,7 +21,7 @@ const CALL_TIMEOUT_MS = Number(process.env.CALL_TIMEOUT_MS || 240000);
 const POLL_WAIT_MS = 25000;
 const CONNECT_GRACE_MS = 8000; // how long a tool call waits for an offline extension to show up
 const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
-const VERSION = '0.3.0';
+const VERSION = '0.3.1';
 const TOKEN_RE = /^[A-Za-z0-9_-]{24,128}$/;
 
 // ---------- per-token state ----------
@@ -183,6 +184,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost');
     if (req.method === 'OPTIONS') return send(res, 204);
+    if (await handleOAuth(req, res, url, send)) return;
     const parts = url.pathname.split('/').filter(Boolean);
     if (!parts.length) return send(res, 200, STATUS_PAGE);
     if (parts[0] === 'health') return send(res, 200, { ok: true, version: VERSION, browsers: [...browsers.values()].filter(online).length });

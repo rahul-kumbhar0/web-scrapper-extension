@@ -1,6 +1,6 @@
 FROM node:22-alpine
 WORKDIR /app
-COPY package.json mcp-relay.mjs tools.mjs ./
+COPY package.json mcp-relay.mjs tools.mjs oauth.mjs ./
 ENV PORT=8787
 EXPOSE 8787
 USER node
