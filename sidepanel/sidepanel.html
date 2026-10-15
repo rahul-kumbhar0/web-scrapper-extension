@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Web Scraper</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="topbar">
+    <img src="../icons/icon32.png" alt="" width="20" height="20">
+    <div class="topbar-text">
+      <strong>Web Scraper</strong>
+      <span id="page-host" class="muted"></span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="scrape" aria-selected="true">Scrape</button>
+    <button role="tab" data-tab="ai">AI Extract</button>
+    <button role="tab" data-tab="history">History</button>
+    <button role="tab" data-tab="settings">Settings</button>
+  </nav>
+
+  <main>
+    <!-- SCRAPE -->
+    <section id="tab-scrape" class="panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>What to extract</h2>
+          <button id="toggle-all" class="link-btn" type="button">Select all</button>
+        </div>
+        <div id="extractor-grid" class="chip-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Custom selector</h2><span id="selector-count" class="muted"></span></div>
+        <p class="hint">Click <b>Pick</b>, then click any item on the page (a product, a name, a row). Similar items are selected automatically.</p>
+        <div class="row">
+          <input id="selector" type="text" placeholder="e.g. .product-card h2" spellcheck="false" autocomplete="off">
+          <button id="pick" class="btn secondary" type="button">Pick</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Options</h2>
+        <label class="check"><input id="opt-scroll" type="checkbox"> Scroll to the bottom first (loads infinite-scroll / lazy content)</label>
+        <label class="check"><input id="opt-pages" type="checkbox"> Follow “Next” pages
+          <span class="inline">up to <input id="opt-max-pages" type="number" min="2" max="100" value="5"> pages</span>
+        </label>
+      </div>
+
+      <div class="row">
+        <button id="run-scrape" class="btn primary grow" type="button">Scrape this page</button>
+        <button id="stop" class="btn danger" type="button" hidden>Stop</button>
+      </div>
+    </section>
+
+    <!-- AI -->
+    <section id="tab-ai" class="panel" hidden>
+      <div class="card">
+        <h2>Describe the data you want</h2>
+        <textarea id="ai-goal" rows="4" placeholder="e.g. Every product with its name, price, rating and link"></textarea>
+        <div id="ai-examples" class="example-list"></div>
+        <p id="ai-meta" class="hint"></p>
+      </div>
+      <div class="row">
+        <button id="run-ai" class="btn primary grow" type="button">Extract with AI</button>
+        <button id="stop-ai" class="btn danger" type="button" hidden>Stop</button>
+      </div>
+      <p class="hint">Sends this page's visible text to Claude using your own API key (Settings). Nothing is sent anywhere else.</p>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="tab-history" class="panel" hidden>
+      <div class="card-head">
+        <h2>Recent scrapes</h2>
+        <button id="clear-history" class="link-btn" type="button">Clear all</button>
+      </div>
+      <ul id="history-list" class="history"></ul>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="tab-settings" class="panel" hidden>
+      <form id="settings-form" class="card">
+        <h2>Claude AI</h2>
+        <label class="field">Anthropic API key
+          <div class="row">
+            <input id="api-key" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false">
+            <button id="show-key" class="btn secondary" type="button">Show</button>
+          </div>
+        </label>
+        <p class="hint">Get a key at console.anthropic.com. It is stored only in this browser.</p>
+        <label class="field">Model <select id="model"></select></label>
+
+        <h2>Multi-page scraping</h2>
+        <label class="field">Delay between pages (ms)
+          <input id="page-delay" type="number" min="0" max="60000" step="250">
+        </label>
+
+        <h2>Google Sheets</h2>
+        <p id="sheets-status" class="hint"></p>
+
+        <button class="btn primary" type="submit">Save settings</button>
+        <span id="settings-saved" class="muted" hidden>Saved ✓</span>
+      </form>
+    </section>
+
+    <!-- RESULTS (shared) -->
+    <section id="results" class="results" hidden>
+      <div class="results-head">
+        <div>
+          <h2 id="results-title">Results</h2>
+          <p id="results-sub" class="muted"></p>
+        </div>
+        <button id="clear-results" class="link-btn" type="button">Clear</button>
+      </div>
+      <div id="type-tabs" class="type-tabs"></div>
+      <input id="filter" type="search" placeholder="Filter rows…">
+      <div class="table-wrap"><table id="table"></table></div>
+      <p id="table-note" class="muted"></p>
+      <div class="export">
+        <span class="muted">Current tab:</span>
+        <button class="btn secondary" data-export="csv" type="button">CSV</button>
+        <button class="btn secondary" data-export="copy" type="button">Copy</button>
+        <span class="muted">All tabs:</span>
+        <button class="btn secondary" data-export="xlsx" type="button">Excel</button>
+        <button class="btn secondary" data-export="json" type="button">JSON</button>
+        <button class="btn secondary" data-export="sheets" type="button">Sheets</button>
+      </div>
+    </section>
+
+    <div id="status" class="status" role="status" hidden></div>
+  </main>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
