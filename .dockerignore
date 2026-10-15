@@ -1,0 +1,4 @@
+*
+!server/package.json
+!server/mcp-relay.mjs
+!server/tools.mjs

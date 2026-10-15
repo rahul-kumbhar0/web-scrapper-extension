@@ -5,6 +5,7 @@
   "description": "Chrome MV3 web scraper extension (no build step).",
   "type": "module",
   "scripts": {
+    "start": "node server/mcp-relay.mjs",
     "test": "node test/e2e.mjs && node test/mcp.mjs",
     "relay": "node server/mcp-relay.mjs",
     "package": "zip -r web-scraper-extension.zip manifest.json background.js content lib sidepanel offscreen icons"
