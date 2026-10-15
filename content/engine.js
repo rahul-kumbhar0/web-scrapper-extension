@@ -39,6 +39,8 @@
   // Generated / obfuscated class names (CSS modules, styled-components, Google & Meta minified classes):
   // MW4etd, hfpxzc, UaQhfb, x1qjc9v5, LrSqpRBTdYAVrgYpUwCXkCOyGxSxCvvlaQ, sVfgkXaQeJziwXv…
   function looksHashed(c) {
+    if (/^x[a-z0-9]{5,9}$/.test(c)) return true; // Meta (Instagram/Facebook) atomic CSS: x1i10hfl, xqjyukv
+    if (!/[-_]/.test(c) && c.length >= 6 && (c.match(/[aeiou]/gi) || []).length / c.length < 0.2) return true;
     if (/\d/.test(c) && !/^(h|col|grid|span|level|step|page|tab|item|row|lg|md|sm|xl)-?\d+$/i.test(c)) return true;
     if (/^(css|sc|jsx|emotion|svelte|styled)-/i.test(c) || /^_/.test(c)) return true;
     if (!/[-_]/.test(c)) {
@@ -895,6 +897,22 @@
     return { moved: el.scrollTop !== before, atBottom, top: el.scrollTop, height: el.scrollHeight, container: box ? 'panel' : 'page' };
   }
 
+  // Chrome pauses lazy loading (IntersectionObserver, animation frames) in hidden / covered windows.
+  const pageState = () => ({ visibility: document.visibilityState, focused: document.hasFocus() });
+
+  // Scroll up a little and back down: re-triggers loaders that only react to fresh scroll movement.
+  async function jiggle(selector) {
+    const box = scrollContainerOf(selector);
+    const el = box || document.scrollingElement || document.documentElement;
+    const top = el.scrollTop;
+    el.scrollTop = Math.max(0, top - 400);
+    (box || window).dispatchEvent(new Event('scroll', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 250));
+    el.scrollTop = el.scrollHeight;
+    (box || window).dispatchEvent(new Event('scroll', { bubbles: true }));
+    return true;
+  }
+
   function scrollToTop(selector) {
     const box = scrollContainerOf(selector);
     (box || document.scrollingElement || document.documentElement).scrollTop = 0;
@@ -1211,7 +1229,7 @@
     quick, findNextUrl,
     // list extractor
     listsFromElement, autoDetectLists, describeSelector, extractList, fingerprint, waitForChange,
-    findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, scrollToTop, autoScroll, presetFor,
+    findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, scrollToTop, jiggle, pageState, autoScroll, presetFor,
     // page extractor
     extractPage, jsonLd, BUILTIN_FIELDS: Object.keys(BUILTINS),
     // text / contacts / AI

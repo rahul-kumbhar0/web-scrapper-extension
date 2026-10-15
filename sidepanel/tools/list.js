@@ -160,7 +160,7 @@ export default {
           onProgress: (n, steps, mode) => progress(`${plural(n, 'row')}${mode === 'none' ? '' : ` · ${steps} scroll steps`}`),
         });
         await setDataset({ title: r.title, url: r.url, source: 'List Extractor', sheets: [makeSheet('List', r.rows, r.cols)] });
-        toast(`Extracted ${plural(r.rows.length, 'row')}${r.pages > 1 ? ` from ${r.pages} pages` : ''}.`, 'ok');
+        toast(`Extracted ${plural(r.rows.length, 'row')}${r.pages > 1 ? ` from ${r.pages} pages` : ''}.${r.warning ? ` ⚠ ${r.warning}` : ''}`, r.warning ? '' : 'ok');
         ctx.go('table');
       });
     }

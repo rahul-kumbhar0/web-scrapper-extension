@@ -103,6 +103,19 @@ try {
     assert.equal(r.total_rows, 60);
     assert.equal(r.rows.filter((x) => !x.caption).length, 0, 'posts without caption');
   });
+  await step('Instagram-like with nested scroll containers → keeps scrolling the page', async () => {
+    const t = await tool('browser_open', { url: `${BASE}/ig-nested.html`, new_tab: true, wait_ms: 300 });
+    const r = await tool('list_extract', { tab_id: t.tab_id, pagination: { mode: 'scroll', max_pages: 10, delay_ms: 200 }, max_rows_returned: 100 });
+    console.log(`    preset ${r.preset} · ${r.total_rows} rows, ${r.rows.filter((x) => x.caption).length} with captions · ${r.scroll_steps} steps`);
+    assert.equal(r.total_rows, 60);
+  });
+
+  await step('Meta-style class names never become column names', async () => {
+    const d = await tool('list_detect', { url: `${BASE}/meta-classes.html` });
+    const names = d.candidates[0].fields.map((f) => f.replace(/ \(.*\)$/, ''));
+    console.log(`    ${names.join(', ')}`);
+    for (const n of names) assert.ok(!/xqjyukv|xlyipyv|xeuugli|x1i10hfl/.test(n), `meta class leaked: ${n}`);
+  });
 } finally {
   await ctx.close();
   server.close();
