@@ -78,7 +78,7 @@ export default {
       plan.pro ? null : h('div', { class: 'price-grid' },
         price('Monthly', '$9', 'per month · ₹399 in India', CHECKOUT.monthly),
         price('Yearly', '$59', 'per year · save 45%', CHECKOUT.yearly, { best: true, tag: 'Best value' }),
-        price('Lifetime', '$99', 'one-time · launch deal', CHECKOUT.lifetime, { tag: 'Launch' })),
+        price('Lifetime', '$79', 'one-time · launch price, was $99', CHECKOUT.lifetime, { tag: 'Launch' })),
       card(plan.pro ? 'Your licence' : 'Licence', status),
       card('Free vs Pro',
         h('div', { class: 'table-wrap' }, h('table', { class: 'compare' },

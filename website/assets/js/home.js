@@ -260,14 +260,14 @@
       USD: {
         free: '$0',
         pro: { monthly: '$9', yearly: '$59' },
-        proSub: { monthly: 'Billed monthly. Cancel any time.', yearly: 'About $4.92 a month, billed yearly.' },
+        proSub: { monthly: 'Billed monthly. Cancel any time.', yearly: 'That’s $4.92 a month, billed yearly.' },
         life: '$79', lifeWas: '$99', save: 'Save 45%'
       },
       INR: {
         free: '₹0',
         pro: { monthly: '₹399', yearly: '₹2,499' },
-        proSub: { monthly: 'Billed monthly. Cancel any time.', yearly: 'About ₹208 a month, billed yearly.' },
-        life: '₹4,999', lifeWas: '', save: 'Save 48%'
+        proSub: { monthly: 'Billed monthly. Cancel any time.', yearly: 'That’s ₹208 a month, billed yearly.' },
+        life: '₹3,999', lifeWas: '₹4,999', save: 'Save 48%'
       }
     };
     var store = {
@@ -277,7 +277,7 @@
     var tz = '';
     try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { /* ignore */ }
     var state = {
-      period: 'monthly',
+      period: 'yearly',
       cur: store.get('pr-currency') || (tz === 'Asia/Kolkata' || tz === 'Asia/Calcutta' ? 'INR' : 'USD')
     };
     var els = {

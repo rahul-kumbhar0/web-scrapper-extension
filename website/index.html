@@ -29,10 +29,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="/assets/css/site.css?v=1.0.0">
+  <link rel="stylesheet" href="/assets/css/site.css?v=1.1.0">
+  <link rel="stylesheet" href="/assets/css/experience.css?v=1.1.0">
   <script src="/assets/config.js?v=1.0.0" defer></script>
-  <script src="/assets/js/main.js?v=1.0.0" defer></script>
-  <script src="/assets/js/home.js?v=1.0.0" defer></script>
+  <script src="/assets/js/main.js?v=1.1.0" defer></script>
+  <script src="/assets/js/home.js?v=1.1.0" defer></script>
+  <script src="/assets/js/experience.js?v=1.1.0" defer></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -85,12 +87,14 @@
 </svg>
 
 <a class="skip-link" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"><i></i></div>
 
 <header class="nav">
   <div class="container nav__inner">
     <a class="brand" href="/" aria-label="PullRows home"><img src="/assets/logo.svg" width="30" height="30" alt="">PullRows</a>
     <nav aria-label="Main">
       <ul class="nav__links">
+        <li><a href="/#how">How it works</a></li>
         <li><a href="/#features">Features</a></li>
         <li><a href="/#claude">Claude</a></li>
         <li><a href="/#pricing">Pricing</a></li>
@@ -106,6 +110,8 @@
   <div class="nav__mobile" id="mobile-menu">
     <nav aria-label="Mobile">
       <ul>
+        <li><a href="/#how">How it works</a></li>
+        <li><a href="/#try">Try it</a></li>
         <li><a href="/#features">Features</a></li>
         <li><a href="/#claude">Claude</a></li>
         <li><a href="/#pricing">Pricing</a></li>
@@ -130,7 +136,7 @@
     <div class="container">
       <div class="hero__copy">
         <a class="pill-link" href="#claude"><span class="pill-link__tag">v1.0</span>Claude can now drive your browser<svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></a>
-        <h1 id="hero-title">Pull any website <br>into <span class="grad-text">rows.</span></h1>
+        <h1 id="hero-title"><span class="w">Pull</span> <span class="w">any</span> <span class="w">website</span> <br><span class="w">into</span> <span class="w grad-text">rows.</span></h1>
         <p class="hero__sub">A no-code web scraper that lives in your Chrome side panel. Click one item on any list and get every row — clean, named columns, ready for CSV or Excel. Or ask Claude to run the whole job for you.</p>
         <div class="hero__ctas">
           <a class="btn btn--primary" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><svg class="i" aria-hidden="true"><use href="#i-puzzle"/></svg><span>Add to <span data-browser>Chrome</span> — free</span></a>
@@ -260,34 +266,123 @@
     </div>
   </section>
 
-  <!-- ============ HOW IT WORKS ============ -->
-  <section class="section" id="how" aria-labelledby="how-title">
+  <!-- ============ HOW IT WORKS (scroll story) ============ -->
+  <section class="section story" id="how" aria-labelledby="how-title">
     <div class="container">
       <div class="section-head section-head--center" data-reveal>
         <span class="eyebrow">How it works</span>
-        <h2 id="how-title">From web page to spreadsheet in three clicks.</h2>
-        <p>No selectors, no code, no account. If you can see it in your browser, PullRows can turn it into rows.</p>
+        <h2 id="how-title">Watch a page turn into rows.</h2>
+        <p>No selectors, no code, no account. Scroll through what PullRows does on every page, in about three clicks.</p>
       </div>
-      <ol class="steps">
-        <li class="step" data-reveal>
-          <span class="step__num">01</span>
-          <h3>Open a page</h3>
-          <p>Any site you can see in Chrome — including the ones you're logged in to.</p>
-          <div class="step__viz" aria-hidden="true"><div class="viz-url">linkedin.com/jobs/search?q=data+analyst</div><div class="viz-lines"><i></i><i></i><i></i></div></div>
-        </li>
-        <li class="step" data-reveal>
-          <span class="step__num">02</span>
-          <h3>Click one item — or Auto-detect</h3>
-          <p>PullRows finds every similar item, names the columns and follows Next, Load more or infinite scroll.</p>
-          <div class="step__viz" aria-hidden="true"><div class="viz-items"><i></i><i></i><i></i></div><svg class="viz-click" viewBox="0 0 24 24"><path d="M5 3l14 8-6.3 1.6L9.4 19z" fill="#0B0B14" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
-        </li>
-        <li class="step" data-reveal>
-          <span class="step__num">03</span>
-          <h3>Export, or hand it to Claude</h3>
-          <p>CSV, Excel, JSON or clipboard. Or let Claude clean, enrich and summarise the table.</p>
-          <div class="step__viz" aria-hidden="true"><div class="viz-export"><span class="hot">.csv</span><span>.xlsx</span><span>.json</span><span>Copy</span><span>Claude</span><span class="ai">✦ AI</span></div></div>
-        </li>
-      </ol>
+      <div class="story__grid">
+        <ol class="story__steps">
+          <li class="story__step is-active" data-stage="0">
+            <span class="story__n">01</span>
+            <h3>Open any page with a list</h3>
+            <p>Search results, a directory, a shop category, a job board — including sites you're logged in to. Then open PullRows from the toolbar.</p>
+          </li>
+          <li class="story__step" data-stage="1">
+            <span class="story__n">02</span>
+            <h3>Auto-detect finds every item</h3>
+            <p>Click one item, or press <b>Auto-detect</b>. PullRows scores every repeating block on the page and outlines the list you mean — then names the columns from the content.</p>
+          </li>
+          <li class="story__step" data-stage="2">
+            <span class="story__n">03</span>
+            <h3>Every item becomes a row</h3>
+            <p>Titles, prices, ratings and links land in a clean table. Next buttons, “Load more” and infinite scroll keep adding rows until the list ends.</p>
+          </li>
+          <li class="story__step" data-stage="3">
+            <span class="story__n">04</span>
+            <h3>Export — or hand it to Claude</h3>
+            <p>Download CSV for free, or Excel and JSON with Pro. Or ask Claude to filter, enrich and summarise the table for you.</p>
+          </li>
+        </ol>
+
+        <div class="story__sticky">
+          <div class="sx" id="story-stage" data-stage="0" aria-hidden="true">
+            <div class="sx__page">
+              <div class="sx__bar"><div class="mock__dots"><i></i><i></i><i></i></div><span class="sx__url">bookshop.example/new-releases</span><span class="sx__ext"><img src="/assets/logo.svg" width="18" height="18" alt=""></span></div>
+              <div class="sx__site">
+                <div class="sx__head"><b>New releases</b><span>6 of 248 books</span></div>
+                <div class="sx__badge"><i></i>6 similar items · Auto-detect</div>
+                <div class="sx__grid">
+                  <div class="sx__item"><span class="sx__cover" data-c="0"></span><span class="sx__t">The Quiet Orbit</span><span class="sx__p">$18.40</span><span class="sx__r">★ 4.8</span></div>
+                  <div class="sx__item"><span class="sx__cover" data-c="1"></span><span class="sx__t">Salt &amp; Lantern</span><span class="sx__p">$12.99</span><span class="sx__r">★ 4.6</span></div>
+                  <div class="sx__item"><span class="sx__cover" data-c="2"></span><span class="sx__t">Paper Rivers</span><span class="sx__p">$24.00</span><span class="sx__r">★ 4.9</span></div>
+                  <div class="sx__item"><span class="sx__cover" data-c="3"></span><span class="sx__t">North of Maybe</span><span class="sx__p">$15.50</span><span class="sx__r">★ 4.4</span></div>
+                  <div class="sx__item"><span class="sx__cover" data-c="4"></span><span class="sx__t">Glass Orchard</span><span class="sx__p">$21.75</span><span class="sx__r">★ 4.7</span></div>
+                  <div class="sx__item"><span class="sx__cover" data-c="5"></span><span class="sx__t">Small Hours</span><span class="sx__p">$9.99</span><span class="sx__r">★ 4.5</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="sx__panel">
+              <div class="sx__phead"><img src="/assets/logo.svg" width="18" height="18" alt=""><b>PullRows</b><span class="sx__status"><span class="sx__s0">Ready</span><span class="sx__s1">List found</span><span class="sx__s2">6 rows</span><span class="sx__s3">Exported</span></span></div>
+              <div class="sx__cols"><span>title</span><span>price</span><span>rating</span><span>link</span></div>
+              <div class="sx__tablewrap">
+                <table class="sx__table">
+                  <thead><tr><th>title</th><th>price</th><th>rating</th><th>link</th></tr></thead>
+                  <tbody>
+                      <tr><td>The Quiet Orbit</td><td>$18.40</td><td>4.8</td><td>/books/the-quiet-orbit</td></tr>
+                      <tr><td>Salt &amp; Lantern</td><td>$12.99</td><td>4.6</td><td>/books/salt-lantern</td></tr>
+                      <tr><td>Paper Rivers</td><td>$24.00</td><td>4.9</td><td>/books/paper-rivers</td></tr>
+                      <tr><td>North of Maybe</td><td>$15.50</td><td>4.4</td><td>/books/north-of-maybe</td></tr>
+                      <tr><td>Glass Orchard</td><td>$21.75</td><td>4.7</td><td>/books/glass-orchard</td></tr>
+                      <tr><td>Small Hours</td><td>$9.99</td><td>4.5</td><td>/books/small-hours</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="sx__out">
+                <span class="sx__file sx__file--csv"><svg class="i"><use href="#i-down"/></svg>new-releases.csv</span>
+                <span class="sx__file">.xlsx</span>
+                <span class="sx__file">.json</span>
+              </div>
+              <div class="sx__ask"><span class="ai-av">AI</span><span><b>Claude:</b> 4 books are under $20 — the cheapest is <i>Small Hours</i> at $9.99.</span></div>
+            </div>
+            <div class="sx__ghosts"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TRY IT (interactive playground) ============ -->
+  <section class="section section--tight try" id="try" aria-labelledby="try-title">
+    <div class="container">
+      <div class="section-head section-head--center" data-reveal>
+        <span class="eyebrow">Try it — no install</span>
+        <h2 id="try-title">Click any product. Get every row.</h2>
+        <p>A tiny, working version of the List Extractor, running right here. Click one card, add the next pages, then download a real CSV.</p>
+      </div>
+      <div class="play" id="play" data-reveal>
+        <div class="play__site">
+          <div class="play__bar"><div class="mock__dots"><i></i><i></i><i></i></div><span class="play__url"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><span id="play-url">audio-shop.example/headphones?page=1</span></span></div>
+          <div class="play__body">
+            <div class="play__top"><b>Headphones</b><span id="play-page">Page 1 of 3</span></div>
+            <ul class="play__grid" id="play-grid" aria-label="Demo product list — click any product to extract the list"></ul>
+          </div>
+        </div>
+        <div class="play__panel" aria-label="PullRows demo panel">
+          <div class="play__phead"><img src="/assets/logo.svg" width="22" height="22" alt=""><b>List Extractor</b><span class="play__count" id="play-count" aria-live="polite">0 rows</span></div>
+          <p class="play__status" id="play-status" aria-live="polite">Click any product on the left — or press Auto-detect.</p>
+          <div class="play__actions">
+            <button type="button" class="pbtn pbtn--main" id="play-detect">Auto-detect</button>
+            <button type="button" class="pbtn" id="play-next" disabled>Next page<svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+            <button type="button" class="pbtn pbtn--ghost" id="play-reset" disabled>Reset</button>
+          </div>
+          <div class="play__cols" id="play-cols" role="group" aria-label="Columns"></div>
+          <div class="play__table">
+            <table>
+              <thead id="play-thead"></thead>
+              <tbody id="play-tbody"><tr class="play__empty"><td>Your rows appear here.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="play__foot">
+            <button type="button" class="pbtn pbtn--main" id="play-csv" disabled><svg class="i" aria-hidden="true"><use href="#i-down"/></svg>Download CSV</button>
+            <button type="button" class="pbtn" id="play-copy" disabled>Copy</button>
+            <span class="play__note">Real file, made in your browser.</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -458,6 +553,43 @@
     </div>
   </section>
 
+  <!-- ============ DATA FLOW (privacy) ============ -->
+  <section class="section section--tight flow-sec" id="privacy-flow" aria-labelledby="flow-title">
+    <div class="container">
+      <div class="flow-layout">
+        <div data-reveal>
+          <span class="eyebrow">Private by design</span>
+          <div class="section-head">
+            <h2 id="flow-title">By default, nothing leaves your browser.</h2>
+            <p>Scraping, your Data Table, history and recipes all live on your device. Flip the switches to see exactly what changes when you turn on the optional features.</p>
+          </div>
+          <div class="flow-toggles" role="group" aria-label="Optional features">
+            <label class="ftoggle"><input type="checkbox" id="flow-ai"><span class="ftoggle__ui" aria-hidden="true"></span><span><b>AI features</b><small>Page text or rows you pick go to Anthropic, with your own API key.</small></span></label>
+            <label class="ftoggle"><input type="checkbox" id="flow-mcp"><span class="ftoggle__ui" aria-hidden="true"></span><span><b>Claude connector</b><small>Tool calls and results pass through the PullRows relay — never stored.</small></span></label>
+          </div>
+          <p class="flow-caption" id="flow-caption" aria-live="polite">Everything stays on this device.</p>
+        </div>
+        <div class="flow" id="flow" data-reveal aria-hidden="true">
+          <svg class="flow__lines" viewBox="0 0 560 420" preserveAspectRatio="none">
+            <path class="flow__path flow__path--ai" d="M200 210 C 300 210, 330 92, 430 92"/>
+            <path class="flow__path flow__path--mcp" d="M200 210 C 300 210, 330 328, 430 328"/>
+            <path class="flow__dots flow__dots--ai" d="M200 210 C 300 210, 330 92, 430 92"/>
+            <path class="flow__dots flow__dots--mcp" d="M200 210 C 300 210, 330 328, 430 328"/>
+          </svg>
+          <div class="fnode fnode--you">
+            <div class="fnode__ring"></div>
+            <img src="/assets/logo.svg" width="40" height="40" alt="">
+            <b>Your browser</b>
+            <span class="fnode__chips"><i>Data Table</i><i>History</i><i>Recipes</i><i>Settings</i></span>
+            <span class="fnode__lock"><svg class="i"><use href="#i-lock"/></svg>stays on this device</span>
+          </div>
+          <div class="fnode fnode--ai"><span class="fnode__ico"><svg class="i"><use href="#i-spark"/></svg></span><b>Anthropic API</b><span>AI Extract · AI column · Ask Claude</span><em>your key · off</em></div>
+          <div class="fnode fnode--mcp"><span class="fnode__ico"><svg class="i"><use href="#i-plug"/></svg></span><b>Relay → your Claude</b><span>pass-through, nothing stored</span><em>off</em></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ USE CASES ============ -->
   <section class="section" id="use-cases" aria-labelledby="uses-title">
     <div class="container">
@@ -542,10 +674,10 @@
       </div>
 
       <div class="price-controls">
-        <div class="seg" role="group" aria-label="Billing period" data-key="period" data-pos="0">
+        <div class="seg" role="group" aria-label="Billing period" data-key="period" data-pos="1">
           <span class="seg__thumb" aria-hidden="true"></span>
-          <button type="button" data-value="monthly" aria-pressed="true">Monthly</button>
-          <button type="button" data-value="yearly" aria-pressed="false">Yearly <span class="save-badge">Save 45%</span></button>
+          <button type="button" data-value="monthly" aria-pressed="false">Monthly</button>
+          <button type="button" data-value="yearly" aria-pressed="true">Yearly <span class="save-badge">Save 45%</span></button>
         </div>
         <div class="seg seg--sm" role="group" aria-label="Currency" data-key="cur" data-pos="0">
           <span class="seg__thumb" aria-hidden="true"></span>
@@ -575,12 +707,12 @@
         </article>
 
         <article class="plan plan--pro" data-reveal aria-labelledby="plan-pro">
-          <span class="plan__badge">Most popular</span>
+          <span class="plan__badge">Best value</span>
           <h3 class="plan__name" id="plan-pro">Pro</h3>
           <p class="plan__desc">No limits, more formats, unlimited Claude. For people who scrape every week.</p>
-          <div class="plan__price"><span class="amount" id="price-pro">$9</span><span class="per" id="per-pro">/ month</span></div>
-          <p class="plan__sub" id="sub-pro">Billed monthly. Cancel any time.</p>
-          <a class="btn btn--primary btn--block plan__cta" id="cta-pro" data-href="CHECKOUT_PRO_MONTHLY" href="https://checkout.dodopayments.com/buy/REPLACE_ME_PRO_MONTHLY">Get Pro</a>
+          <div class="plan__price"><span class="amount" id="price-pro">$59</span><span class="per" id="per-pro">/ year</span></div>
+          <p class="plan__sub" id="sub-pro">That’s $4.92 a month, billed yearly.</p>
+          <a class="btn btn--primary btn--block plan__cta" id="cta-pro" data-href="CHECKOUT_PRO_YEARLY" href="https://checkout.dodopayments.com/buy/REPLACE_ME_PRO_YEARLY">Get Pro</a>
           <ul>
             <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Everything in Free</b>, without per-run limits</span></li>
             <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Unlimited pages, URLs and sites per run</span></li>
@@ -607,10 +739,12 @@
         </article>
       </div>
 
+      <p class="run-note"><b>What’s a “run”?</b> One click of Extract, Find or Scan. The free plan never limits how many runs you do — only how big each one is.</p>
       <ul class="price-foot">
         <li><svg class="i" aria-hidden="true"><use href="#i-refund"/></svg>14-day money-back guarantee</li>
         <li><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Secure checkout by Dodo Payments</li>
         <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Licence key emailed — paste it in Settings → Plan</li>
+        <li><svg class="i" aria-hidden="true"><use href="#i-mail"/></svg>Buying for a team? <a data-mail="PullRows team licences" href="mailto:support@pullrows.com">Ask for volume pricing</a></li>
       </ul>
     </div>
   </section>
@@ -744,6 +878,7 @@
       <span>© <span data-year>2026</span> PullRows. All rights reserved.</span>
       <span>Works with Claude. Not affiliated with Anthropic or Google.</span>
     </div>
+    <div class="footer__mark" aria-hidden="true">PullRows</div>
   </div>
 </footer>
 </body>

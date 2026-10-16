@@ -13,7 +13,7 @@ Dodo is a merchant of record for founders in India: it handles global tax, pays 
 - [ ] Create three products. Turn on **License keys** for each, with **activation limit 3**:
   - PullRows Pro Monthly: $9/month (₹399 with Indian pricing)
   - PullRows Pro Yearly: $59/year (₹2,499)
-  - PullRows Lifetime: $99 one-time (₹4,999). The launch price is $79 using a discount code.
+  - PullRows Lifetime: $79 one-time launch price (₹3,999) for the first 500, then $99 (₹4,999).
 - [ ] Copy each product's checkout link into:
   - `lib/config.js` → `CHECKOUT.monthly / yearly / lifetime`
   - `website/assets/config.js` → `CHECKOUT_PRO_MONTHLY / _YEARLY / _LIFETIME`
