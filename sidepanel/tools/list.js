@@ -91,7 +91,7 @@ export default {
     }
 
     function renderFields() {
-      if (!config) { fill(fieldsBox); return; }
+      if (!config) { fill(fieldsBox, h('p', { class: 'hint' }, 'Columns appear here once a list is selected — named from the content (title, price, rating…).')); return; }
       fill(fieldsBox, 
         h('p', { class: 'hint' }, 'Untick columns you don’t need; click a name to rename it.'),
         ...config.fields.map((f) => h('div', { class: `field-row ${f.enabled ? '' : 'off'}` },

@@ -1,6 +1,6 @@
 // The user's plan inside the side panel: current licence, limits, and the upgrade prompt.
 import { formDialog, toast } from './ui.js';
-import { getLicense, refreshLicense, isPro, limitsFor, PRO_ONLY } from '../lib/license.js';
+import { getLicense, refreshLicense, isPro, limitsFor, PRO_ONLY, getTrial, startTrial, TRIAL_DAYS } from '../lib/license.js';
 
 export const plan = {
   license: { plan: 'free' },
@@ -21,21 +21,35 @@ export function setLicense(lic) {
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.license) setLicense(changes.license.newValue || { plan: 'free' });
+  if (area === 'local' && (changes.license || changes.trial)) getLicense().then(setLicense);
 });
+
+export async function canTrial() { return !plan.pro && !(await getTrial()); }
+
+export async function beginTrial() {
+  const lic = await startTrial();
+  setLicense(lic);
+  toast(`PullRows Pro trial started — ${TRIAL_DAYS} days, every limit removed. No card needed.`, 'ok');
+  return lic;
+}
+
+// Days (rounded up) left in the trial, or 0.
+export const trialDaysLeft = () => (plan.license.trial ? Math.max(1, Math.ceil((plan.license.endsAt - Date.now()) / 86400000)) : 0);
 
 let go = null;
 export const bindNavigation = (fn) => { go = fn; };
 
 // Ask the user to upgrade. Resolves true if they chose to see the plans.
 export async function upsell(reason) {
+  const trial = await canTrial();
   const res = await formDialog({
     title: 'Unlock PullRows Pro',
-    text: `${reason}\n\nPro removes every limit — unlimited pages, URLs and sites per run, Excel & JSON export, unlimited recipes and Claude connector calls.`,
-    submit: 'See plans',
+    text: `${reason}\n\nPro removes every limit — unlimited pages, URLs and sites per run, Excel & JSON export, unlimited recipes and Claude connector calls.${trial ? `\n\nTry it free for ${TRIAL_DAYS} days — no card, no signup.` : ''}`,
+    submit: trial ? `Start ${TRIAL_DAYS}-day free trial` : 'See plans',
   });
-  if (res) go?.('upgrade');
-  return !!res;
+  if (!res) return false;
+  if (trial) await beginTrial(); else go?.('upgrade');
+  return true;
 }
 
 // Gate a Pro-only feature. Returns true when allowed.

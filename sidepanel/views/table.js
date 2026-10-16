@@ -4,6 +4,7 @@ import { state, activeSheet, changed, columnsOf, isUrl, urlColumns, onChange } f
 import { toCSV, toTSV, toJSON, toXLSX, download, fileStem } from '../../lib/export.js';
 import { plan, requirePro, capList } from '../plan.js';
 import { ensureAiConsent } from '../consent.js';
+import { recordWin } from '../feedback.js';
 import { aiColumn, aiAsk } from '../../lib/ai.js';
 import { downloadImages } from '../tools/images.js';
 
@@ -280,10 +281,11 @@ export default {
       const visible = rowsView().map((i) => Object.fromEntries(s.cols.map((c) => [c, s.rows[i][c] ?? ''])));
       const sheets = d.sheets.filter((x) => x.rows.length).map((x) => ({ name: x.name, rows: x.rows.map((r) => Object.fromEntries(x.cols.map((c) => [c, r[c] ?? '']))) }));
       try {
-        if (kind === 'csv') download(toCSV(visible), `${stem}-${s.name}.csv`, 'text/csv;charset=utf-8');
+        if (kind === 'csv') { download(toCSV(visible), `${stem}-${s.name}.csv`, 'text/csv;charset=utf-8'); toast(`Saved ${stem}-${s.name}.csv · ${plural(visible.length, 'row')}.`, 'ok'); }
         if (kind === 'copy') { await navigator.clipboard.writeText(toTSV(visible)); toast(`Copied ${plural(visible.length, 'row')} — paste into any spreadsheet.`, 'ok'); }
-        if (kind === 'xlsx') download(toXLSX(sheets), `${stem}.xlsx`);
-        if (kind === 'json') download(toJSON({ title: d.title, url: d.url, source: d.source, exportedAt: new Date().toISOString(), sheets: Object.fromEntries(sheets.map((x) => [x.name, x.rows])) }), `${stem}.json`, 'application/json');
+        if (kind === 'xlsx') { download(toXLSX(sheets), `${stem}.xlsx`); toast(`Saved ${stem}.xlsx · ${plural(sheets.length, 'sheet')}.`, 'ok'); }
+        if (kind === 'json') { download(toJSON({ title: d.title, url: d.url, source: d.source, exportedAt: new Date().toISOString(), sheets: Object.fromEntries(sheets.map((x) => [x.name, x.rows])) }), `${stem}.json`, 'application/json'); toast(`Saved ${stem}.json.`, 'ok'); }
+        recordWin('export');
       } catch (e) { toast(e.message, 'error'); }
     }
 

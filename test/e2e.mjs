@@ -417,6 +417,13 @@ try {
     await sp.waitForFunction(() => document.getElementById('plan-badge').textContent === 'Free');
     await home();
     await sp.locator('.table-banner').click();
+    // Free user hits a Pro feature → offered the one-time 3-day trial.
+    await sp.getByRole('button', { name: /^Excel/ }).click();
+    await dialog().getByRole('button', { name: 'Start 3-day free trial' }).click();
+    await sp.waitForFunction(() => /^Trial/.test(document.getElementById('plan-badge').textContent));
+    // Trial over → back to free, and the trial is not offered again.
+    await sp.evaluate(() => chrome.storage.local.set({ trial: { startedAt: Date.now() - 4 * 864e5, endsAt: Date.now() - 864e5 } }));
+    await sp.waitForFunction(() => document.getElementById('plan-badge').textContent === 'Free');
     await sp.getByRole('button', { name: /^Excel/ }).click();
     await dialog().getByRole('button', { name: 'See plans' }).click();
     await sp.waitForSelector('#title:text("Upgrade")');

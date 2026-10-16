@@ -2,8 +2,8 @@
 import { h, fill, toast, confirmDialog } from '../ui.js';
 import { card } from '../widgets.js';
 import { icon } from '../icons.js';
-import { plan, setLicense } from '../plan.js';
-import { activate, deactivate, refreshLicense, FREE_LIMITS, getUsage } from '../../lib/license.js';
+import { plan, setLicense, canTrial, beginTrial, trialDaysLeft } from '../plan.js';
+import { activate, deactivate, refreshLicense, FREE_LIMITS, getUsage, getTrial } from '../../lib/license.js';
 import { CHECKOUT, LINKS, SUPPORT_EMAIL } from '../../lib/config.js';
 
 const ROWS = [
@@ -32,7 +32,11 @@ export default {
     async function renderStatus() {
       const lic = plan.license;
       const usage = await getUsage();
-      if (plan.pro) {
+      if (plan.license.trial) {
+        fill(status,
+          h('div', { class: 'notice' }, icon('crown', { size: 16 }), h('span', {}, h('strong', {}, `Pro trial — ${trialDaysLeft()} ${trialDaysLeft() === 1 ? 'day' : 'days'} left.`), ` Ends ${new Date(lic.endsAt).toLocaleDateString()}. Your data stays when it ends; only the limits come back.`)),
+          licenceInput());
+      } else if (plan.pro) {
         fill(status,
           h('div', { class: 'notice' }, icon('check', { size: 16 }), h('span', {}, h('strong', {}, 'PullRows Pro is active in this browser.'), ` Key ${String(lic.key).slice(0, 6)}… · checked ${new Date(lic.validatedAt || lic.activatedAt).toLocaleDateString()}`)),
           h('div', { class: 'row wrap' },
@@ -44,9 +48,19 @@ export default {
               renderStatus();
             } }, 'Deactivate this browser')));
       } else {
+        const pastTrial = await getTrial();
+        const trialBtn = (await canTrial()) ? h('button', { id: 'start-trial', type: 'button', class: 'btn grad', onclick: async () => { await beginTrial(); renderStatus(); } }, icon('crown', { size: 15 }), 'Try Pro free for 3 days') : null;
         fill(status,
           lic.status === 'invalid' ? h('div', { class: 'notice warn' }, icon('lock', { size: 16 }), 'Your previous licence is no longer valid (refunded, expired or cancelled).') : null,
+          pastTrial && !trialBtn ? h('div', { class: 'notice' }, icon('clock', { size: 16 }), `Your ${3}-day Pro trial ended on ${new Date(pastTrial.endsAt).toLocaleDateString()}. Everything you scraped is still here.`) : null,
+          trialBtn,
+          trialBtn ? h('p', { class: 'hint' }, 'No card, no signup — every limit is removed for 3 days, once per browser.') : null,
           h('p', { class: 'hint' }, `Free plan · ${usage.mcp} of ${FREE_LIMITS.mcpCallsPerDay} Claude connector calls used today.`),
+          licenceInput());
+      }
+    }
+    function licenceInput() {
+      return h('div', { class: 'stack' },
           h('label', { class: 'field' }, 'Already bought Pro? Activate it here',
             h('div', { class: 'license-row' }, key,
               h('button', { id: 'activate-license', type: 'button', class: 'btn primary', onclick: async (e) => {
@@ -58,7 +72,6 @@ export default {
                 } catch (err) { toast(err.message, 'error'); } finally { e.target.disabled = false; }
               } }, 'Activate'))),
           h('p', { class: 'hint' }, 'Your key arrives by email after checkout. One licence works in up to 3 browsers.'));
-      }
     }
     renderStatus();
     const onPlan = () => renderStatus();
@@ -73,9 +86,9 @@ export default {
     const el = h('div', { class: 'stack' },
       h('section', { class: 'plan-hero' },
         h('div', { class: 'crown' }, icon('crown', { size: 22 })),
-        h('h3', {}, plan.pro ? 'You’re on PullRows Pro' : 'Scrape without limits'),
-        h('p', {}, plan.pro ? 'Thanks for supporting an independent tool.' : 'Everything in Free, minus the caps. Cancel any time · 14-day refund.')),
-      plan.pro ? null : h('div', { class: 'price-grid' },
+        h('h3', {}, plan.pro && !plan.license.trial ? 'You’re on PullRows Pro' : 'Scrape without limits'),
+        h('p', {}, plan.pro && !plan.license.trial ? 'Thanks for supporting an independent tool.' : 'Everything in Free, minus the caps. Cancel any time · 14-day refund.')),
+      plan.pro && !plan.license.trial ? null : h('div', { class: 'price-grid' },
         price('Monthly', '$9', 'per month · ₹399 in India', CHECKOUT.monthly),
         price('Yearly', '$59', 'per year · save 45%', CHECKOUT.yearly, { best: true, tag: 'Best value' }),
         price('Lifetime', '$79', 'one-time · launch price, was $99', CHECKOUT.lifetime, { tag: 'Launch' })),

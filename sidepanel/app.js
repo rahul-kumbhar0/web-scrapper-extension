@@ -4,7 +4,9 @@ import { state, loadDataset, onChange } from './state.js';
 import { getSettings, saveRecipe, getRecipes } from '../lib/storage.js';
 import { getActiveTab, navigate } from '../lib/tab.js';
 import { icon, TOOL_ICONS } from './icons.js';
-import { plan, loadPlan, bindNavigation, upsell } from './plan.js';
+import { plan, loadPlan, bindNavigation, upsell, canTrial, beginTrial, trialDaysLeft } from './plan.js';
+import { shouldAskReview, answerReview, reviewUrl } from './feedback.js';
+import { SUPPORT_EMAIL } from '../lib/config.js';
 
 import listTool from './tools/list.js';
 import pageTool from './tools/page.js';
@@ -97,7 +99,23 @@ export function go(id, opts = {}) {
 
 let pageInfo = { host: '', title: '', url: '' };
 
+// One-time, reward-free review request after the user has had a few successful runs.
+const reviewSlot = h('div', { id: 'review-slot' });
+async function renderReview() {
+  if (!(await shouldAskReview())) { fill(reviewSlot); return; }
+  const close = async (answer) => { await answerReview(answer); fill(reviewSlot); };
+  fill(reviewSlot, h('div', { class: 'review-card' },
+    h('div', { class: 'stars', 'aria-hidden': 'true' }, '★★★★★'),
+    h('strong', {}, 'Is PullRows saving you time?'),
+    h('p', { class: 'muted small' }, 'A short review on the Chrome Web Store helps other people find it. If something isn’t working, tell us instead — we read every email.'),
+    h('div', { class: 'row wrap' },
+      h('button', { type: 'button', class: 'btn tiny primary', onclick: () => { chrome.tabs.create({ url: reviewUrl() }); close('done'); } }, 'Write a review'),
+      h('button', { type: 'button', class: 'btn tiny', onclick: () => { chrome.tabs.create({ url: `mailto:${SUPPORT_EMAIL}?subject=PullRows%20feedback` }); close('later'); } }, 'Send feedback'),
+      h('button', { type: 'button', class: 'link-btn', onclick: () => close('later') }, 'Not now'))));
+}
+
 function renderHome() {
+  renderReview();
   const d = state.dataset;
   const rows = d ? d.sheets.reduce((n, s) => n + s.rows.length, 0) : 0;
   const scrapable = /^https?:/i.test(pageInfo.url);
@@ -135,10 +153,13 @@ function renderHome() {
         h('strong', {}, 'Claude connector'),
         h('span', { class: 'muted small block' }, h('span', { class: `status-dot ${mcpOn ? 'on' : ''}` }), mcpOn ? 'On — Claude can run these tools for you' : 'Let Claude drive PullRows in this browser')),
       h('span', { class: 'chev muted' }, icon('chevron', { size: 16 }))),
-    plan.pro ? null : h('div', { class: 'upsell' },
+    reviewSlot,
+    plan.pro && !plan.license.trial ? null : h('div', { class: 'upsell' },
       h('span', { class: 'icon' }, icon('crown', { size: 18 })),
-      h('span', { class: 'grow small' }, h('strong', {}, 'PullRows Pro'), h('span', { class: 'muted block' }, 'No limits, Excel & JSON export, unlimited Claude calls.')),
-      h('button', { type: 'button', class: 'btn tiny primary', onclick: () => go('upgrade') }, 'Upgrade')),
+      h('span', { class: 'grow small' },
+        h('strong', {}, plan.license.trial ? `Pro trial · ${trialDaysLeft()} ${trialDaysLeft() === 1 ? 'day' : 'days'} left` : 'PullRows Pro'),
+        h('span', { class: 'muted block' }, plan.license.trial ? 'Keep no-limit scraping after your trial ends.' : 'No limits, Excel & JSON export, unlimited Claude calls.')),
+      h('button', { type: 'button', class: 'btn tiny primary', onclick: () => go('upgrade') }, plan.license.trial ? 'Keep Pro' : 'Upgrade')),
     h('div', { class: 'home-links' },
       ['recipes', 'history', 'settings'].map((id) => h('button', { type: 'button', class: 'btn secondary', onclick: () => go(id) }, icon(TOOL_ICONS[id], { size: 15 }), VIEWS[id].title))));
 }
@@ -147,8 +168,8 @@ function renderBadge() {
   const b = $('#plan-badge');
   b.hidden = false;
   b.className = `plan-badge ${plan.pro ? 'pro' : ''}`;
-  fill(b, plan.pro ? icon('crown', { size: 12 }) : null, plan.pro ? 'Pro' : 'Free');
-  b.title = plan.pro ? 'PullRows Pro — manage your plan' : 'Free plan — see what Pro adds';
+  fill(b, plan.pro ? icon('crown', { size: 12 }) : null, plan.license.trial ? `Trial · ${trialDaysLeft()}d` : plan.pro ? 'Pro' : 'Free');
+  b.title = plan.license.trial ? 'PullRows Pro trial — buy to keep Pro' : plan.pro ? 'PullRows Pro — manage your plan' : 'Free plan — see what Pro adds';
 }
 
 async function updateHost() {

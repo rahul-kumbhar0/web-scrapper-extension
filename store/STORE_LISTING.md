@@ -44,7 +44,7 @@ PRIVATE BY DESIGN
 Your scraped data stays in your browser. PullRows has no analytics and no tracking, and needs no account.
 
 FREE FOREVER, PRO WHEN YOU NEED MORE
-The free plan includes every tool and unlimited CSV export, with sensible per-run limits. Pro (from $9/month, or $59/year) removes all limits and adds Excel and JSON export, unlimited recipes and unlimited Claude connector calls.
+The free plan includes every tool and unlimited CSV export, with sensible per-run limits. Try Pro free for 3 days, no card needed. Pro (from $9/month, or $59/year) removes all limits and adds Excel and JSON export, unlimited recipes and unlimited Claude connector calls.
 
 Use PullRows responsibly: respect each website's terms and privacy laws when collecting data.
 ```

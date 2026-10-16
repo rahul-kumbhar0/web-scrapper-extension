@@ -60,6 +60,7 @@ export default {
     async function updateLink() {
       linkValue = mcp.token ? `${serverUrl()}/mcp/${await connectorId(mcp.token)}` : '';
       link.value = linkValue || '—';
+      syncGuide?.();
     }
 
     async function saveMcp(patch = {}) {
@@ -88,8 +89,9 @@ export default {
       }
       mcp.enabled = enabled.checked;
       await saveMcp();
-      toast(mcp.enabled ? 'Claude connector on.' : 'Claude connector off.', 'ok');
+      toast(mcp.enabled ? 'Claude connector on — follow the steps below to add it to Claude.' : 'Claude connector off.', 'ok');
       renderStatus();
+      syncGuide();
     });
     for (const el of [server, actions, downloads, local, blocked]) el.addEventListener('change', () => saveMcp());
 
@@ -109,6 +111,26 @@ export default {
     // First run: make sure a secret exists.
     if (!mcp.token) saveMcp({ token: newToken() }); else updateLink();
 
+    // Step-by-step: how to add this browser's link to Claude.
+    const cmd = () => `claude mcp add --transport http pullrows ${linkValue}`;
+    const copy = async (text, msg) => { await navigator.clipboard.writeText(text); toast(msg, 'ok'); };
+    const guide = h('ol', { class: 'connect-steps', id: 'connect-steps' },
+      h('li', {}, h('strong', {}, 'Copy your link'), h('span', { class: 'muted small block' }, 'The Copy button above.')),
+      h('li', {}, h('strong', {}, 'Add it in Claude'),
+        h('span', { class: 'muted small block' }, 'claude.ai or Claude Desktop → Settings → Connectors → Add custom connector → paste → Add. Then switch PullRows on in a chat’s tools menu.'),
+        h('div', { class: 'row wrap' },
+          h('button', { type: 'button', class: 'btn tiny primary', onclick: () => { if (linkValue) copy(linkValue, 'Link copied — paste it in Claude.'); open('https://claude.ai/settings/connectors'); } }, 'Copy link & open Claude'))),
+      h('li', {}, h('strong', {}, 'Using Claude Code?'),
+        h('span', { class: 'muted small block' }, 'Run this once in your terminal:'),
+        h('div', { class: 'row' }, h('code', { class: 'selector grow', id: 'connect-cmd' }, 'claude mcp add --transport http pullrows <your link>'),
+          h('button', { type: 'button', class: 'btn tiny', onclick: () => linkValue && copy(cmd(), 'Command copied.') }, 'Copy'))),
+      h('li', {}, h('strong', {}, 'Try it'), h('span', { class: 'muted small block' }, 'Ask Claude: “Use PullRows to list my open tabs.” The call shows up under Recent Claude activity below.')));
+    const syncGuide = () => {
+      guide.hidden = !(mcp.enabled && mcp.consentAt);
+      const c = guide.querySelector('#connect-cmd');
+      if (c && linkValue) c.textContent = cmd();
+    };
+
     const connector = card('Claude connector',
       h('p', { class: 'hint' }, 'Let Claude run PullRows for you: it opens pages, extracts lists, finds emails… in this Chrome, and results land in your Data Table. Works with claude.ai, Claude Desktop and Claude Code.'),
       sw('Allow Claude to use this browser', enabled),
@@ -121,6 +143,7 @@ export default {
             toast('Connector link copied — paste it in Claude → Settings → Connectors → Add custom connector.', 'ok');
           } }, 'Copy'))),
       h('div', { class: 'notice' }, icon('lock', { size: 15 }), h('span', {}, 'Treat this link like a password: anyone who has it can use PullRows in this browser while the connector is on. ', h('button', { type: 'button', class: 'link-btn', onclick: () => open(LINKS.connectorDocs) }, 'Setup guide'))),
+      guide,
       h('div', { class: 'section-label' }, 'Safety'),
       sw('Allow actions', actions, 'Claude may click buttons and type into forms. Off: read-only.'),
       sw('Allow downloads', downloads, 'Claude may save images to Downloads/pullrows.'),
@@ -158,7 +181,7 @@ export default {
       el: h('div', { class: 'stack' },
         h('button', { type: 'button', class: 'connector-card', onclick: () => ctx.go('upgrade') },
           h('span', { class: 'icon', style: 'background:var(--accent-soft);color:var(--accent-ink)' }, icon('crown', { size: 18 })),
-          h('span', { class: 'grow' }, h('strong', {}, plan.pro ? 'PullRows Pro' : 'Free plan'), h('span', { class: 'muted small block' }, plan.pro ? 'Manage your licence' : 'Upgrade or activate a licence key')),
+          h('span', { class: 'grow' }, h('strong', {}, plan.license.trial ? 'Pro trial' : plan.pro ? 'PullRows Pro' : 'Free plan'), h('span', { class: 'muted small block' }, plan.license.trial ? 'Buy Pro to keep it after the trial' : plan.pro ? 'Manage your licence' : 'Try Pro free, upgrade or activate a key')),
           icon('chevron', { size: 16 })),
         connector,
         card('AI features in the side panel',

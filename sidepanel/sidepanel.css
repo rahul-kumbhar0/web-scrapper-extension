@@ -269,6 +269,7 @@ body.is-busy .actions-bar .btn.primary { opacity: .5; pointer-events: none; }
 .img-tile:hover { transform: scale(1.02); }
 .img-tile.on { border-color: var(--accent); }
 .img-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.img-broken { display: grid; place-items: center; width: 100%; height: 100%; font-size: 11px; color: var(--muted); }
 .img-tile input { position: absolute; top: 5px; left: 5px; accent-color: var(--accent); }
 .img-tile .dims { position: absolute; bottom: 0; right: 0; font-size: 10px; background: rgba(0, 0, 0, .62); color: #fff; padding: 1px 5px; border-top-left-radius: 5px; }
 
@@ -379,3 +380,16 @@ tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 45%, 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- review request ---------- */
+.review-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: var(--radius); background: var(--surface); border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--border)); box-shadow: var(--shadow-sm); }
+.review-card .stars { color: var(--amber); letter-spacing: 2px; font-size: 14px; }
+.review-card p { margin: 0; }
+#review-slot:empty { display: none; }
+
+/* ---------- connect-to-Claude steps ---------- */
+.connect-steps { list-style: none; counter-reset: cs; margin: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 10px; border-radius: 10px; background: var(--accent-soft); }
+.connect-steps li { counter-increment: cs; display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 8px; row-gap: 4px; }
+.connect-steps li::before { content: counter(cs); grid-row: span 3; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; }
+.connect-steps li > * { grid-column: 2; }
+.connect-steps code { font-size: 10.5px; }

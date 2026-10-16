@@ -1,6 +1,7 @@
 // The shared Data Table every tool writes into: a set of named sheets.
 // Persisted to chrome.storage.local so it survives closing the panel.
 import { addHistory } from '../lib/storage.js';
+import { recordWin } from './feedback.js';
 
 export const state = {
   dataset: null, // { title, url, source, sheets: [{ name, cols, rows }], active }
@@ -49,6 +50,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sav
 export async function setDataset({ title, url, source, sheets }) {
   state.dataset = { title, url, source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)), updatedAt: Date.now() };
   changed();
+  recordWin('run').catch(() => {});
   await addHistory({
     title, url, source,
     pages: [url],

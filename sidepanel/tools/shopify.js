@@ -23,7 +23,7 @@ export default {
       { value: 'shopify-csv', label: 'Shopify product import CSV' },
     ], preset.format || 'variants');
 
-    getActiveTab().then((t) => { if (!store.value && /^https?:/.test(t.url)) store.value = new URL(t.url).host; }).catch(() => {});
+    getActiveTab().then((t) => { if (!store.value && /^https?:/.test(t.url)) store.value = new URL(t.url).origin; }).catch(() => {});
 
     async function check() {
       const origin = storeOrigin(store.value);

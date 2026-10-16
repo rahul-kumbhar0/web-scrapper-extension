@@ -24,7 +24,7 @@ export default {
     let rows = [];
     let found = [];
 
-    getActiveTab().then((t) => { if (!site.value && /^https?:/.test(t.url)) site.value = new URL(t.url).host; }).catch(() => {});
+    getActiveTab().then((t) => { if (!site.value && /^https?:/.test(t.url)) site.value = new URL(t.url).origin; }).catch(() => {});
 
     const matcher = () => urlMatcher(filter.value);
     const filtered = () => { const m = matcher(); return rows.filter((r) => (!sections.size || sections.has(r.section)) && m(r.url)); };

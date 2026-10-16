@@ -71,7 +71,7 @@ export default {
         images.length ? h('button', { type: 'button', class: 'btn tiny', onclick: () => { vis.forEach((i) => selected.add(i.src)); render(); } }, 'Select all') : null,
         images.length ? h('button', { type: 'button', class: 'btn tiny', onclick: () => { selected.clear(); render(); } }, 'None') : null);
       fill(grid, ...vis.map((img) => {
-        const thumb = h('img', { src: img.src, alt: img.alt || '', loading: 'lazy', referrerPolicy: 'no-referrer' });
+        const thumb = h('img', { src: img.src, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer', onerror: (e) => { e.target.replaceWith(h('span', { class: 'img-broken' }, 'No preview')); } });
         thumb.addEventListener('load', () => {
           const known = img.w && img.h;
           img.w = img.w || thumb.naturalWidth;
