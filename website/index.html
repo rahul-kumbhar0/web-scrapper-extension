@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PullRows — Pull any website into rows</title>
+  <meta name="description" content="PullRows is a no-code web scraper in your Chrome side panel. Click one item, get every row, export CSV free — or let Claude run the scrape in your own browser.">
+  <link rel="canonical" href="https://pullrows.vercel.app/">
+  <meta name="theme-color" content="#FAFAF7">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PullRows">
+  <meta property="og:title" content="PullRows — Pull any website into rows">
+  <meta property="og:description" content="The no-code web scraper that lives in your Chrome side panel — and the one Claude can drive. Free CSV export, no signup.">
+  <meta property="og:url" content="https://pullrows.vercel.app/">
+  <meta property="og:image" content="https://pullrows.vercel.app/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PullRows: a web page turning into a clean table of rows.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="PullRows — Pull any website into rows">
+  <meta name="twitter:description" content="No-code scraping in your Chrome side panel. Free CSV export. Works with Claude.">
+  <meta name="twitter:image" content="https://pullrows.vercel.app/assets/og.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/assets/css/site.css?v=1.0.0">
+  <script src="/assets/config.js?v=1.0.0" defer></script>
+  <script src="/assets/js/main.js?v=1.0.0" defer></script>
+  <script src="/assets/js/home.js?v=1.0.0" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "PullRows",
+    "applicationCategory": "BrowserApplication",
+    "operatingSystem": "Chrome, Edge, Brave (desktop)",
+    "description": "No-code web scraper in the Chrome side panel. Extract lists, pages, emails, social links, images, Shopify catalogues and sitemaps into a table and export CSV or Excel. Works with Claude via MCP.",
+    "url": "https://pullrows.vercel.app/",
+    "offers": [
+      { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
+      { "@type": "Offer", "name": "Pro (monthly)", "price": "9", "priceCurrency": "USD" },
+      { "@type": "Offer", "name": "Pro (yearly)", "price": "59", "priceCurrency": "USD" },
+      { "@type": "Offer", "name": "Lifetime", "price": "79", "priceCurrency": "USD" }
+    ]
+  }
+  </script>
+</head>
+<body>
+<svg class="sr-only" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M10 8.8v6.4l5-3.2z"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9.5 4.5a2.5 2.5 0 0 1 5 0V6H18v3.5h-1.5a2.5 2.5 0 0 0 0 5H18V18h-3.5v-1.5a2.5 2.5 0 0 0-5 0V18H6v-3.5h1.5a2.5 2.5 0 0 0 0-5H6V6h3.5z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.6-3 8-7 9.5-4-1.5-7-4.9-7-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M4 13h16M12 9c-1.5-3-5-3.5-5-1.5S10 9 12 9zm0 0c1.5-3 5-3.5 5-1.5S14 9 12 9z"/></symbol>
+    <symbol id="i-user-off" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-3.5 3.6-5.5 7-5.5s6.2 2 7 5.5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="4" rx="1.5"/><rect x="3.5" y="10" width="17" height="4" rx="1.5"/><rect x="3.5" y="16" width="11" height="4" rx="1.5"/></symbol>
+    <symbol id="i-page" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 11h6M9 14.5h6M9 18h3"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M4 7.5l8 5.5 8-5.5"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 10.9l7.4-3.7M8.3 13.1l7.4 3.7"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 15.5l-5-5L7 20"/></symbol>
+    <symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1.2 12.2H6.2z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></symbol>
+    <symbol id="i-tree" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1.2"/><rect x="3" y="16" width="6" height="5" rx="1.2"/><rect x="15" y="16" width="6" height="5" rx="1.2"/><path d="M12 8v4M6 16v-4h12v4"/></symbol>
+    <symbol id="i-md" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M6 15V9l2.5 3L11 9v6M16 9v6m0 0l-2-2m2 2l2-2"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M18.5 14.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></symbol>
+    <symbol id="i-yes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.8 2.8L16 10"/></symbol>
+    <symbol id="i-no" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.2l5.6 5.6M14.8 9.2l-5.6 5.6"/></symbol>
+    <symbol id="i-meh" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8.5 12h7"/></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 16.5h6"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v3.8h3.8"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></symbol>
+    <symbol id="i-refund" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4.5v3.8h3.8"/><path d="M12 8v8M14.2 9.6c-.4-.7-1.2-1.1-2.2-1.1-1.3 0-2.2.7-2.2 1.7 0 2.3 4.6 1.2 4.6 3.6 0 1-1 1.7-2.4 1.7-1 0-1.9-.4-2.3-1.2"/></symbol>
+  </defs>
+</svg>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="brand" href="/" aria-label="PullRows home"><img src="/assets/logo.svg" width="30" height="30" alt="">PullRows</a>
+    <nav aria-label="Main">
+      <ul class="nav__links">
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/#claude">Claude</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faq">FAQ</a></li>
+        <li><a href="/docs">Docs</a></li>
+      </ul>
+    </nav>
+    <div class="nav__cta">
+      <a class="btn btn--primary btn--sm" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><span>Add to <span data-browser>Chrome</span> — free</span></a>
+      <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </div>
+  <div class="nav__mobile" id="mobile-menu">
+    <nav aria-label="Mobile">
+      <ul>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/#claude">Claude</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faq">FAQ</a></li>
+        <li><a href="/docs">Docs</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn--primary btn--block" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><span>Add to <span data-browser>Chrome</span> — free</span></a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero__bg" aria-hidden="true">
+      <div class="blob blob--1"></div>
+      <div class="blob blob--2"></div>
+      <div class="blob blob--3"></div>
+      <div class="hero__grid"></div>
+    </div>
+    <div class="container">
+      <div class="hero__copy">
+        <a class="pill-link" href="#claude"><span class="pill-link__tag">v1.0</span>Claude can now drive your browser<svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        <h1 id="hero-title">Pull any website <br>into <span class="grad-text">rows.</span></h1>
+        <p class="hero__sub">A no-code web scraper that lives in your Chrome side panel. Click one item on any list and get every row — clean, named columns, ready for CSV or Excel. Or ask Claude to run the whole job for you.</p>
+        <div class="hero__ctas">
+          <a class="btn btn--primary" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><svg class="i" aria-hidden="true"><use href="#i-puzzle"/></svg><span>Add to <span data-browser>Chrome</span> — free</span></a>
+          <a class="btn btn--ghost" href="#demo"><svg class="i" aria-hidden="true"><use href="#i-play"/></svg><span>See it work</span></a>
+        </div>
+        <ul class="hero__trust">
+          <li><svg class="i" aria-hidden="true"><use href="#i-gift"/></svg>Free forever plan</li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-user-off"/></svg>No signup</li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>Data stays in your browser</li>
+        </ul>
+        <p class="hero__note">PullRows runs on desktop Chrome, Edge and Brave.</p>
+      </div>
+
+      <!-- Product mock -->
+      <div class="mock-wrap" id="demo">
+        <div class="mock" id="mock">
+          <p class="sr-only">Animated demo: PullRows' Google Maps preset highlights each cafe in a list of search results, fills the side panel's data table row by row, and exports 40 rows to CSV.</p>
+          <div aria-hidden="true">
+            <div class="mock__bar">
+              <div class="mock__dots"><i></i><i></i><i></i></div>
+              <div class="mock__url"><svg class="i"><use href="#i-lock"/></svg><span>google.com/maps/search/cafes+in+pune</span></div>
+              <div class="mock__ext"><img src="/assets/logo.svg" width="22" height="22" alt=""></div>
+            </div>
+            <div class="mock__body">
+              <div class="mp">
+                <div class="mp__side">
+                  <div class="mp__search"><svg class="i"><use href="#i-search"/></svg>cafes in Pune</div>
+                  <div class="mp__chips"><span>Rating 4+</span><span>Open now</span><span>Wi-Fi</span></div>
+                  <div class="mp__viewport">
+                    <div class="mp__track">
+                      <div class="mp__card"><div><div class="mp__name">Monsoon Bean Co.</div><div class="mp__meta"><b>4.8</b><span class="mp__stars">★★★★★</span>(1,204)</div><div class="mp__sub">Coffee shop · Koregaon Park · <span class="mp__open">Open</span></div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">The Filter Room</div><div class="mp__meta"><b>4.7</b><span class="mp__stars">★★★★★</span>(862)</div><div class="mp__sub">Café · Baner · <span class="mp__open">Open</span></div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Kalyani Kaapi House</div><div class="mp__meta"><b>4.6</b><span class="mp__stars">★★★★★</span>(2,315)</div><div class="mp__sub">South Indian café · Deccan</div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Peth Street Espresso</div><div class="mp__meta"><b>4.9</b><span class="mp__stars">★★★★★</span>(341)</div><div class="mp__sub">Espresso bar · Sadashiv Peth · <span class="mp__open">Open</span></div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Aundh Garden Café</div><div class="mp__meta"><b>4.4</b><span class="mp__stars">★★★★☆</span>(978)</div><div class="mp__sub">Café · Aundh</div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Brewhouse 47</div><div class="mp__meta"><b>4.6</b><span class="mp__stars">★★★★★</span>(509)</div><div class="mp__sub">Coffee roaster · Viman Nagar · <span class="mp__open">Open</span></div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Third Wave Lane</div><div class="mp__meta"><b>4.5</b><span class="mp__stars">★★★★★</span>(1,127)</div><div class="mp__sub">Café · Kalyani Nagar</div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Old Mill Roasters</div><div class="mp__meta"><b>4.7</b><span class="mp__stars">★★★★★</span>(690)</div><div class="mp__sub">Roastery · Shivaji Nagar · <span class="mp__open">Open</span></div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Laxmi Road Chai Co.</div><div class="mp__meta"><b>4.3</b><span class="mp__stars">★★★★☆</span>(1,860)</div><div class="mp__sub">Tea house · Laxmi Road</div></div><div class="mp__thumb"></div></div>
+                      <div class="mp__card"><div><div class="mp__name">Sunday Slow Bar</div><div class="mp__meta"><b>4.6</b><span class="mp__stars">★★★★★</span>(233)</div><div class="mp__sub">Café · Hinjewadi</div></div><div class="mp__thumb"></div></div>
+                    </div>
+                    <div class="mp__hl"></div>
+                  </div>
+                </div>
+                <div class="mp__map">
+                  <svg viewBox="0 0 400 560" preserveAspectRatio="xMidYMid slice">
+                    <rect width="400" height="560" fill="#EEF0EA"/>
+                    <path d="M-20 380 C 80 340 140 420 230 380 S 360 300 430 330 L430 400 C 360 380 300 450 220 450 S 70 410 -20 450z" fill="#CFE3F0"/>
+                    <path d="M40 60 h110 v90 h-110z" fill="#DCEBD6" rx="10"/>
+                    <path d="M250 470 h120 v80 h-120z" fill="#DCEBD6"/>
+                    <path d="M260 90 c30-20 80-10 90 20 s-20 60-60 55 -60-50-30-75z" fill="#DCEBD6"/>
+                    <g fill="none" stroke="#fff" stroke-linecap="round">
+                      <path d="M-10 200 L 420 150" stroke-width="12"/>
+                      <path d="M180 -10 L 210 580" stroke-width="12"/>
+                      <path d="M-10 300 C 120 280 260 300 420 250" stroke-width="8"/>
+                      <path d="M90 -10 L 120 580" stroke-width="6"/>
+                      <path d="M320 -10 L 300 580" stroke-width="6"/>
+                      <path d="M-10 90 L 420 70" stroke-width="5"/>
+                      <path d="M-10 500 L 420 470" stroke-width="5"/>
+                    </g>
+                    <g fill="none" stroke="#F7D78B" stroke-linecap="round"><path d="M-10 200 L 420 150" stroke-width="4"/><path d="M180 -10 L 210 580" stroke-width="4"/></g>
+                    <g transform="translate(150 175)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                    <g transform="translate(250 120)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                    <g transform="translate(110 260)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                    <g transform="translate(300 230)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                    <g transform="translate(200 320)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                    <g transform="translate(60 150)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                    <g transform="translate(330 400)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                    <g transform="translate(140 470)"><g class="pin"><path class="pin__b" d="M0 0c-8 0-13 5.5-13 12.5C-13 22 0 34 0 34s13-12 13-21.5C13 5.5 8 0 0 0z"/><circle cy="12.5" r="4.5" fill="#fff"/></g></g>
+                  </svg>
+                  <div class="mp__zoom"><i>+</i><i>−</i></div>
+                </div>
+              </div>
+
+              <div class="sp">
+                <div class="sp__head"><img src="/assets/logo.svg" width="22" height="22" alt=""><b>PullRows</b><span class="sp__plan">Free</span></div>
+                <div class="sp__tabs"><span class="is-on">List</span><span>Page</span><span>Emails</span><span>Socials</span><span>Images</span><span>More</span></div>
+                <div class="sp__status">
+                  <div class="sp__row"><span class="sp__preset"><i></i>Google Maps preset</span><span class="sp__count">40 rows</span></div>
+                  <div class="sp__msg">Done · 40 rows · 0 duplicates</div>
+                  <div class="sp__bar"><i></i></div>
+                </div>
+                <div class="sp__table">
+                  <table>
+                    <thead><tr><th>name</th><th>rating</th><th>reviews</th><th>phone</th></tr></thead>
+                    <tbody>
+                      <tr class="r"><td>Monsoon Bean Co.</td><td>4.8</td><td>1,204</td><td>+91 20 4123 8890</td></tr>
+                      <tr class="r"><td>The Filter Room</td><td>4.7</td><td>862</td><td>+91 20 2553 0142</td></tr>
+                      <tr class="r"><td>Kalyani Kaapi House</td><td>4.6</td><td>2,315</td><td>+91 98220 41187</td></tr>
+                      <tr class="r"><td>Peth Street Espresso</td><td>4.9</td><td>341</td><td>+91 20 6740 2219</td></tr>
+                      <tr class="r"><td>Aundh Garden Café</td><td>4.4</td><td>978</td><td>+91 20 2588 1930</td></tr>
+                      <tr class="r"><td>Brewhouse 47</td><td>4.6</td><td>509</td><td>+91 70200 13456</td></tr>
+                      <tr class="r"><td>Third Wave Lane</td><td>4.5</td><td>1,127</td><td>+91 20 4860 7712</td></tr>
+                      <tr class="r"><td>Old Mill Roasters</td><td>4.7</td><td>690</td><td>+91 20 2551 6684</td></tr>
+                    </tbody>
+                  </table>
+                  <div class="sp__more">+ 32 more rows · address, category, website, hours…</div>
+                </div>
+                <div class="sp__foot">
+                  <span class="sp__btn sp__btn--main"><svg class="i"><use href="#i-down"/></svg>Export CSV</span>
+                  <span class="sp__btn">Excel</span>
+                  <span class="sp__btn sp__btn--ai"><svg class="i"><use href="#i-spark"/></svg>AI column</span>
+                </div>
+                <div class="sp__toast"><svg class="i"><use href="#i-yes"/></svg><span><code>pune-cafes.csv</code> saved · 40 rows</span></div>
+              </div>
+            </div>
+            <div class="cursor"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6.3 1.6L9.4 19z" fill="#0B0B14" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+          </div>
+        </div>
+        <p class="mock-caption">The Google Maps preset at work: it scrolls the results feed one screen at a time, so nothing is skipped.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MARQUEE ============ -->
+  <section class="marquee-sec" aria-labelledby="sites-title">
+    <h2 class="marquee-label" id="sites-title">If it's a list on a page, it can be rows</h2>
+    <div class="marquee">
+      <div class="marquee__track">
+        <ul>
+          <li>Google Maps</li><li>LinkedIn Jobs</li><li>Instagram</li><li>YouTube</li><li>Amazon</li><li>Shopify stores</li><li>Yelp</li><li>Indeed</li><li>eBay</li><li>Etsy</li><li>Product Hunt</li><li>Reddit</li><li>GitHub</li><li>Wikipedia tables</li><li>Business directories</li><li>Real-estate listings</li><li>Any HTML table</li>
+        </ul>
+        <ul aria-hidden="true">
+          <li>Google Maps</li><li>LinkedIn Jobs</li><li>Instagram</li><li>YouTube</li><li>Amazon</li><li>Shopify stores</li><li>Yelp</li><li>Indeed</li><li>eBay</li><li>Etsy</li><li>Product Hunt</li><li>Reddit</li><li>GitHub</li><li>Wikipedia tables</li><li>Business directories</li><li>Real-estate listings</li><li>Any HTML table</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="section" id="how" aria-labelledby="how-title">
+    <div class="container">
+      <div class="section-head section-head--center" data-reveal>
+        <span class="eyebrow">How it works</span>
+        <h2 id="how-title">From web page to spreadsheet in three clicks.</h2>
+        <p>No selectors, no code, no account. If you can see it in your browser, PullRows can turn it into rows.</p>
+      </div>
+      <ol class="steps">
+        <li class="step" data-reveal>
+          <span class="step__num">01</span>
+          <h3>Open a page</h3>
+          <p>Any site you can see in Chrome — including the ones you're logged in to.</p>
+          <div class="step__viz" aria-hidden="true"><div class="viz-url">linkedin.com/jobs/search?q=data+analyst</div><div class="viz-lines"><i></i><i></i><i></i></div></div>
+        </li>
+        <li class="step" data-reveal>
+          <span class="step__num">02</span>
+          <h3>Click one item — or Auto-detect</h3>
+          <p>PullRows finds every similar item, names the columns and follows Next, Load more or infinite scroll.</p>
+          <div class="step__viz" aria-hidden="true"><div class="viz-items"><i></i><i></i><i></i></div><svg class="viz-click" viewBox="0 0 24 24"><path d="M5 3l14 8-6.3 1.6L9.4 19z" fill="#0B0B14" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+        </li>
+        <li class="step" data-reveal>
+          <span class="step__num">03</span>
+          <h3>Export, or hand it to Claude</h3>
+          <p>CSV, Excel, JSON or clipboard. Or let Claude clean, enrich and summarise the table.</p>
+          <div class="step__viz" aria-hidden="true"><div class="viz-export"><span class="hot">.csv</span><span>.xlsx</span><span>.json</span><span>Copy</span><span>Claude</span><span class="ai">✦ AI</span></div></div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============ TOOLS ============ -->
+  <section class="section" id="features" aria-labelledby="features-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Ten tools, one table</span>
+        <h2 id="features-title">Every scraping job you actually do, in one side panel.</h2>
+        <p>Each tool writes into the same editable Data Table, so you can mix results, dedupe, clean and export in one place.</p>
+      </div>
+      <ul class="tools">
+        <li class="card" data-tilt data-reveal><div class="ico"><svg class="i" aria-hidden="true"><use href="#i-list"/></svg></div><h3>List Extractor</h3><p>Turn any list, grid or table into rows with readable columns. Follows pagination for you.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico ico--mint"><svg class="i" aria-hidden="true"><use href="#i-page"/></svg></div><h3>Page Extractor</h3><p>Define fields once, then pull them from hundreds of URLs. One row per page.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico ico--amber"><svg class="i" aria-hidden="true"><use href="#i-mail"/></svg></div><h3>Email Finder</h3><p>Crawls contact, about and team pages. Decodes protected and “name (at) domain” addresses.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico"><svg class="i" aria-hidden="true"><use href="#i-share"/></svg></div><h3>Social Links</h3><p>LinkedIn, X, Instagram, YouTube, TikTok and GitHub profiles for a list of sites. Skips share buttons.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico ico--mint"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg></div><h3>Image Downloader</h3><p>Full-size originals from srcset, lazy loads and CSS backgrounds, saved with readable names.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico ico--amber"><svg class="i" aria-hidden="true"><use href="#i-bag"/></svg></div><h3>Shopify Exporter</h3><p>A store's whole catalogue — per variant, per product, or ready-to-import Shopify CSV.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico"><svg class="i" aria-hidden="true"><use href="#i-tree"/></svg></div><h3>Sitemap Explorer</h3><p>Every URL from robots.txt, sitemap indexes and .gz files, grouped by section and filterable.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico ico--mint"><svg class="i" aria-hidden="true"><use href="#i-md"/></svg></div><h3>Page → Markdown</h3><p>Clean reader-mode text with title, author and date. Copy it or save it as .md.</p></li>
+        <li class="card" data-tilt data-reveal><div class="ico ico--amber"><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg></div><h3>Quick Scan</h3><p>One click for emails, phones, links, tables, prices and socials — one sheet each.</p></li>
+        <li class="card card--ai card--wide" data-tilt data-reveal><span class="tag-ai">your API key</span><div class="ico ico--coral"><svg class="i" aria-hidden="true"><use href="#i-spark"/></svg></div><h3>AI Extract · AI column · Ask Claude</h3><p>Describe the table you want in plain English. Fill a new column from every row (“classify the industry”). Ask questions and get answers with numbers from your data.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ PRESETS ============ -->
+  <section class="section section--tight" aria-labelledby="presets-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Smart presets</span>
+        <h2 id="presets-title">The hard sites, already figured out.</h2>
+        <p>Presets kick in automatically on the sites people scrape most, with the columns you'd want — no clicking around.</p>
+      </div>
+      <ul class="presets">
+        <li class="preset" data-reveal><div class="preset__name">Google Maps</div><div class="preset__fields"><span>name</span><span>rating</span><span>reviews</span><span>category</span><span>address</span><span>phone</span><span>website</span><span>hours</span></div></li>
+        <li class="preset" data-reveal><div class="preset__name">LinkedIn Jobs</div><div class="preset__fields"><span>title</span><span>company</span><span>location</span><span>posted</span><span>link</span></div></li>
+        <li class="preset" data-reveal><div class="preset__name">Instagram posts &amp; Reels</div><div class="preset__fields"><span>type</span><span>likes</span><span>comments</span><span>caption</span><span>author</span><span>date</span></div></li>
+        <li class="preset" data-reveal><div class="preset__name">YouTube</div><div class="preset__fields"><span>title</span><span>channel</span><span>views</span><span>published</span><span>link</span></div></li>
+        <li class="preset" data-reveal><div class="preset__name">Amazon</div><div class="preset__fields"><span>title</span><span>price</span><span>rating</span><span>reviews</span><span>link</span></div></li>
+      </ul>
+      <p class="presets-note" data-reveal>Everywhere else, Auto-detect scores every repeating block on the page and picks the list you most likely mean.</p>
+    </div>
+  </section>
+
+  <!-- ============ ENGINE ============ -->
+  <section class="section" aria-labelledby="engine-title">
+    <div class="container">
+      <div class="engine">
+        <div data-reveal>
+          <span class="eyebrow">Pro-grade scraping</span>
+          <div class="section-head">
+            <h2 id="engine-title">Built for the messy, modern web.</h2>
+            <p>Sites lazy-load, virtualise and obfuscate. PullRows was built against exactly that, so your export matches what you saw.</p>
+          </div>
+          <ul class="bullets">
+            <li><span class="tick"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><div><b>Scrolls one screen at a time</b><span>Catches lazy-loaded and virtualised items that a jump-to-bottom scraper misses.</span></div></li>
+            <li><span class="tick"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><div><b>Next, Load more and infinite scroll</b><span>Including scrolling panels like the Google Maps results feed.</span></div></li>
+            <li><span class="tick"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><div><b>Merges half-loaded rows</b><span>When an item renders in stages, the pieces are joined into one complete row.</span></div></li>
+            <li><span class="tick"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><div><b>Readable column names</b><span>title, price, rating, date — named from the content, even on sites with scrambled class names.</span></div></li>
+            <li><span class="tick"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span><div><b>Runs with your logins</b><span>It's your browser, so member areas and dashboards work. PullRows never sees your passwords.</span></div></li>
+          </ul>
+        </div>
+        <div class="scanner" data-reveal aria-hidden="true">
+          <div class="scanner__list">
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 1</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 2</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 3</em></div>
+            <div class="scanner__item half"><i></i><div><b></b><b></b></div><em>merging</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 5</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 6</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 7</em></div>
+            <div class="scanner__item half"><i></i><div><b></b><b></b></div><em>merging</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 9</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 10</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 11</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 12</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 13</em></div>
+            <div class="scanner__item half"><i></i><div><b></b><b></b></div><em>merging</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 15</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 16</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 17</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 18</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 19</em></div>
+            <div class="scanner__item"><i></i><div><b></b><b></b></div><em>row 20</em></div>
+          </div>
+          <div class="scanner__window"></div>
+          <div class="scanner__fade-top"></div>
+          <div class="scanner__fade-bot"></div>
+          <div class="scanner__hud"><span class="live">scrolling feed</span><span><b>0</b> skipped · <b>0</b> duplicates</span></div>
+        </div>
+      </div>
+
+      <ul class="stats" aria-label="PullRows in numbers">
+        <li class="stat" data-reveal><div class="stat__num" data-count="10">10</div><div class="stat__label">point-and-click tools in the side panel</div></li>
+        <li class="stat" data-reveal><div class="stat__num" data-count="18">18</div><div class="stat__label">tools Claude can call through the connector</div></li>
+        <li class="stat" data-reveal><div class="stat__num" data-count="5">5</div><div class="stat__label">site presets that need zero setup</div></li>
+        <li class="stat" data-reveal><div class="stat__num"><span class="grad-text">$0</span></div><div class="stat__label">to export unlimited CSV, forever</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ CLAUDE ============ -->
+  <section class="section dark" id="claude" aria-labelledby="claude-title">
+    <div class="dark__glow" aria-hidden="true"></div>
+    <div class="dark__grid" aria-hidden="true"></div>
+    <div class="container">
+      <div class="claude">
+        <div data-reveal>
+          <span class="eyebrow">Claude connector · MCP</span>
+          <h2 id="claude-title">Your browser. Your logins. Driven by&nbsp;Claude.</h2>
+          <p class="claude__lead">Turn on the connector and Claude can open pages, extract lists, crawl for emails and read your Data Table — inside your own Chrome, with the sessions you're already signed in to. No cloud browsers. No credits.</p>
+          <ol class="csteps">
+            <li class="cstep"><span class="cstep__n">1</span><div><b>Turn it on in Settings</b><span>Side panel → Settings → Claude connector. It's off until you switch it on.</span></div></li>
+            <li class="cstep"><span class="cstep__n">2</span><div><b>Copy your private link</b><span>It's the only key to your browser. Generate a new one any time to revoke the old.</span></div></li>
+            <li class="cstep"><span class="cstep__n">3</span><div><b>Add it as a custom connector in Claude</b><span>Settings → Connectors → Add custom connector, then paste the link.</span></div></li>
+          </ol>
+          <div class="cmd" aria-label="Claude Code command"><span class="p" aria-hidden="true">$</span><code>claude mcp add --transport http pullrows <em>&lt;your-link&gt;</em></code></div>
+          <div class="works-with"><span>Works with Claude on</span><span class="chip">claude.ai</span><span class="chip">Claude Desktop</span><span class="chip">Claude Code</span></div>
+          <p class="safety-note"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg><span>Read-only by default. Clicks, typing and downloads need your OK in Settings, and email, banking and password-manager sites are blocked.</span></p>
+        </div>
+
+        <div data-reveal class="d1">
+          <div class="chat" id="chat">
+            <p class="sr-only">Example conversation: the user asks Claude to find every cafe in Pune rated above 4.5 and export it. Claude calls the PullRows tools browser_open, list_detect, list_extract and data_table_read, finds 186 cafes, filters 38 above 4.5 and returns a table plus a CSV file.</p>
+            <div aria-hidden="true">
+              <div class="chat__bar"><div class="mock__dots"><i></i><i></i><i></i></div><span class="chat__title">New chat</span><span class="chat__conn">PullRows connected</span></div>
+              <div class="chat__body">
+                <div class="msg-user"><span class="typed" data-text="Find every cafe in Pune with rating > 4.5 and export it">Find every cafe in Pune with rating &gt; 4.5 and export it</span><span class="caret"></span></div>
+                <div class="msg-ai">
+                  <span class="ai-av">AI</span>
+                  <div>
+                    <p class="msg-ai__text" data-step>I'll search Google Maps in your browser and pull the full results list.</p>
+                    <div class="tool-chips">
+                      <div class="tchip" data-step><svg class="i plug"><use href="#i-plug"/></svg><code>browser_open</code><span class="arg">google.com/maps/search/cafes+in+pune</span><span class="st"></span></div>
+                      <div class="tchip" data-step><svg class="i plug"><use href="#i-plug"/></svg><code>list_detect</code><span class="arg">1 list · Google Maps preset</span><span class="st"></span></div>
+                      <div class="tchip" data-step><svg class="i plug"><use href="#i-plug"/></svg><code>list_extract</code><span class="arg">infinite scroll · 186 rows</span><span class="st"></span></div>
+                      <div class="tchip" data-step><svg class="i plug"><use href="#i-plug"/></svg><code>data_table_read</code><span class="arg">filter rating &gt; 4.5</span><span class="st"></span></div>
+                    </div>
+                    <p class="msg-ai__text" data-step>Found <b>186</b> cafes; <b>38</b> are rated above 4.5. Top results:</p>
+                    <div class="res-table" data-step>
+                      <table>
+                        <thead><tr><th>Name</th><th>Rating</th><th>Area</th></tr></thead>
+                        <tbody>
+                          <tr><td>Peth Street Espresso</td><td class="rt">4.9</td><td>Sadashiv Peth</td></tr>
+                          <tr><td>Monsoon Bean Co.</td><td class="rt">4.8</td><td>Koregaon Park</td></tr>
+                          <tr><td>The Filter Room</td><td class="rt">4.7</td><td>Baner</td></tr>
+                          <tr><td>Old Mill Roasters</td><td class="rt">4.7</td><td>Shivaji Nagar</td></tr>
+                          <tr class="more"><td colspan="3">+ 34 more</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="file-chip" data-step><svg class="i"><use href="#i-file"/></svg>pune-cafes-4.5-plus.csv <span>38 rows · also in your Data Table</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="chat__replay" type="button"><svg class="i" aria-hidden="true"><use href="#i-replay"/></svg>Replay</button>
+          </div>
+          <div class="mcp-tools">
+            <p>Tools Claude gets</p>
+            <ul>
+              <li>browser_tabs</li><li>browser_open</li><li>browser_screenshot</li><li>page_action</li><li>page_read</li><li>quick_scan</li><li>list_detect</li><li>list_extract</li><li>page_extract</li><li>find_emails</li><li>find_social_links</li><li>shopify_products</li><li>sitemap_urls</li><li>images_find</li><li>images_download</li><li>data_table_read</li><li>recipes_list</li><li>recipe_run</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ USE CASES ============ -->
+  <section class="section" id="use-cases" aria-labelledby="uses-title">
+    <div class="container">
+      <div class="section-head section-head--center" data-reveal>
+        <span class="eyebrow">Built for</span>
+        <h2 id="uses-title">The research you do every week, minus the copy-paste.</h2>
+      </div>
+      <ul class="uses">
+        <li class="use" data-reveal><span class="use__k">Sales &amp; agencies</span><h3>Lead lists from Google Maps</h3><p>Every business for a search — rating, phone, website — then their emails and socials.</p><div class="use__flow"><span>List</span><i>→</i><span>Email Finder</span><i>→</i><span>CSV</span></div></li>
+        <li class="use" data-reveal><span class="use__k">Job seekers &amp; recruiters</span><h3>Job research</h3><p>Pull LinkedIn Jobs results into one sheet, then let AI column tag seniority and stack.</p><div class="use__flow"><span>LinkedIn preset</span><i>→</i><span>✦ AI column</span></div></li>
+        <li class="use" data-reveal><span class="use__k">E-commerce</span><h3>Competitor price tracking</h3><p>Save a recipe for a competitor's catalogue and re-run it in one click whenever you like.</p><div class="use__flow"><span>Page Extractor</span><i>→</i><span>Recipe</span><i>→</i><span>Excel</span></div></li>
+        <li class="use" data-reveal><span class="use__k">Marketing</span><h3>Influencer research</h3><p>Likes, comments and captions from Instagram posts and Reels, plus YouTube channel stats.</p><div class="use__flow"><span>Instagram preset</span><i>→</i><span>Ask Claude</span></div></li>
+        <li class="use" data-reveal><span class="use__k">SEO</span><h3>SEO audits</h3><p>Every URL from the sitemap, then titles, H1s, descriptions and canonicals for each page.</p><div class="use__flow"><span>Sitemap</span><i>→</i><span>Page Extractor</span></div></li>
+        <li class="use" data-reveal><span class="use__k">Store owners</span><h3>Shopify catalogue exports</h3><p>A whole store's products and variants, ready to analyse — or to import as Shopify CSV.</p><div class="use__flow"><span>Shopify Exporter</span><i>→</i><span>Import CSV</span></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ COMPARE ============ -->
+  <section class="section section--tight" id="compare" aria-labelledby="compare-title">
+    <div class="container">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Why PullRows</span>
+        <h2 id="compare-title">Fair pricing, local scraping, and an AI that works where you do.</h2>
+      </div>
+      <div class="compare-wrap" data-reveal>
+        <table class="compare">
+          <caption class="sr-only">PullRows compared with typical scraper extensions and cloud scraping tools</caption>
+          <thead>
+            <tr>
+              <th scope="col"><span class="sr-only">Feature</span></th>
+              <th scope="col" class="us"><span><img src="/assets/logo.svg" width="22" height="22" alt="">PullRows</span></th>
+              <th scope="col">Typical scraper extensions</th>
+              <th scope="col">Cloud scraping tools</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Free CSV export<small>Download your data without paying</small></th>
+              <td data-label="PullRows" class="us"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Unlimited, on the free plan</span></td>
+              <td data-label="Typical scraper extensions"><span class="meh"><svg class="i" aria-hidden="true"><use href="#i-meh"/></svg>Often paywalled</span></td>
+              <td data-label="Cloud scraping tools"><span class="meh"><svg class="i" aria-hidden="true"><use href="#i-meh"/></svg>Usually paid plans</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Monthly billing<small>No forced annual commitment</small></th>
+              <td data-label="PullRows" class="us"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>$9/month, or yearly, or once</span></td>
+              <td data-label="Typical scraper extensions"><span class="meh"><svg class="i" aria-hidden="true"><use href="#i-meh"/></svg>Often annual-only</span></td>
+              <td data-label="Cloud scraping tools"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Usually</span></td>
+            </tr>
+            <tr>
+              <th scope="row">AI agent control in your own browser<small>Claude runs the scrape on your machine</small></th>
+              <td data-label="PullRows" class="us"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Yes, via MCP</span></td>
+              <td data-label="Typical scraper extensions"><span class="no"><svg class="i" aria-hidden="true"><use href="#i-no"/></svg>Rare</span></td>
+              <td data-label="Cloud scraping tools"><span class="no"><svg class="i" aria-hidden="true"><use href="#i-no"/></svg>Runs in their cloud</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Logged-in sites<small>Member areas, dashboards, CRMs</small></th>
+              <td data-label="PullRows" class="us"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Uses your sessions</span></td>
+              <td data-label="Typical scraper extensions"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Yes</span></td>
+              <td data-label="Cloud scraping tools"><span class="meh"><svg class="i" aria-hidden="true"><use href="#i-meh"/></svg>Needs your cookies or password</span></td>
+            </tr>
+            <tr>
+              <th scope="row">No cloud credits<small>Nothing metered per page</small></th>
+              <td data-label="PullRows" class="us"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Runs locally</span></td>
+              <td data-label="Typical scraper extensions"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Mostly</span></td>
+              <td data-label="Cloud scraping tools"><span class="no"><svg class="i" aria-hidden="true"><use href="#i-no"/></svg>Pay per page or credit</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="compare-note">Columns describe common patterns across each category as of October 2026, not any single product.</p>
+    </div>
+  </section>
+
+  <!-- ============ PRICING ============ -->
+  <section class="section" id="pricing" aria-labelledby="pricing-title">
+    <div class="container">
+      <div class="section-head section-head--center" data-reveal>
+        <span class="eyebrow">Pricing</span>
+        <h2 id="pricing-title">Start free. Upgrade when you outgrow it.</h2>
+        <p>Every tool and unlimited CSV export are free. Pro removes the per-run limits — billed monthly, yearly or once.</p>
+      </div>
+
+      <div class="price-controls">
+        <div class="seg" role="group" aria-label="Billing period" data-key="period" data-pos="0">
+          <span class="seg__thumb" aria-hidden="true"></span>
+          <button type="button" data-value="monthly" aria-pressed="true">Monthly</button>
+          <button type="button" data-value="yearly" aria-pressed="false">Yearly <span class="save-badge">Save 45%</span></button>
+        </div>
+        <div class="seg seg--sm" role="group" aria-label="Currency" data-key="cur" data-pos="0">
+          <span class="seg__thumb" aria-hidden="true"></span>
+          <button type="button" data-value="USD" aria-pressed="true">USD</button>
+          <button type="button" data-value="INR" aria-pressed="false">INR</button>
+        </div>
+        <span class="sr-only" id="cur-note" aria-live="polite">Prices in US dollars.</span>
+      </div>
+
+      <div class="plans">
+        <article class="plan" data-reveal aria-labelledby="plan-free">
+          <h3 class="plan__name" id="plan-free">Free</h3>
+          <p class="plan__desc">Every tool, for as long as you like. No account, no trial timer.</p>
+          <div class="plan__price"><span class="amount" id="price-free">$0</span><span class="per">forever</span></div>
+          <p class="plan__sub">No card needed.</p>
+          <a class="btn btn--ghost btn--block plan__cta" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><span>Add to <span data-browser>Chrome</span> — free</span></a>
+          <ul>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>All 10 tools</b> and the Data Table</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Unlimited CSV</b> and clipboard export</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Up to 10 pages per list run</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>25 URLs or sites per run for Page, Email &amp; Social</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>100 images · 100 Shopify products · 1,000 sitemap URLs</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>3 saved recipes</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>AI features with your own Anthropic key</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Claude connector: 25 tool calls a day</span></li>
+          </ul>
+        </article>
+
+        <article class="plan plan--pro" data-reveal aria-labelledby="plan-pro">
+          <span class="plan__badge">Most popular</span>
+          <h3 class="plan__name" id="plan-pro">Pro</h3>
+          <p class="plan__desc">No limits, more formats, unlimited Claude. For people who scrape every week.</p>
+          <div class="plan__price"><span class="amount" id="price-pro">$9</span><span class="per" id="per-pro">/ month</span></div>
+          <p class="plan__sub" id="sub-pro">Billed monthly. Cancel any time.</p>
+          <a class="btn btn--primary btn--block plan__cta" id="cta-pro" data-href="CHECKOUT_PRO_MONTHLY" href="https://checkout.dodopayments.com/buy/REPLACE_ME_PRO_MONTHLY">Get Pro</a>
+          <ul>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Everything in Free</b>, without per-run limits</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Unlimited pages, URLs and sites per run</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Excel</b> (.xlsx) and <b>JSON</b> export</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Unlimited recipes</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Unlimited Claude connector</b> calls</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Priority email support</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Use on up to 3 browsers</span></li>
+          </ul>
+        </article>
+
+        <article class="plan" data-reveal aria-labelledby="plan-life">
+          <h3 class="plan__name" id="plan-life">Lifetime</h3>
+          <p class="plan__desc">Every Pro feature, paid once. A launch deal for early supporters.</p>
+          <div class="plan__price"><span class="amount" id="price-life">$79</span><span class="strike" id="was-life">$99</span><span class="per">once</span></div>
+          <p class="plan__sub"><span class="counter-note">Launch price · first 500 licences</span></p>
+          <a class="btn btn--block plan__cta" id="cta-life" data-href="CHECKOUT_LIFETIME" href="https://checkout.dodopayments.com/buy/REPLACE_ME_LIFETIME">Get lifetime access</a>
+          <ul>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Everything in Pro</b></span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>One payment, no renewals</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Use on up to 3 browsers</span></li>
+            <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Licence key by email, instantly</span></li>
+          </ul>
+        </article>
+      </div>
+
+      <ul class="price-foot">
+        <li><svg class="i" aria-hidden="true"><use href="#i-refund"/></svg>14-day money-back guarantee</li>
+        <li><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Secure checkout by Dodo Payments</li>
+        <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Licence key emailed — paste it in Settings → Plan</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="container faq-layout">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">FAQ</span>
+        <h2 id="faq-title">Questions, answered plainly.</h2>
+        <p>Something missing? Email <a data-mail="Question about PullRows" data-mail-text href="mailto:support@pullrows.com">support@pullrows.com</a> — a human replies.</p>
+      </div>
+      <div class="faq">
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q1" aria-expanded="true" aria-controls="a1">Is it really free?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a1" role="region" aria-labelledby="q1"><div><div class="faq__a">
+            <p>Yes. The free plan includes every tool and unlimited CSV and clipboard export — no account and no trial timer.</p>
+            <p>Free runs have generous caps: 10 pages per list run, 25 URLs or sites per run for Page, Email and Social, 100 images, 100 Shopify products, 1,000 sitemap URLs, 3 recipes and 25 Claude connector calls a day. Pro removes them and adds Excel and JSON export.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q2" aria-expanded="true" aria-controls="a2">Does my data leave my browser?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a2" role="region" aria-labelledby="q2"><div><div class="faq__a">
+            <p>Not by default. Scraping runs in your browser, and your results, history and recipes are stored on your device. We have no analytics in the extension and no account system.</p>
+            <p>Data only leaves when you switch on a feature that needs it: AI features send the page text or rows you chose to Anthropic with your own API key, and the Claude connector passes tool results through our relay to your Claude account without storing them. Details are in the <a href="/privacy">privacy policy</a>.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q3" aria-expanded="true" aria-controls="a3">Do I need an Anthropic API key?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a3" role="region" aria-labelledby="q3"><div><div class="faq__a">
+            <p>Only for the AI features inside the side panel — AI Extract, AI column and Ask Claude — which call Anthropic's API with your own key.</p>
+            <p>The Claude connector doesn't need a key. It runs on your existing Claude subscription in claude.ai, Claude Desktop or Claude Code.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q4" aria-expanded="true" aria-controls="a4">Which browsers does it work in?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a4" role="region" aria-labelledby="q4"><div><div class="faq__a">
+            <p>Chrome, Microsoft Edge and Brave on desktop (Chrome 116 or newer). Browser extensions don't run on phones, so you'll need a computer.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q5" aria-expanded="true" aria-controls="a5">Is web scraping legal?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a5" role="region" aria-labelledby="q5"><div><div class="faq__a">
+            <p>Collecting publicly available data is lawful in many places, but it depends on what you collect, where you are and what you do with it.</p>
+            <p>You're responsible for following each site's terms, copyright, and privacy laws such as the GDPR and India's DPDP Act — especially for personal data like emails and phone numbers. Keep request volumes polite. This is general information, not legal advice.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q6" aria-expanded="true" aria-controls="a6">How many devices can I use a licence on?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a6" role="region" aria-labelledby="q6"><div><div class="faq__a">
+            <p>Pro and Lifetime licences work on up to 3 browsers — for example your work laptop, your home desktop and a second Chrome profile. Need to move one? Email us and we'll reset it.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q7" aria-expanded="true" aria-controls="a7">How do refunds work?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a7" role="region" aria-labelledby="q7"><div><div class="faq__a">
+            <p>Email us within 14 days of your purchase and we'll refund it in full. No questions, no forms. See the <a href="/refund">refund policy</a>.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q8" aria-expanded="true" aria-controls="a8">Does it work on sites where I'm logged in?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a8" role="region" aria-labelledby="q8"><div><div class="faq__a">
+            <p>Yes. PullRows runs inside your own browser, so it sees pages exactly as you do — dashboards, CRMs and member areas included. It never asks for or stores your passwords. Only scrape accounts and data you're allowed to.</p>
+          </div></div></div>
+        </div>
+        <div class="faq__item">
+          <h3 class="faq__q"><button class="faq__btn" type="button" id="q9" aria-expanded="true" aria-controls="a9">What is MCP?<span class="faq__icon" aria-hidden="true"></span></button></h3>
+          <div class="faq__panel" id="a9" role="region" aria-labelledby="q9"><div><div class="faq__a">
+            <p>The Model Context Protocol is an open standard that lets AI assistants use outside tools. PullRows' connector gives Claude 18 scraping tools, so you can ask in plain English and Claude runs the steps in your browser. It stays off until you turn it on. <a href="/docs#claude-connector">Set it up</a>.</p>
+          </div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA BAND ============ -->
+  <section class="dark cta-band" aria-labelledby="cta-title">
+    <div class="dark__glow" aria-hidden="true"></div>
+    <div class="dark__grid" aria-hidden="true"></div>
+    <div class="container" data-reveal>
+      <img class="logo-big" src="/assets/logo.svg" width="72" height="72" alt="">
+      <h2 id="cta-title">Your next spreadsheet is <span class="grad-text">one click away.</span></h2>
+      <p>Install PullRows, open any page and press Auto-detect. It takes less time than reading this sentence twice.</p>
+      <div class="hero__ctas">
+        <a class="btn btn--light" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><svg class="i" aria-hidden="true"><use href="#i-puzzle"/></svg><span>Add to <span data-browser>Chrome</span> — free</span></a>
+        <a class="btn btn--outline-dark" href="/docs">Read the docs</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <a class="brand" href="/"><img src="/assets/logo.svg" width="30" height="30" alt="">PullRows</a>
+        <p class="footer__tag">The no-code web scraper that lives in your Chrome side panel — and the one Claude can drive.</p>
+        <p class="footer__tag"><a data-mail data-mail-text href="mailto:support@pullrows.com">support@pullrows.com</a></p>
+      </div>
+      <nav aria-labelledby="f-product">
+        <h2 id="f-product">Product</h2>
+        <ul>
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/#claude">Claude connector</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows">Add to <span data-browser>Chrome</span></a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="f-res">
+        <h2 id="f-res">Resources</h2>
+        <ul>
+          <li><a href="/docs">Docs</a></li>
+          <li><a href="/changelog">Changelog</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/terms">Terms</a></li>
+          <li><a href="/refund">Refunds</a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="f-help">
+        <h2 id="f-help">Help</h2>
+        <ul>
+          <li><a href="/docs#getting-started">Getting started</a></li>
+          <li><a href="/docs#claude-connector">Connect Claude</a></li>
+          <li><a href="/docs#troubleshooting">Troubleshooting</a></li>
+          <li><a data-mail="PullRows support" href="mailto:support@pullrows.com">Email support</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span data-year>2026</span> PullRows. All rights reserved.</span>
+      <span>Works with Claude. Not affiliated with Anthropic or Google.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

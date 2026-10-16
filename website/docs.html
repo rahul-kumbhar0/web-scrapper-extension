@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docs — PullRows</title>
+  <meta name="description" content="How to install PullRows, use each scraping tool, export your data, save recipes and connect Claude to your browser via MCP.">
+  <link rel="canonical" href="https://pullrows.vercel.app/docs">
+  <meta name="theme-color" content="#FAFAF7">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PullRows">
+  <meta property="og:title" content="Docs — PullRows">
+  <meta property="og:description" content="How to install PullRows, use each scraping tool, export your data, save recipes and connect Claude to your browser via MCP.">
+  <meta property="og:url" content="https://pullrows.vercel.app/docs">
+  <meta property="og:image" content="https://pullrows.vercel.app/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PullRows: a web page turning into a clean table of rows.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Docs — PullRows">
+  <meta name="twitter:description" content="How to install PullRows, use each scraping tool, export your data, save recipes and connect Claude to your browser via MCP.">
+  <meta name="twitter:image" content="https://pullrows.vercel.app/assets/og.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/assets/css/site.css?v=1.0.0">
+  <script src="/assets/config.js?v=1.0.0" defer></script>
+  <script src="/assets/js/main.js?v=1.0.0" defer></script>
+  <script src="/assets/js/docs.js?v=1.0.0" defer></script>
+</head>
+<body>
+<svg class="sr-only" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.3v.1"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.6-3 8-7 9.5-4-1.5-7-4.9-7-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9.5 4.5a2.5 2.5 0 0 1 5 0V6H18v3.5h-1.5a2.5 2.5 0 0 0 0 5H18V18h-3.5v-1.5a2.5 2.5 0 0 0-5 0V18H6v-3.5h1.5a2.5 2.5 0 0 0 0-5H6V6h3.5z"/></symbol>
+  </defs>
+</svg>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="brand" href="/" aria-label="PullRows home"><img src="/assets/logo.svg" width="30" height="30" alt="">PullRows</a>
+    <nav aria-label="Main">
+      <ul class="nav__links">
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/#claude">Claude</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faq">FAQ</a></li>
+        <li><a href="/docs" aria-current="page">Docs</a></li>
+      </ul>
+    </nav>
+    <div class="nav__cta">
+      <a class="btn btn--primary btn--sm" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><span>Add to <span data-browser>Chrome</span> — free</span></a>
+      <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </div>
+  <div class="nav__mobile" id="mobile-menu">
+    <nav aria-label="Mobile">
+      <ul>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/#claude">Claude</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faq">FAQ</a></li>
+        <li><a href="/docs" aria-current="page">Docs</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn--primary btn--block" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><span>Add to <span data-browser>Chrome</span> — free</span></a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="page-hero" aria-labelledby="page-title">
+    <div class="hero__bg" aria-hidden="true"><div class="blob blob--1"></div><div class="blob blob--2"></div><div class="hero__grid"></div></div>
+    <div class="container">
+      <span class="eyebrow">Documentation</span>
+      <h1 id="page-title">PullRows docs</h1>
+      <p class="lead">Everything from installing the extension to your first export — and how to let Claude drive it.</p>
+    </div>
+  </section>
+
+  <div class="container docs">
+    <nav class="toc" aria-label="On this page">
+      <p class="toc__title">On this page</p>
+      <ul>
+        <li><a href="#getting-started">Getting started</a></li>
+        <li><a href="#tools">Tools</a>
+          <ul>
+            <li><a href="#list-extractor">List Extractor</a></li>
+            <li><a href="#page-extractor">Page Extractor</a></li>
+            <li><a href="#email-finder">Email Finder</a></li>
+            <li><a href="#social-links">Social Links</a></li>
+            <li><a href="#image-downloader">Image Downloader</a></li>
+            <li><a href="#shopify-exporter">Shopify Exporter</a></li>
+            <li><a href="#sitemap-explorer">Sitemap Explorer</a></li>
+            <li><a href="#page-markdown">Page → Markdown</a></li>
+            <li><a href="#quick-scan">Quick Scan</a></li>
+            <li><a href="#ai-features">AI features</a></li>
+          </ul>
+        </li>
+        <li><a href="#data-table">Data Table &amp; exports</a></li>
+        <li><a href="#recipes">Recipes &amp; History</a></li>
+        <li><a href="#claude-connector">Claude connector</a>
+          <ul>
+            <li><a href="#connector-claude-ai">claude.ai &amp; Desktop</a></li>
+            <li><a href="#connector-code">Claude Code</a></li>
+            <li><a href="#connector-tools">Tools Claude gets</a></li>
+          </ul>
+        </li>
+        <li><a href="#safety">Safety controls</a></li>
+        <li><a href="#plans">Plans &amp; limits</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+        <li><a href="#accessibility">Keyboard &amp; accessibility</a></li>
+      </ul>
+    </nav>
+
+    <article class="prose">
+      <details class="toc-mobile">
+        <summary>On this page</summary>
+        <nav class="toc" aria-label="On this page (mobile)">
+          <ul>
+            <li><a href="#getting-started">Getting started</a></li>
+            <li><a href="#tools">Tools</a></li>
+            <li><a href="#data-table">Data Table &amp; exports</a></li>
+            <li><a href="#recipes">Recipes &amp; History</a></li>
+            <li><a href="#claude-connector">Claude connector</a></li>
+            <li><a href="#safety">Safety controls</a></li>
+            <li><a href="#plans">Plans &amp; limits</a></li>
+            <li><a href="#troubleshooting">Troubleshooting</a></li>
+            <li><a href="#accessibility">Keyboard &amp; accessibility</a></li>
+          </ul>
+        </nav>
+      </details>
+
+      <h2 id="getting-started">Getting started</h2>
+      <p>PullRows runs in desktop Chrome 116 or newer, Microsoft Edge and Brave. There's no account to create.</p>
+      <ol>
+        <li><strong>Install.</strong> Open PullRows in the <a data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows">Chrome Web Store</a> and click <strong>Add to Chrome</strong>. On Edge, use <a data-href="EDGE_URL" href="https://microsoftedge.microsoft.com/addons/detail/pullrows">Edge Add-ons</a>. Brave installs straight from the Chrome Web Store.</li>
+        <li><strong>Pin it.</strong> Click the puzzle-piece icon in the toolbar and pin PullRows so it's one click away.</li>
+        <li><strong>Open the side panel.</strong> Click the PullRows icon. The panel opens on the right and stays open while you browse, so you can scrape page after page.</li>
+      </ol>
+      <h3>Your first scrape in 30 seconds</h3>
+      <ol>
+        <li>Open a page with a list — search results, a directory, a product grid.</li>
+        <li>In the <strong>List</strong> tab, press <strong>Auto-detect</strong>. PullRows outlines the list it found.</li>
+        <li>Check the preview columns, then press <strong>Start</strong>.</li>
+        <li>Rows land in the <a href="#data-table">Data Table</a>. Press <strong>Export CSV</strong>.</li>
+      </ol>
+      <div class="callout"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><p>Already had the page open before installing? Reload it once so PullRows can read it.</p></div></div>
+
+      <h2 id="tools">Tools</h2>
+      <p>All ten tools live in tabs along the top of the side panel and write into the same Data Table.</p>
+
+      <h3 id="list-extractor">List Extractor</h3>
+      <p>Turns any repeating list, grid or table into rows.</p>
+      <ul>
+        <li><strong>Auto-detect</strong> scores every repeating block on the page and picks the most likely list. Not the one you meant? Cycle through the other candidates.</li>
+        <li><strong>Pick an item</strong> lets you click one item on the page; PullRows finds all its siblings. Press <kbd>Esc</kbd> to cancel picking.</li>
+        <li><strong>Columns</strong> are generated and named from the content — title, price, rating, reviews, date, link — even on sites with scrambled class names. Rename, remove or add columns by clicking elements.</li>
+        <li><strong>Pagination:</strong> none, <em>Next</em> button, <em>Load more</em> button or <em>infinite scroll</em> — including scrolling panels such as the Google Maps results feed. Set a page limit.</li>
+        <li><strong>Presets</strong> apply automatically on Google Maps, LinkedIn Jobs, Instagram (posts and Reels), YouTube and Amazon.</li>
+      </ul>
+      <p>The scroll engine moves one screen at a time so lazy-loaded and virtualised items are captured, and merges rows that load in stages.</p>
+
+      <h3 id="page-extractor">Page Extractor</h3>
+      <p>Extracts the same fields from many URLs — one row per page. Paste URLs, or send them from the Sitemap Explorer or a Data Table column.</p>
+      <ul>
+        <li><strong>Define fields</strong> by clicking elements on a sample page, or add built-ins: title, H1, description, canonical, Open Graph image, author, published date, language, word count, emails, phones, social links, price and main text.</li>
+        <li><strong>Presets</strong> add whole field sets: page metadata, contacts, product price, Google Maps place (name, rating, reviews, category, address, phone, website, hours) and Instagram post or Reel stats.</li>
+        <li><strong>Fast mode</strong> fetches each page's HTML in the background with your browser's cookies — quick, and logged-in pages work.</li>
+        <li><strong>Browser mode</strong> renders each page in a background tab. Use it for JavaScript-heavy sites and Google Maps.</li>
+      </ul>
+
+      <h3 id="email-finder">Email Finder</h3>
+      <p>Finds email addresses across a list of websites.</p>
+      <ul>
+        <li><strong>Deep scan</strong> also visits contact, about, team and imprint pages.</li>
+        <li>Decodes Cloudflare-protected addresses and spelled-out ones like <code>name (at) domain (dot) com</code>, and filters out junk such as image file names.</li>
+        <li>Optional domain filter (only emails on the site's own domain) and phone number extraction.</li>
+      </ul>
+
+      <h3 id="social-links">Social Links</h3>
+      <p>Finds LinkedIn, X, Instagram, Facebook, YouTube, TikTok, GitHub and other profiles for a list of sites. You get one row per site with a column per platform. Share buttons are ignored, so you get the company's own profiles.</p>
+
+      <h3 id="image-downloader">Image Downloader</h3>
+      <p>Collects every image on a page: <code>srcset</code> originals, lazy-loaded images, CSS backgrounds and the Open Graph image. Filter by size and type, pick what you want in a thumbnail grid, and download them into <code>Downloads/pullrows/</code>, in a folder per site, with readable file names. You can also download every image from a URL column in the Data Table.</p>
+
+      <h3 id="shopify-exporter">Shopify Exporter</h3>
+      <p>Exports a Shopify store's catalogue — all products or one collection — from the store's public product feed. Choose the format:</p>
+      <ul>
+        <li><strong>One row per variant</strong> with price, compare-at price, SKU and availability.</li>
+        <li><strong>One row per product.</strong></li>
+        <li><strong>Shopify import CSV</strong>, ready to import into another store.</li>
+      </ul>
+
+      <h3 id="sitemap-explorer">Sitemap Explorer</h3>
+      <p>Finds a site's sitemaps from <code>robots.txt</code> and common paths, follows sitemap indexes and <code>.gz</code> files, and groups URLs by section. Filter by text or a <code>/regex/</code>, then send the URLs to Page Extractor, Email Finder, Social Links or Page → Markdown.</p>
+
+      <h3 id="page-markdown">Page → Markdown</h3>
+      <p>Extracts the main content of a page — like reader mode — as clean text and Markdown, with title, author, date, language and word count. Works on the current page or a list of URLs. Copy the result or save it as a <code>.md</code> file.</p>
+
+      <h3 id="quick-scan">Quick Scan</h3>
+      <p>One click on the current page pulls emails, phones, links, images, tables, text, social profiles, prices and pagination links, plus anything matching a custom CSS selector. It can follow Next links across pages. Each type gets its own sheet.</p>
+
+      <h3 id="ai-features">AI features</h3>
+      <p>Three optional features use Claude through Anthropic's API with <strong>your own API key</strong> (paste it in <strong>Settings</strong> and pick a model). Anthropic bills usage to your key.</p>
+      <ul>
+        <li><strong>AI Extract</strong> — describe the table you want in plain English. Claude reads the page, or a list of URLs, and returns rows.</li>
+        <li><strong>AI column</strong> — in the Data Table, fill a new column from every row: “classify the industry”, “summarise in 10 words”, “extract the city”.</li>
+        <li><strong>Ask Claude</strong> — ask questions about your data and get an answer with numbers from the table.</li>
+      </ul>
+      <div class="callout"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><p>Page text or table rows are sent to Anthropic only when you run one of these features. The <a href="#claude-connector">Claude connector</a> is separate and doesn't need an API key.</p></div></div>
+
+      <h2 id="data-table">Data Table &amp; exports</h2>
+      <p>Every tool writes into the Data Table, a small spreadsheet inside the side panel.</p>
+      <ul>
+        <li><strong>Sheets</strong> — each run gets its own tab; search across rows.</li>
+        <li><strong>Edit</strong> — double-click a cell to edit it.</li>
+        <li><strong>Column menu</strong> — rename, sort, move, dedupe by column, delete, send URLs to another tool, or download the column's images.</li>
+        <li><strong>Dedupe</strong>, <strong>Clean</strong> (trim spaces, drop empty rows and mostly-blank columns), <strong>Merge columns</strong> and delete rows.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Export</th><th>What you get</th><th>Plan</th></tr></thead>
+        <tbody>
+          <tr><td>CSV</td><td>UTF-8 CSV that opens cleanly in Excel, Numbers and Google Sheets</td><td>Free</td></tr>
+          <tr><td>Clipboard</td><td>Tab-separated, paste straight into any spreadsheet</td><td>Free</td></tr>
+          <tr><td>Excel (.xlsx)</td><td>One worksheet per sheet tab</td><td>Pro</td></tr>
+          <tr><td>JSON</td><td>An array of row objects</td><td>Pro</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="recipes">Recipes &amp; History</h2>
+      <p>Save any tool's setup as a <strong>recipe</strong> — optionally with its start page — and re-run it in one click. Export recipes as JSON to share them or move them to another browser, and import recipes others share with you. The free plan keeps 3 recipes; Pro is unlimited. Claude can list and run your recipes through the connector.</p>
+      <p><strong>History</strong> keeps your last 30 results on your device. Open one to load it back into the Data Table, or clear history at any time.</p>
+
+      <h2 id="claude-connector">Claude connector</h2>
+      <p>The connector lets Claude use PullRows' tools through MCP, the Model Context Protocol. Claude asks; your browser does the work, with your logged-in sessions; results come back to Claude and also land in your Data Table.</p>
+      <pre><code>Claude ──MCP (HTTPS)──▶ PullRows relay ◀──── PullRows in your Chrome
+                         passes calls through,        does the scraping,
+                         stores nothing               returns results</code></pre>
+      <p>Claude's servers can't reach your browser directly, so a small relay sits in between. It holds tool calls and results in memory only long enough to pass them on. PullRows uses our hosted relay by default; developers can run their own and enter its address under <strong>Relay server</strong> in Settings.</p>
+      <h3 id="connector-setup">Turn it on</h3>
+      <ol>
+        <li>Open the side panel → <strong>Settings → Claude connector</strong>.</li>
+        <li>Switch on <strong>Allow Claude to use this browser</strong>. The status changes to <strong>● Connected</strong>.</li>
+        <li>Press <strong>Copy</strong> next to your private link. It looks like <code>https://…/mcp/&lt;secret&gt;</code>.</li>
+      </ol>
+      <h3 id="connector-claude-ai">claude.ai and Claude Desktop</h3>
+      <ol>
+        <li>In Claude, open <strong>Settings → Connectors</strong> and choose <strong>Add custom connector</strong>.</li>
+        <li>Name it <em>PullRows</em>, paste your private link and press <strong>Add</strong>.</li>
+        <li>In a chat, enable PullRows from the tools menu, then ask away.</li>
+      </ol>
+      <p>Connectors you add on claude.ai also appear in Claude Desktop when you're signed in to the same account. Custom connectors need a Claude plan that supports them.</p>
+      <h3 id="connector-code">Claude Code</h3>
+      <pre><code>claude mcp add --transport http pullrows &lt;your-link&gt;</code></pre>
+      <p>Run <code>/mcp</code> inside Claude Code to check the connection.</p>
+      <h3 id="connector-tools">Tools Claude gets</h3>
+      <table>
+        <thead><tr><th>Tools</th><th>What they do</th></tr></thead>
+        <tbody>
+          <tr><td><code>browser_tabs</code>, <code>browser_open</code>, <code>browser_screenshot</code>, <code>page_action</code></td><td>See and drive pages — list tabs, open a URL, screenshot, click, scroll, type</td></tr>
+          <tr><td><code>page_read</code></td><td>Page as clean Markdown plus metadata</td></tr>
+          <tr><td><code>list_detect</code>, <code>list_extract</code></td><td>Lists, grids and tables with Next, Load more or infinite scroll</td></tr>
+          <tr><td><code>page_extract</code></td><td>The same fields from many URLs, with built-ins like Google Maps place fields</td></tr>
+          <tr><td><code>find_emails</code>, <code>find_social_links</code></td><td>Contact crawling over a list of sites</td></tr>
+          <tr><td><code>shopify_products</code>, <code>sitemap_urls</code>, <code>images_find</code>, <code>images_download</code>, <code>quick_scan</code></td><td>The other side-panel tools</td></tr>
+          <tr><td><code>data_table_read</code>, <code>recipes_list</code>, <code>recipe_run</code></td><td>Read results and run your saved recipes</td></tr>
+        </tbody>
+      </table>
+      <h4>Prompts to try</h4>
+      <ul>
+        <li>“Open this Google Maps search and give me every cafe with its rating and phone number.”</li>
+        <li>“Find the contact emails for these 20 company websites.”</li>
+        <li>“Export this Shopify store's products and tell me the median price per collection.”</li>
+        <li>“Run my <em>competitor prices</em> recipe and compare it with last week's numbers.”</li>
+      </ul>
+      <div class="callout"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><p>Each tool call has about four minutes to finish. For big jobs, ask Claude to work in chunks — say, 5 pages at a time. On the free plan the connector allows 25 tool calls a day.</p></div></div>
+
+      <h2 id="safety">Safety controls</h2>
+      <p>Letting an AI use your browser should be boring and predictable. These are the guardrails:</p>
+      <ul>
+        <li><strong>Off by default.</strong> Nothing connects until you switch the connector on. Switching it off disconnects immediately.</li>
+        <li><strong>A private link.</strong> The secret in your link is the only key to your browser. Don't share it. <strong>Generate new link</strong> revokes the old one instantly.</li>
+        <li><strong>Read-only by default.</strong> Claude can open pages, read them and extract data. Clicking, typing and file downloads stay blocked until you allow <strong>Actions</strong> and <strong>Downloads</strong> in Settings → Claude connector.</li>
+        <li><strong>Sensitive sites are blocked.</strong> Claude can never open, read or screenshot webmail and account pages (Gmail, Outlook, Google, Microsoft and Apple accounts), payment and banking sites (PayPal, Stripe, Wise, Revolut and any site with “bank” or “wallet” in its address), password managers (1Password, LastPass, Bitwarden, Dashlane), the Chrome Web Store, browser pages and <code>localhost</code> or private-network addresses. Edit the list under <strong>Blocked sites</strong> in Settings. These rules apply only to Claude — your own scrapes are unaffected.</li>
+        <li><strong>You confirm before it starts.</strong> Turning the connector on shows exactly what will pass through the relay, and asks for your OK.</li>
+        <li><strong>Everything is visible.</strong> Settings shows Claude's recent activity, and results Claude collects also land in your Data Table, so you can see exactly what was read.</li>
+      </ul>
+      <div class="callout callout--ok"><svg class="i" aria-hidden="true"><use href="#i-shield"/></svg><div><p>The relay passes calls and results through in memory and doesn't store page content. See the <a href="/privacy">privacy policy</a> for details.</p></div></div>
+
+      <h2 id="plans">Plans &amp; limits</h2>
+      <table>
+        <thead><tr><th></th><th>Free</th><th>Pro &amp; Lifetime</th></tr></thead>
+        <tbody>
+          <tr><td>All 10 tools, Data Table, presets</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>CSV &amp; clipboard export</td><td>Unlimited</td><td>Unlimited</td></tr>
+          <tr><td>Excel &amp; JSON export</td><td>—</td><td>Yes</td></tr>
+          <tr><td>List pagination</td><td>10 pages per run</td><td>No limit</td></tr>
+          <tr><td>Page Extractor</td><td>25 URLs per run</td><td>No limit</td></tr>
+          <tr><td>Email &amp; Social finder</td><td>25 sites per run</td><td>No limit</td></tr>
+          <tr><td>Images / Shopify / Sitemap</td><td>100 / 100 / 1,000 per run</td><td>No limit</td></tr>
+          <tr><td>Recipes</td><td>3</td><td>Unlimited</td></tr>
+          <tr><td>AI features</td><td>With your Anthropic key</td><td>With your Anthropic key</td></tr>
+          <tr><td>Claude connector</td><td>25 tool calls a day</td><td>Unlimited</td></tr>
+          <tr><td>Browsers per licence</td><td>—</td><td>Up to 3</td></tr>
+        </tbody>
+      </table>
+      <p>After checkout you'll get a licence key by email. Paste it in <strong>Settings → Plan</strong>. Each browser activates once and re-checks the licence about once a day; if the licence server can't be reached, Pro keeps working for 14 days. Payments are handled by Dodo Payments, our merchant of record. Every purchase has a <a href="/refund">14-day money-back guarantee</a>.</p>
+
+      <h2 id="troubleshooting">Troubleshooting</h2>
+      <h4>A list stops early or items are missing</h4>
+      <p>Chrome pauses lazy loading in hidden windows and background tabs. Keep the tab you're scraping visible — not minimised or covered — while a scroll job runs. If you're working with Claude, put Chrome side by side with it. PullRows warns you when the tab was hidden during a run.</p>
+      <h4>Page Extractor returns empty fields</h4>
+      <p>The site probably builds its content with JavaScript, or blocks background requests. Switch the run to <strong>Browser mode</strong>, which renders each page in a real tab.</p>
+      <h4>“Can't run on this page”</h4>
+      <p>Chrome doesn't let extensions read its own pages (<code>chrome://</code>), the Chrome Web Store or some built-in viewers. On ordinary sites, reload the page once after installing or updating PullRows.</p>
+      <h4>Claude says the connector is offline</h4>
+      <p>Chrome needs to be open with the connector switched on — check that Settings shows <strong>● Connected</strong>. If you generated a new link, update the connector in Claude with the new one.</p>
+      <h4>A Claude tool call timed out</h4>
+      <p>Ask for smaller chunks, such as fewer pages per call or 20 URLs at a time.</p>
+      <h4>My licence key isn't accepted</h4>
+      <p>Check for extra spaces when pasting. A key works on up to 3 browsers; if you've reached that, email <a data-mail="Licence reset" data-mail-text href="mailto:support@pullrows.com">support@pullrows.com</a> and we'll reset it.</p>
+
+      <h2 id="accessibility">Keyboard &amp; accessibility</h2>
+      <ul>
+        <li><strong>Shortcut:</strong> set a keyboard shortcut to open PullRows at <code>chrome://extensions/shortcuts</code>.</li>
+        <li><strong>Navigation:</strong> the side panel uses standard buttons, inputs and menus, so <kbd>Tab</kbd>, <kbd>Shift</kbd>+<kbd>Tab</kbd>, <kbd>Enter</kbd> and <kbd>Space</kbd> work throughout, with visible focus.</li>
+        <li><strong>Editing cells:</strong> <kbd>Enter</kbd> saves, <kbd>Shift</kbd>+<kbd>Enter</kbd> adds a new line, <kbd>Esc</kbd> cancels.</li>
+        <li><strong>Picking elements:</strong> <kbd>Esc</kbd> cancels the element picker.</li>
+        <li><strong>Reduced motion:</strong> this website respects your system’s reduced-motion setting.</li>
+      </ul>
+      <p>Found something hard to use? Tell us at <a data-mail="Accessibility feedback" data-mail-text href="mailto:support@pullrows.com">support@pullrows.com</a>.</p>
+    </article>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <a class="brand" href="/"><img src="/assets/logo.svg" width="30" height="30" alt="">PullRows</a>
+        <p class="footer__tag">The no-code web scraper that lives in your Chrome side panel — and the one Claude can drive.</p>
+        <p class="footer__tag"><a data-mail data-mail-text href="mailto:support@pullrows.com">support@pullrows.com</a></p>
+      </div>
+      <nav aria-labelledby="f-product">
+        <h2 id="f-product">Product</h2>
+        <ul>
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/#claude">Claude connector</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows">Add to <span data-browser>Chrome</span></a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="f-res">
+        <h2 id="f-res">Resources</h2>
+        <ul>
+          <li><a href="/docs">Docs</a></li>
+          <li><a href="/changelog">Changelog</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/terms">Terms</a></li>
+          <li><a href="/refund">Refunds</a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="f-help">
+        <h2 id="f-help">Help</h2>
+        <ul>
+          <li><a href="/docs#getting-started">Getting started</a></li>
+          <li><a href="/docs#claude-connector">Connect Claude</a></li>
+          <li><a href="/docs#troubleshooting">Troubleshooting</a></li>
+          <li><a data-mail="PullRows support" href="mailto:support@pullrows.com">Email support</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span data-year>2026</span> PullRows. All rights reserved.</span>
+      <span>Works with Claude. Not affiliated with Anthropic or Google.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

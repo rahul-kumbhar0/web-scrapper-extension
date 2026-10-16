@@ -1,0 +1,14 @@
+{
+  "name": "PullRows",
+  "short_name": "PullRows",
+  "description": "Pull any website into rows. A no-code web scraper in your Chrome side panel.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#FAFAF7",
+  "theme_color": "#6A5CFF",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/apple-touch-icon.png", "type": "image/png", "sizes": "180x180" },
+    { "src": "/assets/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ]
+}

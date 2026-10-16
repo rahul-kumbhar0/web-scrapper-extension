@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Changelog — PullRows</title>
+  <meta name="description" content="What&#x27;s new in PullRows: the v1.0 launch with a redesigned side panel, Pro plan and Claude connector safety controls, plus earlier releases.">
+  <link rel="canonical" href="https://pullrows.vercel.app/changelog">
+  <meta name="theme-color" content="#FAFAF7">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PullRows">
+  <meta property="og:title" content="Changelog — PullRows">
+  <meta property="og:description" content="What&#x27;s new in PullRows: the v1.0 launch with a redesigned side panel, Pro plan and Claude connector safety controls, plus earlier releases.">
+  <meta property="og:url" content="https://pullrows.vercel.app/changelog">
+  <meta property="og:image" content="https://pullrows.vercel.app/assets/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="PullRows: a web page turning into a clean table of rows.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Changelog — PullRows">
+  <meta name="twitter:description" content="What&#x27;s new in PullRows: the v1.0 launch with a redesigned side panel, Pro plan and Claude connector safety controls, plus earlier releases.">
+  <meta name="twitter:image" content="https://pullrows.vercel.app/assets/og.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter:wght@400..700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/assets/css/site.css?v=1.0.0">
+  <script src="/assets/config.js?v=1.0.0" defer></script>
+  <script src="/assets/js/main.js?v=1.0.0" defer></script>
+</head>
+<body>
+<svg class="sr-only" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6v.1"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.3v.1"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.6-3 8-7 9.5-4-1.5-7-4.9-7-9.5V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-puzzle" viewBox="0 0 24 24"><path d="M9.5 4.5a2.5 2.5 0 0 1 5 0V6H18v3.5h-1.5a2.5 2.5 0 0 0 0 5H18V18h-3.5v-1.5a2.5 2.5 0 0 0-5 0V18H6v-3.5h1.5a2.5 2.5 0 0 0 0-5H6V6h3.5z"/></symbol>
+  </defs>
+</svg>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="container nav__inner">
+    <a class="brand" href="/" aria-label="PullRows home"><img src="/assets/logo.svg" width="30" height="30" alt="">PullRows</a>
+    <nav aria-label="Main">
+      <ul class="nav__links">
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/#claude">Claude</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faq">FAQ</a></li>
+        <li><a href="/docs">Docs</a></li>
+      </ul>
+    </nav>
+    <div class="nav__cta">
+      <a class="btn btn--primary btn--sm" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><span>Add to <span data-browser>Chrome</span> — free</span></a>
+      <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" aria-label="Open menu"><span></span></button>
+    </div>
+  </div>
+  <div class="nav__mobile" id="mobile-menu">
+    <nav aria-label="Mobile">
+      <ul>
+        <li><a href="/#features">Features</a></li>
+        <li><a href="/#claude">Claude</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/#faq">FAQ</a></li>
+        <li><a href="/docs">Docs</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn--primary btn--block" data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows"><span>Add to <span data-browser>Chrome</span> — free</span></a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="page-hero" aria-labelledby="page-title">
+    <div class="hero__bg" aria-hidden="true"><div class="blob blob--1"></div><div class="blob blob--2"></div><div class="hero__grid"></div></div>
+    <div class="container">
+      <span class="eyebrow">Changelog</span>
+      <h1 id="page-title">What's new</h1>
+      <p class="lead">Every release of PullRows, newest first. Chrome updates the extension automatically.</p>
+    </div>
+  </section>
+
+  <div class="container legal">
+    <section class="release" aria-labelledby="v100">
+      <div class="release__meta">
+        <h2 class="release__v" id="v100">v1.0.0</h2>
+        <p class="release__d">October 16, 2026</p>
+        <span class="release__tag">Launch</span>
+      </div>
+      <div class="prose">
+        <h3>Hello, PullRows</h3>
+        <p>The extension formerly known as “Web Scraper Extension” launches as PullRows.</p>
+        <ul>
+          <li><strong>Redesigned side panel</strong> — new name, icon and look; clearer tool tabs, status and progress while a job runs.</li>
+          <li><strong>Pro plan</strong> — monthly, yearly and a launch Lifetime licence. The free plan keeps every tool and unlimited CSV export. Paste your licence key in Settings → Plan; one key works on up to 3 browsers.</li>
+          <li><strong>Claude connector safety controls</strong> — off by default; a private link you can regenerate to revoke access; read-only by default, with separate switches for actions (click, type) and downloads; webmail, banking, password-manager, browser and local-network pages blocked.</li>
+          <li><strong>Security hardening</strong> — stricter validation of messages between the side panel, pages and the relay, and tighter limits on the relay.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="release" aria-labelledby="v04">
+      <div class="release__meta">
+        <h2 class="release__v" id="v04">v0.4.x</h2>
+        <p class="release__d">October 2026 · pre-release</p>
+      </div>
+      <div class="prose">
+        <h3>0.4.2 — Instagram Reels</h3>
+        <ul>
+          <li>Instagram lists and Page Extractor now tell posts and Reels apart with a <code>type</code> column.</li>
+          <li>Likes and comments for posts and Reels, as plain numbers.</li>
+        </ul>
+        <h3>0.4.1 — Reliability</h3>
+        <ul>
+          <li>Warning when the tab was hidden during a scroll job (Chrome pauses lazy loading in hidden windows).</li>
+          <li>Automatic retry when a page's content loads slowly.</li>
+          <li>Readable column names on sites with scrambled class names, such as Instagram and Facebook.</li>
+        </ul>
+        <h3>0.4.0 — New scroll engine and presets</h3>
+        <ul>
+          <li>Scrolls one screen at a time, so lazy-loaded and virtualised lists are captured in full.</li>
+          <li>Rows that load in stages are merged into one complete row.</li>
+          <li>Columns are named from their content — title, price, rating, date.</li>
+          <li>Site presets for Google Maps, LinkedIn Jobs, Instagram, YouTube and Amazon.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="release" aria-labelledby="v03">
+      <div class="release__meta">
+        <h2 class="release__v" id="v03">Earlier</h2>
+        <p class="release__d">October 2026 · pre-release</p>
+      </div>
+      <div class="prose">
+        <h3>0.3 — Claude connector</h3>
+        <ul><li>An MCP server and relay so Claude can use the extension's tools in your browser.</li></ul>
+        <h3>0.2 — Ten tools and the Data Table</h3>
+        <ul><li>List, Page, Email, Social, Images, Shopify, Sitemap, Page Text, Quick Scan and AI Extract; an editable Data Table with exports; recipes and history.</li></ul>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <a class="brand" href="/"><img src="/assets/logo.svg" width="30" height="30" alt="">PullRows</a>
+        <p class="footer__tag">The no-code web scraper that lives in your Chrome side panel — and the one Claude can drive.</p>
+        <p class="footer__tag"><a data-mail data-mail-text href="mailto:support@pullrows.com">support@pullrows.com</a></p>
+      </div>
+      <nav aria-labelledby="f-product">
+        <h2 id="f-product">Product</h2>
+        <ul>
+          <li><a href="/#features">Features</a></li>
+          <li><a href="/#claude">Claude connector</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+          <li><a href="/#faq">FAQ</a></li>
+          <li><a data-href="CHROME_STORE_URL" href="https://chromewebstore.google.com/detail/pullrows">Add to <span data-browser>Chrome</span></a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="f-res">
+        <h2 id="f-res">Resources</h2>
+        <ul>
+          <li><a href="/docs">Docs</a></li>
+          <li><a href="/changelog">Changelog</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/terms">Terms</a></li>
+          <li><a href="/refund">Refunds</a></li>
+        </ul>
+      </nav>
+      <nav aria-labelledby="f-help">
+        <h2 id="f-help">Help</h2>
+        <ul>
+          <li><a href="/docs#getting-started">Getting started</a></li>
+          <li><a href="/docs#claude-connector">Connect Claude</a></li>
+          <li><a href="/docs#troubleshooting">Troubleshooting</a></li>
+          <li><a data-mail="PullRows support" href="mailto:support@pullrows.com">Email support</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span data-year>2026</span> PullRows. All rights reserved.</span>
+      <span>Works with Claude. Not affiliated with Anthropic or Google.</span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>
