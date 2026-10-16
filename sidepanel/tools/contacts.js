@@ -1,5 +1,6 @@
 // EMAIL EXTRACTOR + SOCIAL LINK EXTRACTOR — crawl a list of sites (and their contact/about pages).
 import { h, toast, runJob, plural } from '../ui.js';
+import { capList } from '../plan.js';
 import { makeSheet, setDataset } from '../state.js';
 import { urlSource, card, numberField, checkbox, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab } from '../../lib/tab.js';
@@ -37,7 +38,7 @@ export const emailTool = {
     const getConfig = () => ({ ...opts.get(), domain: domain.value.trim(), phones: phones.get() });
 
     async function run() {
-      const list = urls.get();
+      const list = capList(urls.get(), 'contactSites', 'the email finder');
       if (!list.length) { toast('Add some websites.', 'error'); return; }
       const cfg = getConfig();
       await runJob(`Scanning ${plural(list.length, 'site')}…`, async (signal, progress) => {
@@ -89,7 +90,7 @@ export const socialTool = {
     const getConfig = () => ({ ...opts.get(), platforms: [...chosen], wide: wide.get() });
 
     async function run() {
-      const list = urls.get();
+      const list = capList(urls.get(), 'contactSites', 'the social link finder');
       if (!list.length) { toast('Add some websites.', 'error'); return; }
       const cfg = getConfig();
       await runJob(`Scanning ${plural(list.length, 'site')}…`, async (signal, progress) => {

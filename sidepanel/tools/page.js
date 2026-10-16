@@ -7,6 +7,7 @@ import { pick } from '../picker.js';
 import { urlSource, card, numberField, select, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab, runInNewTab, sleep } from '../../lib/tab.js';
 import { fetchDoc, runPool } from '../../lib/net.js';
+import { capList } from '../plan.js';
 
 const BUILTINS = [
   { group: 'Page metadata', items: ['title', 'h1', 'description', 'canonical', 'og_image', 'author', 'published', 'language', 'word_count'] },
@@ -64,8 +65,9 @@ export default {
     async function pickField() {
       const r = await pick('field').catch((e) => { toast(e.message, 'error'); return null; });
       if (!r) return;
-      let name = r.name || 'field';
-      for (let i = 2; fields.some((f) => f.name === name); i++) name = `${r.name} ${i}`;
+      const base = r.name || 'field';
+      let name = base;
+      for (let i = 2; fields.some((f) => f.name === name); i++) name = `${base} ${i}`;
       fields.push({ name, selector: r.selector, attr: r.defaultAttr || 'text', attrs: r.attrs });
       renderFields();
       toast(`Added “${name}” = ${r.sample || '(empty)'}`, 'ok');
@@ -95,7 +97,7 @@ export default {
     }
 
     async function run() {
-      const list = urls.get();
+      const list = capList(urls.get(), 'pageUrls', 'Page Extractor');
       if (!list.length) { toast('Add some URLs.', 'error'); return; }
       if (!fields.length) { toast('Add some fields first.', 'error'); return; }
       const cfg = getConfig();

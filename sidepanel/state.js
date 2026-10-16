@@ -23,18 +23,31 @@ export function activeSheet() {
   return d ? d.sheets[Math.min(d.active || 0, d.sheets.length - 1)] : null;
 }
 
-let saveTimer;
+let saveTimer = null;
+async function persistNow() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  // Never overwrite newer results Claude wrote while this edit was pending.
+  const { dataset: cur } = await chrome.storage.local.get('dataset');
+  if (cur?.updatedBy === 'claude' && cur.updatedAt > (state.dataset?.updatedAt || 0)) return;
+  await chrome.storage.local.set({ dataset: state.dataset });
+}
+
 export function changed({ persist = true } = {}) {
   for (const fn of state.listeners) fn();
   if (persist) {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => chrome.storage.local.set({ dataset: state.dataset }), 400);
+    saveTimer = setTimeout(persistNow, 400);
   }
 }
 
+// Closing the panel right after an edit must not lose it.
+addEventListener('pagehide', () => { if (saveTimer) persistNow(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) persistNow(); });
+
 // Replace the table with a tool's output and record it in History.
 export async function setDataset({ title, url, source, sheets }) {
-  state.dataset = { title, url, source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)) };
+  state.dataset = { title, url, source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)), updatedAt: Date.now() };
   changed();
   await addHistory({
     title, url, source,

@@ -1,8 +1,10 @@
-import { h, $, toast, stopJob, plural } from './ui.js';
+import { h, $, fill, toast, stopJob, plural } from './ui.js';
 import './picker.js';
 import { state, loadDataset, onChange } from './state.js';
-import { getSettings, saveRecipe } from '../lib/storage.js';
+import { getSettings, saveRecipe, getRecipes } from '../lib/storage.js';
 import { getActiveTab, navigate } from '../lib/tab.js';
+import { icon, TOOL_ICONS } from './icons.js';
+import { plan, loadPlan, bindNavigation, upsell } from './plan.js';
 
 import listTool from './tools/list.js';
 import pageTool from './tools/page.js';
@@ -17,9 +19,15 @@ import tableView from './views/table.js';
 import recipesView from './views/recipes.js';
 import historyView from './views/history.js';
 import settingsView from './views/settings.js';
+import upgradeView from './views/upgrade.js';
 
 export const TOOLS = [listTool, pageTool, emailTool, socialTool, imagesTool, shopifyTool, sitemapTool, textTool, quickTool, aiTool];
-const VIEWS = { table: tableView, recipes: recipesView, history: historyView, settings: settingsView };
+const GROUPS = [
+  { label: 'On this page', ids: ['list', 'quick', 'images', 'text'] },
+  { label: 'Across many pages', ids: ['page', 'email', 'social', 'sitemap', 'shopify'] },
+  { label: 'AI', ids: ['ai'] },
+];
+const VIEWS = { table: tableView, recipes: recipesView, history: historyView, settings: settingsView, upgrade: upgradeView };
 const ALL = Object.fromEntries([...TOOLS, ...Object.values(VIEWS)].map((t) => [t.id, t]));
 
 let settings;
@@ -32,6 +40,10 @@ export const ctx = {
   go,
   async saveRecipe(tool, config, defaultName) {
     const { formDialog } = await import('./ui.js');
+    if ((await getRecipes()).length >= plan.limits.recipes) {
+      upsell(`The free plan keeps ${plan.limits.recipes} saved recipes. Delete one, or upgrade for unlimited recipes.`);
+      return;
+    }
     const tab = await getActiveTab().catch(() => null);
     const res = await formDialog({
       title: 'Save as recipe',
@@ -60,6 +72,7 @@ export const ctx = {
     go(tool.id, { preset: recipe.config, autoRun: true });
   },
 };
+bindNavigation((id) => go(id));
 
 export function go(id, opts = {}) {
   cleanup?.();
@@ -67,8 +80,12 @@ export function go(id, opts = {}) {
   currentId = id;
   const view = $('#view');
   view.replaceChildren();
+  // Replay the entrance animation on every navigation.
+  view.style.animation = 'none';
+  void view.offsetHeight;
+  view.style.animation = '';
   $('#back').hidden = id === 'home';
-  $('#title').textContent = id === 'home' ? 'Web Scraper' : ALL[id].title;
+  $('#title').textContent = id === 'home' ? 'PullRows' : ALL[id].title;
   document.body.dataset.view = id;
   if (id === 'home') { view.append(renderHome()); return; }
   const tool = ALL[id];
@@ -78,42 +95,91 @@ export function go(id, opts = {}) {
   window.scrollTo(0, 0);
 }
 
+let pageInfo = { host: '', title: '', url: '' };
+
 function renderHome() {
   const d = state.dataset;
   const rows = d ? d.sheets.reduce((n, s) => n + s.rows.length, 0) : 0;
+  const scrapable = /^https?:/i.test(pageInfo.url);
+  const toolCard = (t) => h('button', { type: 'button', class: 'tool-card', onclick: () => go(t.id), dataset: { tool: t.id } },
+    h('span', { class: 'icon' }, icon(TOOL_ICONS[t.id] || 'list', { size: 17 })),
+    h('strong', {}, t.title),
+    h('span', { class: 'muted small' }, t.desc));
+  const mcpOn = settings.mcp?.enabled && settings.mcp?.consentAt;
+
   return h('div', { class: 'home' },
+    h('section', { class: 'hero' },
+      h('div', { class: 'hero-top' },
+        h('span', { class: 'site-dot' }, (pageInfo.host || '?').replace(/^www\./, '').slice(0, 1)),
+        h('div', { class: 'grow' },
+          h('div', { class: 'site-host' }, scrapable ? pageInfo.host.replace(/^www\./, '') : 'Open any website'),
+          h('div', { class: 'site-title' }, scrapable ? pageInfo.title || pageInfo.url : 'then pull its lists, contacts and text into rows'))),
+      h('div', { class: 'hero-actions' },
+        h('button', { type: 'button', class: 'btn on-dark', disabled: !scrapable, onclick: () => go('list', { autoDetect: true }) }, icon('scan', { size: 15 }), 'Auto-detect list'),
+        h('button', { type: 'button', class: 'btn on-dark-ghost', disabled: !scrapable, onclick: () => go('quick') }, icon('bolt', { size: 15 }), 'Quick scan')),
+      h('div', { class: 'hero-note' }, scrapable ? 'Or click one item on the page with List Extractor — every similar item becomes a row.' : 'Chrome pages and the Web Store can’t be scraped.')),
     h('button', { type: 'button', class: 'table-banner', onclick: () => go('table') },
-      h('span', { class: 'icon' }, '▦'),
+      h('span', { class: 'icon' }, icon('table', { size: 18 })),
       h('span', { class: 'grow' },
         h('strong', {}, 'Data Table'),
-        h('span', { class: 'muted small block' }, d ? `${plural(rows, 'row')} · ${d.title || d.source}` : 'Results from every tool land here')),
-      h('span', { class: 'chev' }, '›')),
-    h('div', { class: 'tool-grid' }, TOOLS.map((t) =>
-      h('button', { type: 'button', class: 'tool-card', onclick: () => go(t.id), dataset: { tool: t.id } },
-        h('span', { class: 'icon' }, t.icon),
-        h('strong', {}, t.title),
-        h('span', { class: 'muted small' }, t.desc)))),
+        h('span', { class: 'muted small block ellipsis' }, d ? `${d.title || d.source}` : 'Results from every tool land here')),
+      d ? h('span', { class: 'count-pill' }, plural(rows, 'row')) : null,
+      h('span', { class: 'chev' }, icon('chevron', { size: 16 }))),
+    GROUPS.map((g) => [
+      h('div', { class: 'section-label' }, g.label),
+      h('div', { class: 'tool-grid' }, g.ids.map((id) => toolCard(ALL[id]))),
+    ]),
+    h('button', { type: 'button', class: 'connector-card', onclick: () => go('settings') },
+      h('span', { class: 'icon' }, icon('plug', { size: 18 })),
+      h('span', { class: 'grow' },
+        h('strong', {}, 'Claude connector'),
+        h('span', { class: 'muted small block' }, h('span', { class: `status-dot ${mcpOn ? 'on' : ''}` }), mcpOn ? 'On — Claude can run these tools for you' : 'Let Claude drive PullRows in this browser')),
+      h('span', { class: 'chev muted' }, icon('chevron', { size: 16 }))),
+    plan.pro ? null : h('div', { class: 'upsell' },
+      h('span', { class: 'icon' }, icon('crown', { size: 18 })),
+      h('span', { class: 'grow small' }, h('strong', {}, 'PullRows Pro'), h('span', { class: 'muted block' }, 'No limits, Excel & JSON export, unlimited Claude calls.')),
+      h('button', { type: 'button', class: 'btn tiny primary', onclick: () => go('upgrade') }, 'Upgrade')),
     h('div', { class: 'home-links' },
-      ['recipes', 'history', 'settings'].map((id) => h('button', { type: 'button', class: 'btn secondary', onclick: () => go(id) }, `${VIEWS[id].icon} ${VIEWS[id].title}`))));
+      ['recipes', 'history', 'settings'].map((id) => h('button', { type: 'button', class: 'btn secondary', onclick: () => go(id) }, icon(TOOL_ICONS[id], { size: 15 }), VIEWS[id].title))));
+}
+
+function renderBadge() {
+  const b = $('#plan-badge');
+  b.hidden = false;
+  b.className = `plan-badge ${plan.pro ? 'pro' : ''}`;
+  fill(b, plan.pro ? icon('crown', { size: 12 }) : null, plan.pro ? 'Pro' : 'Free');
+  b.title = plan.pro ? 'PullRows Pro — manage your plan' : 'Free plan — see what Pro adds';
 }
 
 async function updateHost() {
   try {
     const tab = await getActiveTab();
-    $('#host').textContent = tab.url ? new URL(tab.url).host || tab.url : '';
-  } catch { $('#host').textContent = ''; }
+    let host = '';
+    try { host = new URL(tab.url).host; } catch { /* chrome:// etc */ }
+    pageInfo = { host, title: tab.title || '', url: tab.url || '' };
+    $('#host').textContent = host || tab.url || '';
+  } catch {
+    pageInfo = { host: '', title: '', url: '' };
+    $('#host').textContent = '';
+  }
+  if (currentId === 'home') go('home');
 }
 
 // ---------- init ----------
+$('#back').append(icon('back', { size: 18 }));
 $('#back').addEventListener('click', () => go('home'));
 $('#job-stop').addEventListener('click', stopJob);
+$('#plan-badge').addEventListener('click', () => go('upgrade'));
 chrome.tabs.onActivated.addListener(updateHost);
-chrome.tabs.onUpdated.addListener((_id, info, tab) => { if (tab.active && info.url) updateHost(); });
+chrome.tabs.onUpdated.addListener((_id, info, tab) => { if (tab.active && (info.url || info.title || info.status === 'complete')) updateHost(); });
 onChange(() => { if (currentId === 'home') go('home'); });
+plan.listeners.add(() => { renderBadge(); if (currentId === 'home') go('home'); });
 
-// Results written by Claude (via the MCP connector) appear live.
 chrome.storage.onChanged.addListener((changes, area) => {
-  const d = area === 'local' && changes.dataset?.newValue;
+  if (area !== 'local') return;
+  if (changes.settings) ctx.reloadSettings().then(() => { if (currentId === 'home') go('home'); });
+  // Results written by Claude (via the MCP connector) appear live.
+  const d = changes.dataset?.newValue;
   if (!d || d.updatedBy !== 'claude' || d.updatedAt === state.dataset?.updatedAt) return;
   state.dataset = d;
   for (const fn of state.listeners) fn();
@@ -122,6 +188,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 settings = await getSettings();
-await loadDataset();
-updateHost();
+await Promise.all([loadDataset(), loadPlan()]);
+renderBadge();
 go('home');
+updateHost();
+const { whatsNew } = await chrome.storage.local.get('whatsNew');
+if (whatsNew) {
+  toast(`PullRows updated to v${whatsNew}. See what’s new in Settings → About.`, 'ok');
+  chrome.storage.local.remove('whatsNew');
+}

@@ -1,134 +1,91 @@
-# Web Scraper Extension
+# PullRows
 
-A no-code Chrome (Manifest V3) scraper that lives in the side panel: ten point-and-click tools that all write into one editable Data Table, with Claude AI built in. Plain JavaScript, no build step.
+**Pull any website into rows.** PullRows is a no-code web scraper that lives in Chrome's side panel. It has ten point-and-click tools that write into one editable Data Table, and Claude can drive it through MCP. Plain JavaScript, Manifest V3, no build step.
+
+- Website: `website/` (static, deployed to Vercel)
+- Store listing, images and permission justifications: `store/`
+- Brand: `brand/`
+- Launch checklist: [`LAUNCH.md`](LAUNCH.md)
 
 ## Tools
 
 | Tool | What it does |
 |---|---|
-| **List Extractor** | Click one item of any list, grid or table (or press *Auto-detect*) and every similar item becomes a row, with readable columns generated automatically (named from content — title, price, rating, reviews, date… — even on sites with obfuscated class names). **Site presets** for Google Maps, LinkedIn Jobs, Instagram, YouTube and Amazon. Scrolls one screen at a time so lazy/virtualised items are captured, merges half-loaded rows, and paginates via **Next**, **Load more** or **infinite scroll** (including panels such as Google Maps' results feed). |
-| **Page Extractor** | Define fields once (click elements on a sample page, or add built-ins/presets: page metadata, contacts, product price, **Google Maps place**) and extract them from a list of URLs — one row per page. *Fast* mode fetches HTML in the background; *Browser* mode renders each page in a background tab. |
-| **Email Extractor** | Emails from many sites. Deep scan follows links to contact/about/team/impressum pages. Decodes Cloudflare-protected and "name (at) domain (dot) com" addresses, filters junk, optional domain filter and phone numbers. |
-| **Social Link Extractor** | LinkedIn, X, Instagram, Facebook, YouTube, TikTok, GitHub… profiles for a list of sites; one row per site with a column per platform. Ignores share buttons. |
-| **Image Downloader** | Every image on a page — `srcset` originals, lazy-loaded, CSS backgrounds, og:image. Filter by size/type, pick in a thumbnail grid, download into `Downloads/web-scraper/<site>/` with readable file names. Also downloads an image-URL column from the Data Table. |
-| **Shopify Extractor** | A Shopify store's whole catalogue (or one collection) via its public JSON: one row per variant (price, compare-at, SKU, availability), one row per product, or **Shopify import CSV** format. |
-| **Sitemap Explorer** | Finds sitemaps (robots.txt + common paths), follows sitemap indexes and `.gz` files, groups URLs by section, filters by text or `/regex/`, and sends the URLs to the Page / Email / Social / Text tools. |
-| **Page Text Extractor** | Clean main-content text and Markdown (readability-style) with title, author, date, language and word count; current page or a list of URLs. Copy or save as `.md`. |
-| **Quick Scan** | One click on the current page: emails, phones, links, images, tables, text, socials, prices, pagination (+ custom selector), optionally following Next links. One sheet per type. |
-| **AI Extract (Claude)** | Describe what you want in plain English; Claude reads the page (or a list of URLs) and returns a table. |
+| **List Extractor** | Click one item of any list, grid or table, or press *Auto-detect*. Every similar item becomes a row, and the columns get readable names. **Site presets** cover map results, job listings, Instagram posts and Reels, YouTube and Amazon. It scrolls one screen at a time, merges half-loaded rows, and paginates through **Next**, **Load more** or **infinite scroll** (including scrolling panels). |
+| **Page Extractor** | Define fields once (by clicking, or with built-ins and presets) and extract them from a list of URLs, one row per page. *Fast* mode fetches pages in the background; *Browser* mode renders each one in a tab. |
+| **Email Extractor** | Finds emails across many sites. A deep scan follows contact, about and team pages, and decodes protected or obfuscated addresses. |
+| **Social Link Extractor** | Finds LinkedIn, X, Instagram, Facebook, YouTube, TikTok and GitHub profiles, giving one row per site. |
+| **Image Downloader** | Collects `srcset` originals, lazy-loaded and CSS-background images. Filter, pick, then download to `Downloads/pullrows/<site>/`. |
+| **Shopify Extractor** | Exports a whole catalogue or one collection. Output can be one row per variant, one per product, or the Shopify import CSV. |
+| **Sitemap Explorer** | Reads robots.txt, sitemap indexes and `.gz` files. Groups URLs by section, filters them, and can send them to other tools. |
+| **Page Text Extractor** | Clean main-content text and Markdown. |
+| **Quick Scan** | Emails, phones, links, images, tables, socials and prices on the current page. |
+| **AI Extract** | Describe what you want; Claude, using the user's own API key, returns a table. |
 
-### Data Table
-Sheets, search, double-click to edit cells, column menu (rename, sort, move, dedupe by column, delete, send URLs to another tool, download as images), **Dedupe**, **Clean** (trim, drop empty rows and mostly-blank columns), **Merge columns**, delete rows.
-**✦ AI column** — Claude fills a new column from each row ("classify the industry", "summarise in 10 words", "extract the city"…).
-**✦ Ask Claude** — ask questions about the data and get an answer with numbers from the table.
-Export: CSV, Excel (one sheet per tab), JSON, clipboard, Google Sheets.
+**Data Table:** sheets, search, editing, rename, sort, dedupe, clean, merge, an AI column and Ask Claude. Export to CSV or the clipboard (free), or to Excel and JSON (Pro). **Recipes** re-run any setup in one click. **History** keeps the last 30 results.
 
-### Recipes & History
-Any tool's setup can be saved as a **recipe** (optionally with a start page) and re-run in one click; export/import recipes as JSON to share them. The last 30 results are kept in **History**.
+## Plans and licensing
+
+| | Free | Pro |
+|---|---|---|
+| Every tool, CSV and copy export, AI features with your own key | ✓ | ✓ |
+| List pagination per run | 10 pages, 60 scrolls | unlimited |
+| URLs per run (Page Extractor, emails/socials, text) | 25 | unlimited |
+| Images, Shopify products, sitemap URLs | 100 / 100 / 1,000 | unlimited |
+| Excel and JSON export | | ✓ |
+| Saved recipes | 3 | unlimited |
+| Claude connector calls per day | 25 | unlimited |
+
+Limits are defined in `lib/license.js` (`FREE_LIMITS`). Pro licence keys are sold through **Dodo Payments** (merchant of record). The extension activates a key once per browser, up to 3 browsers, and re-validates it daily. If the licence server can't be reached, Pro keeps working for 14 days (`activate`/`validate`/`deactivate` in `lib/license.js`). Checkout links, the site URL and the relay URL are all in `lib/config.js`.
 
 ## Claude connector (MCP)
 
-Control the scraper from Claude: *"Open this Google Maps search and give me every cafe with rating and phone"*, *"Find the emails of these 20 companies"*, *"Export this Shopify store"*. Claude calls the extension's tools; the work runs in **your** Chrome (with your logins), and results also land in the Data Table.
-
 ```
-Claude ──MCP (HTTPS)──▶ relay server ◀──long-poll── extension in your Chrome
-          https://<relay>/mcp/<secret>              (does the scraping, returns results)
+Claude ──MCP (HTTPS)──▶ relay ◀──long-poll── PullRows in your Chrome
+        /mcp/<id>                /bridge/<secret>
 ```
 
-Claude's cloud can't reach your browser directly, so a tiny **relay server** (`server/`, zero dependencies) sits in between. It holds no data — it just passes tool calls and results through.
+Claude's cloud can't reach your browser, so a small **relay** (`server/`, zero dependencies) passes tool calls and results through. It stores nothing.
+- **The link contains only a hash of the browser's secret.** `id = base64url(sha256(secret))[:32]`. Someone who has the link can call tools, but cannot impersonate the browser.
+- **Consent.** Turning the connector on shows a disclosure that the user must accept. It is off by default.
+- **Read-only by default.** Clicking, typing and downloads need *Allow actions* and *Allow downloads*.
+- **Blocked sites.** Email, accounts, payments and password managers are blocked (an editable list). Banking or wallet hosts and local-network addresses are always blocked (`lib/guard.js`).
+- **Visibility and limits.** A toolbar badge shows while Claude is working, and every call is logged in Settings. At most 2 commands run in parallel. Calls are capped per plan.
+- **Relay hardening.** Origin checks, rate limits, body limits, fast offline detection, and cancellation of abandoned calls. OAuth is hardened: `PUBLIC_URL`, exact redirect URIs, single-use codes, signed refresh tokens.
 
-### 1. Deploy the relay (once, free)
+**Use it:** Settings → *Claude connector* → turn on → **Copy** the private link → in Claude go to Settings → Connectors → *Add custom connector*. For Claude Code: `claude mcp add --transport http pullrows <link>`.
 
-**Render (one click):** Render dashboard → **New → Blueprint** → connect this GitHub repo → it reads `render.yaml` and deploys `server/`. You get a URL like `https://web-scraper-mcp.onrender.com`.
-The extension keeps a connection open, which also keeps Render's free instance awake while Chrome is running.
+**Deploy your own relay:** Render Blueprint (`render.yaml`), or `docker build -t pullrows-relay . && docker run -p 8787:8787 pullrows-relay`. Set `PUBLIC_URL`, `OAUTH_SECRET` and `TRUST_PROXY=1` behind a proxy.
 
-**Anything else with Node 18+ or Docker:** `node server/mcp-relay.mjs` (env `PORT`, default 8787), or `docker build -t web-scraper-mcp server && docker run -p 8787:8787 web-scraper-mcp`. Works on Railway, Fly.io, a VPS… It must be reachable over **HTTPS** for claude.ai.
+## Development
 
-### 2. Connect the extension
-Side panel → **Settings → Claude connector** → paste the relay URL → tick **Allow Claude to use this browser**. It shows **● Connected** and your personal **MCP link**: `https://<relay>/mcp/<secret>` → **Copy**.
-
-### 3. Add it to Claude
-**claude.ai / Claude Desktop:** Settings → **Connectors** → **Add custom connector** → paste the MCP link → Add. Enable it in a chat (tools menu).
-**Claude Code:** `claude mcp add --transport http web-scraper https://<relay>/mcp/<secret>`
-
-> The secret in the link is the only key to your browser's scraper — don't share it. **Generate new link** in Settings revokes the old one. Turning the switch off disconnects immediately.
-
-### Tools Claude gets
-
-| Tool | |
-|---|---|
-| `browser_tabs`, `browser_open`, `browser_screenshot`, `page_action` (click / scroll / type) | see and drive pages |
-| `page_read` | page as clean Markdown + metadata |
-| `list_detect`, `list_extract` | lists/grids/tables with Next / Load more / infinite scroll (incl. Google Maps feed) |
-| `page_extract` | same fields from many URLs (selectors + built-ins incl. Google Maps place fields) |
-| `find_emails`, `find_social_links` | deep contact crawling over a list of sites |
-| `shopify_products`, `sitemap_urls`, `images_find`, `images_download`, `quick_scan` | the other tools |
-| `data_table_read`, `recipes_list`, `recipe_run` | read results, run your saved recipes |
-
-The relay implements MCP's Streamable HTTP transport (protocol versions 2024-11-05 → 2025-11-25) with plain JSON responses. Tool calls time out after 240 s (`CALL_TIMEOUT_MS`), so ask Claude for big jobs in chunks.
-
-## Install (development)
-
-1. Open `chrome://extensions`, turn on **Developer mode**.
-2. **Load unpacked** → select this folder.
-3. Pin the extension and click its icon — the side panel opens.
-
-After editing code, click the reload icon on the extension card (and reload the page you're scraping).
-
-## Setup
-
-**Claude** — Settings → paste an Anthropic API key (console.anthropic.com) → choose a model (Opus 5.5 default, Sonnet 5.5, Haiku 5.5). Page text or table rows are sent to the Anthropic API only when you use an AI feature.
-> Calling the API from the browser with a user-supplied key is fine for personal/internal use. If you distribute this, proxy requests through your own backend instead.
-
-**Google Sheets** (optional) — create a Google Cloud project, enable the Sheets API, create an OAuth client of type *Chrome extension* for your extension ID, and put the client ID in `manifest.json` → `oauth2.client_id`. Only the `drive.file` scope is requested.
-
-## How it works
-
-```
-manifest.json
-background.js              opens the side panel on icon click
-content/engine.js          the scraping engine — injected into tabs on demand AND loaded in the
-                           side panel to parse pages fetched in the background
-                           · list detection (repeating siblings scored by count × richness × similarity²)
-                           · field generation, item/field selectors, pagination actions, picker
-                           · quick extractors, readability, contacts, JSON-LD, Maps fields
-lib/tab.js                 inject + call the engine in a tab, background tabs, navigation
-lib/net.js                 background fetch → DOMParser, worker pool, URL list parsing
-lib/crawl.js               email/social crawler (site + contact pages)
-lib/shopify.js             /products.json paging + row formats
-lib/sitemap.js             sitemap discovery + crawl (.xml, index, .gz)
-lib/ai.js                  Claude: AI extract, AI column (batched), Ask Claude — structured outputs
-lib/export.js              CSV / TSV / JSON / dependency-free XLSX writer
-lib/sheets.js              Google Sheets export
-lib/list-runner.js         list jobs: step-by-step scrolling, row merging, Next / Load more / infinite scroll
-lib/storage.js             settings, history, recipes
-lib/mcp-exec.js            executes Claude's MCP tool calls (runs in offscreen/bridge.html)
-offscreen/                 always-on bridge page: long-polls the relay, parses fetched pages
-server/                    MCP relay (Node, zero deps) + Dockerfile; render.yaml at repo root
-sidepanel/                 app shell, tools/*, views/* (table, recipes, history, settings)
-test/                      Playwright end-to-end test + fixture sites
-```
-
-Pages fetched in Fast mode use your browser's cookies (`credentials: include`), so logged-in pages work like in a normal tab.
-
-## Testing
+1. `chrome://extensions` → Developer mode → **Load unpacked** → this folder.
+2. Pin PullRows and click the icon to open the side panel.
 
 ```bash
-NODE_PATH=$(npm root -g) node test/e2e.mjs            # everything
-NODE_PATH=$(npm root -g) node test/e2e.mjs "list"     # steps matching a pattern
-NODE_PATH=$(npm root -g) node test/mcp.mjs            # Claude connector: relay + extension + MCP client
-NODE_PATH=$(npm root -g) node test/realistic.mjs      # LinkedIn / Maps / Instagram look-alikes (virtualised lists, lazy loading, obfuscated classes)
-node test/oauth.mjs                                   # relay sign-in flow
+NODE_PATH=$(npm root -g) npm test        # relay, oauth, e2e, mcp, realistic (headless Chromium)
+NODE_PATH=$(npm root -g) node test/e2e.mjs "list"   # steps matching a pattern
+npm run package                          # → dist/pullrows-<version>.zip (allow-listed files only)
+NODE_PATH=$(npm root -g) node scripts/store-assets.mjs   # → store/*.png screenshots + promo tiles
 ```
 
-The test loads the unpacked extension in headless Chromium, serves `test/fixtures/` (a JS-paginated catalogue, a load-more list, a Maps-style scrolling feed, product/contact/about pages, sitemaps incl. `.gz`, a fake Shopify store) and drives the real side panel through every tool, the Data Table operations, exports, recipes, history and the Claude features (against a mocked API).
+```
+manifest.json, background.js   service worker: side panel, bridge lifecycle, guarded browser ops
+content/engine.js              scraping engine: injected into tabs, and also loaded in extension pages for DOMParser docs
+lib/                           tab, net, crawl, shopify, sitemap, ai, export, list-runner, storage,
+                               license (plans), guard (connector safety), config, mcp-exec
+offscreen/                     Claude bridge (long-poll, 2 parallel commands, cancellation)
+sidepanel/                     app shell, icons, plan, tools/*, views/* (table, recipes, history, settings, upgrade)
+onboarding/                    welcome page opened on install
+server/                        MCP relay + OAuth (Node, zero deps)
+website/                       marketing site (static)
+store/                         listing text, screenshots, promo tiles, demo site used for screenshots
+scripts/                       package + store-asset builders
+test/                          Playwright suites + fixture sites + fake Shopify / licence APIs
+```
 
-## Ideas / roadmap
-
-- Scheduled re-runs of recipes, change detection.
-- Nested scraping (list → open each item → page fields) as one recipe.
-- Firefox build.
-
-## Credits
-
-Feature set modelled on the commercial *Ultimate Web Scraper* extension; list detection ideas inspired by Instant Data Scraper's approach (no code copied). All code in this repository was written independently.
+## Roadmap
+- Background jobs for very long scrapes (avoids Claude's per-call timeout)
+- Nested scraping (list → open each item → page fields) as one recipe
+- Scheduled recipe runs and change alerts
+- Firefox build

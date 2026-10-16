@@ -54,6 +54,7 @@ export async function runJob(label, fn) {
     if (total) {
       fill.classList.remove('indeterminate');
       fill.style.width = `${Math.round((done / total) * 100)}%`;
+      bar.querySelector('.job-track')?.setAttribute('aria-valuenow', String(Math.round((done / total) * 100)));
     }
   };
   try {
@@ -132,6 +133,15 @@ export function menu(anchor, items) {
   m.style.top = `${r.bottom + window.scrollY + 4}px`;
   m.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - 220))}px`;
   document.body.append(m);
+  m.querySelector('button:not(:disabled)')?.focus();
+  // Keyboard: arrows move, Escape closes and returns focus.
+  m.addEventListener('keydown', (e) => {
+    const items = [...m.querySelectorAll('button:not(:disabled)')];
+    const i = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
+    if (e.key === 'Escape') { m.remove(); anchor.focus?.(); }
+  });
   setTimeout(() => document.addEventListener('click', function close(e) {
     if (!m.contains(e.target)) { m.remove(); document.removeEventListener('click', close); }
   }), 0);

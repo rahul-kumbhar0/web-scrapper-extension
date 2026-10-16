@@ -1,6 +1,7 @@
 // AI EXTRACT (Claude) — describe the data you want in plain English; Claude reads the page
 // (optionally after scrolling / across several URLs) and returns a clean table.
 import { h, toast, runJob, plural } from '../ui.js';
+import { ensureAiConsent } from '../consent.js';
 import { makeSheet, setDataset } from '../state.js';
 import { urlSource, card, checkbox, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab, runInNewTab } from '../../lib/tab.js';
@@ -34,6 +35,7 @@ export default {
       const cfg = getConfig();
       if (!cfg.goal) { toast('Describe what to extract.', 'error'); return; }
       if (!ctx.settings.apiKey) { toast('Add your Anthropic API key in Settings first.', 'error'); ctx.go('settings'); return; }
+      if (!(await ensureAiConsent(ctx))) return;
       await runJob('Asking Claude…', async (signal, progress) => {
         const rows = [];
         let tokens = 0;
@@ -78,6 +80,6 @@ export default {
         h('p', { class: 'hint' }, ctx.settings.apiKey ? `Model: ${model} · uses your Anthropic API key` : '⚠ No API key yet — add one in Settings.')),
       card('Many pages (optional)', urls.el),
       actions(primary('Extract with Claude', run), secondary('Save recipe', () => ctx.saveRecipe(ctx.tool, getConfig()))),
-      h('p', { class: 'hint' }, 'The page’s visible text is sent to the Anthropic API with your request. Nothing is sent anywhere else.'));
+      h('p', { class: 'hint' }, 'The page’s visible text is sent to the Anthropic API with your request, using your own API key.'));
   },
 };

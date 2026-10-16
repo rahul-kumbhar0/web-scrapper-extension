@@ -1,13 +1,13 @@
 {
-  "name": "web-scraper-extension",
-  "version": "0.4.2",
+  "name": "pullrows",
+  "version": "1.0.0",
   "private": true,
-  "description": "Chrome MV3 web scraper extension (no build step).",
+  "description": "PullRows \u2014 no-code web scraper Chrome extension (MV3, no build step) + Claude MCP relay.",
   "type": "module",
   "scripts": {
     "start": "node server/mcp-relay.mjs",
-    "test": "node test/e2e.mjs && node test/mcp.mjs && node test/realistic.mjs && node test/oauth.mjs",
+    "test": "node test/relay.mjs && node test/oauth.mjs && node test/e2e.mjs && node test/mcp.mjs && node test/realistic.mjs",
     "relay": "node server/mcp-relay.mjs",
-    "package": "zip -r web-scraper-extension.zip manifest.json background.js content lib sidepanel offscreen icons"
+    "package": "node scripts/package.mjs"
   }
 }

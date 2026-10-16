@@ -1,8 +1,8 @@
 {
-  "name": "web-scraper-mcp-relay",
-  "version": "0.3.0",
+  "name": "pullrows-mcp-relay",
+  "version": "1.0.0",
   "private": true,
-  "description": "MCP server (Streamable HTTP) that lets Claude control the Web Scraper Chrome extension.",
+  "description": "MCP server (Streamable HTTP) that lets Claude control the PullRows Chrome extension.",
   "type": "module",
   "engines": { "node": ">=18" },
   "scripts": { "start": "node mcp-relay.mjs" }

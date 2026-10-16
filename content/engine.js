@@ -1,9 +1,12 @@
 // Scraping engine. Injected on demand into pages (chrome.scripting.executeScript) and also
 // loaded in the side panel to parse pages fetched in the background, so every extractor
 // takes a `doc` argument instead of assuming the global document.
-// Safe to load repeatedly: everything hangs off one global.
+// Safe to load repeatedly: everything hangs off one global, re-created after an extension update.
 (() => {
-  if (globalThis.__webScraper) return;
+  let ENGINE_VERSION = '';
+  try { ENGINE_VERSION = chrome.runtime.getManifest().version; } catch { /* page reloaded under an old extension */ }
+  if (globalThis.__webScraper && globalThis.__webScraper.version === ENGINE_VERSION) return;
+  try { globalThis.__webScraper?.stopPicker?.(); } catch { /* old instance */ }
 
   // ======================================================================
   // helpers
@@ -857,7 +860,13 @@
     if (!el) return false;
     el.focus();
     if (el.isContentEditable) el.textContent = value;
-    else {
+    else if (el.tagName === 'SELECT') {
+      const opt = [...el.options].find((o) => o.value === value || clean(o.textContent).toLowerCase() === String(value).toLowerCase());
+      if (!opt) return false;
+      el.value = opt.value;
+    } else if (el.type === 'checkbox' || el.type === 'radio') {
+      el.checked = !/^(false|0|off|no|)$/i.test(String(value));
+    } else {
       const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
       Object.getOwnPropertyDescriptor(proto, 'value')?.set?.call(el, value);
     }
@@ -1253,6 +1262,7 @@
   }
 
   globalThis.__webScraper = {
+    version: ENGINE_VERSION,
     // quick scan
     quick, findNextUrl,
     // list extractor

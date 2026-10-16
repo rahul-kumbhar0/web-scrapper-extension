@@ -3,29 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Web Scraper</title>
+  <title>PullRows</title>
   <link rel="stylesheet" href="sidepanel.css">
 </head>
 <body data-view="home">
   <header class="topbar">
-    <button id="back" class="icon-btn" type="button" title="Back to tools" hidden>‹</button>
-    <img src="../icons/icon32.png" alt="" width="20" height="20">
+    <button id="back" class="icon-btn" type="button" title="Back to tools" aria-label="Back to tools" hidden></button>
+    <img class="logo" src="../icons/logo.svg" alt="" width="26" height="26">
     <div class="topbar-text">
-      <strong id="title">Web Scraper</strong>
+      <strong id="title">PullRows</strong>
       <span id="host" class="muted"></span>
     </div>
+    <span class="grow"></span>
+    <button id="plan-badge" class="plan-badge" type="button" hidden></button>
   </header>
 
   <div id="job" class="job" hidden>
     <div class="job-row">
+      <span class="job-spinner" aria-hidden="true"></span>
       <span id="job-text" class="grow">Working…</span>
       <button id="job-stop" class="btn danger tiny" type="button">Stop</button>
     </div>
-    <div class="job-track"><div id="job-fill" class="job-fill"></div></div>
+    <div class="job-track" role="progressbar" aria-label="Progress"><div id="job-fill" class="job-fill"></div></div>
   </div>
 
   <main id="view"></main>
-  <div id="toast" class="toast" role="status" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
   <!-- Engine is also used here to parse pages fetched in the background. -->
   <script src="../content/engine.js"></script>

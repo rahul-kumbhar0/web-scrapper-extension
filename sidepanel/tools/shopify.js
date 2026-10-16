@@ -1,5 +1,6 @@
 // SHOPIFY EXTRACTOR — whole catalogue (or one collection) from any Shopify store's public JSON.
 import { h, fill, toast, runJob, plural } from '../ui.js';
+import { plan } from '../plan.js';
 import { makeSheet, setDataset } from '../state.js';
 import { card, select, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab } from '../../lib/tab.js';
@@ -47,12 +48,13 @@ export default {
       const origin = storeOrigin(cfg.store);
       if (!origin) { toast('Enter a store address.', 'error'); return; }
       await runJob('Downloading products…', async (signal, progress) => {
-        const products = await fetchProducts(origin, { collection: cfg.collection, signal, onProgress: (n, page) => progress(`${plural(n, 'product')} (page ${page})`) });
+        const products = await fetchProducts(origin, { collection: cfg.collection, signal, max: plan.limits.shopifyProducts, onProgress: (n, page) => progress(`${plural(n, 'product')} (page ${page})`) });
         if (!products.length) throw new Error('No products returned — the store may block its public product feed.');
         const rows = productRows(origin, products, cfg.format);
         const host = new URL(origin).host;
         await setDataset({ title: `${host} — ${cfg.collection || 'all products'}`, url: origin, source: 'Shopify Extractor', sheets: [makeSheet(cfg.format === 'shopify-csv' ? 'Shopify import' : 'Products', rows)] });
-        toast(`Exported ${plural(products.length, 'product')} (${plural(rows.length, 'row')}).`, 'ok');
+        const note = products.capped ? ` Free plan stops at ${plan.limits.shopifyProducts} products — upgrade for the full catalogue.` : products.partial ? ` Stopped early: ${products.partial}.` : '';
+        toast(`Exported ${plural(products.length, 'product')} (${plural(rows.length, 'row')}).${note}`, note ? '' : 'ok');
         ctx.go('table');
       });
     }

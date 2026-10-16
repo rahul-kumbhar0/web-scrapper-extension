@@ -1,16 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "Web Scraper Extension",
-  "version": "0.4.2",
-  "description": "Point-and-click scraping: lists, pages, emails, socials, images, Shopify, sitemaps. AI with Claude. Export CSV, Excel, Sheets.",
+  "name": "PullRows – Web Scraper & Data Extractor",
+  "short_name": "PullRows",
+  "version": "1.0.0",
+  "description": "Turn any website into rows: lists, pages, emails, socials, images, Shopify, sitemaps. Export CSV/Excel. Works with Claude.",
+  "homepage_url": "https://pullrows.vercel.app",
   "minimum_chrome_version": "116",
   "permissions": [
-    "activeTab",
     "scripting",
     "storage",
     "unlimitedStorage",
     "sidePanel",
-    "identity",
     "downloads",
     "offscreen"
   ],
@@ -25,7 +25,7 @@
     "default_path": "sidepanel/sidepanel.html"
   },
   "action": {
-    "default_title": "Open Web Scraper",
+    "default_title": "Open PullRows",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -39,10 +39,7 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "oauth2": {
-    "client_id": "YOUR_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/drive.file"
-    ]
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'"
   }
 }

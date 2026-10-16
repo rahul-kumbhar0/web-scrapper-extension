@@ -8,6 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { startServer } from './server.mjs';
+import { prepareExtension, enableConnector } from './setup.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -51,25 +52,21 @@ try {
   const sw = ctx.serviceWorkers()[0] || (await ctx.waitForEvent('serviceworker'));
   const extId = new URL(sw.url()).host;
   console.log(`Extension ${extId} · relay ${RELAY} · fixtures ${BASE}`);
+  await prepareExtension(ctx, sw, { mcp: { allowLocal: true, allowActions: true, allowDownloads: true } });
   const sp = await ctx.newPage();
   await sp.goto(`chrome-extension://${extId}/sidepanel/sidepanel.html`);
 
   await step('connector: enable in Settings → status Connected, link shown', async () => {
-    await sp.getByRole('button', { name: /Settings/ }).click();
-    await sp.fill('#mcp-server', RELAY);
-    await sp.locator('#mcp-server').dispatchEvent('change');
-    await sp.check('#mcp-enabled');
-    await sp.waitForFunction(() => /Connected/.test(document.getElementById('mcp-status').textContent), null, { timeout: 20000 });
-    MCP = await sp.inputValue('#mcp-link');
+    MCP = await enableConnector(sp, RELAY);
     await sp.setViewportSize({ width: 420, height: 760 });
     await sp.screenshot({ path: path.join(ROOT, 'test', 'connector.png') });
     console.log(`    MCP link: ${MCP.replace(/\/mcp\/.{6}.*/, '/mcp/******')}`);
-    assert.match(MCP, new RegExp(`^${RELAY}/mcp/[A-Za-z0-9_-]{24,}$`));
+    assert.match(MCP, new RegExp(`^${RELAY}/mcp/[A-Za-z0-9_-]{32}$`));
   });
 
   await step('MCP handshake: initialize + tools/list', async () => {
     const init = await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test-claude', version: '1' } });
-    assert.equal(init.serverInfo.name, 'web-scraper');
+    assert.equal(init.serverInfo.name, 'pullrows');
     const { tools } = await rpc('tools/list');
     assert.ok(tools.length >= 18);
   });
@@ -166,6 +163,36 @@ try {
   await step('errors are reported to Claude, not thrown', async () => {
     const r = await rpc('tools/call', { name: 'shopify_products', arguments: { store: 'http://127.0.0.1:1' } });
     assert.ok(r.isError && /Shopify|Error/.test(r.content[0].text));
+  });
+
+  await step('safety: blocked sites, read-only mode and free-plan limit', async () => {
+    const setMcp = (patch) => sp.evaluate(async (p) => {
+      const { settings } = await chrome.storage.local.get('settings');
+      await chrome.storage.local.set({ settings: { ...settings, mcp: { ...settings.mcp, ...p } } });
+    }, patch);
+    const raw = async (name, args) => (await rpc('tools/call', { name, arguments: args }));
+    const textOf = (r) => r.content.map((c) => c.text).join(' ');
+
+    await setMcp({ allowActions: false });
+    let r = await raw('page_action', { tab_id: tabId, action: 'click', selector: '#next' });
+    assert.ok(r.isError && /Allow actions/.test(textOf(r)), `click allowed in read-only mode: ${textOf(r)}`);
+
+    await setMcp({ allowLocal: false });
+    r = await raw('browser_open', { url: `${BASE}/catalog.html` });
+    assert.ok(r.isError && /local-network/.test(textOf(r)), `local page not blocked: ${textOf(r)}`);
+    r = await raw('page_read', { url: 'https://mail.google.com/mail/u/0/' });
+    assert.ok(r.isError && /blocked/.test(textOf(r)), `sensitive site not blocked: ${textOf(r)}`);
+    const tabs = (await tool('browser_tabs')).json;
+    assert.ok(!tabs.some((t) => t.url.startsWith(BASE)), 'blocked tabs are hidden from browser_tabs');
+    await setMcp({ allowLocal: true, allowActions: true });
+
+    await sp.evaluate(() => chrome.storage.local.set({ license: { plan: 'free' }, usage: { day: new Date().toISOString().slice(0, 10), mcp: 25 } }));
+    r = await raw('browser_tabs', {});
+    assert.ok(r.isError && /free plan/i.test(textOf(r)), `daily limit not enforced: ${textOf(r)}`);
+    await sp.evaluate(() => chrome.storage.local.set({ usage: { day: new Date().toISOString().slice(0, 10), mcp: 0 } }));
+    const lim = (await tool('list_extract', { url: `${BASE}/catalog.html`, pagination: { mode: 'next', max_pages: 50, delay_ms: 50 } })).json;
+    assert.ok(lim.pages_visited <= 10, `free plan visited ${lim.pages_visited} pages`);
+    await sp.evaluate(() => chrome.storage.local.set({ license: { plan: 'pro', key: 'TEST-LICENSE-KEY', instanceId: 'lki_test', validatedAt: Date.now(), status: 'active' } }));
   });
 
   await step('activity log is visible in Settings', async () => {

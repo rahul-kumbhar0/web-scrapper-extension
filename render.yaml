@@ -1,4 +1,5 @@
-# One-click deploy of the MCP relay on Render: Dashboard → New → Blueprint → pick this repo.
+# One-click deploy of the PullRows MCP relay on Render: Dashboard → New → Blueprint → pick this repo.
+# If you deploy under a different service name, change PUBLIC_URL to your service's URL.
 services:
   - type: web
     name: web-scraper-mcp
@@ -11,3 +12,13 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PUBLIC_URL
+        value: https://web-scrapper-extension.onrender.com
+      - key: OAUTH_SECRET
+        generateValue: true
+      - key: TRUST_PROXY
+        value: "1"

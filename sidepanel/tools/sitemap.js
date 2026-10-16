@@ -1,6 +1,7 @@
 // SITEMAP EXPLORER — find every URL a site publishes, filter by section/pattern, hand them to
 // another tool (Page / Email / Social / Text extractors) or the Data Table.
 import { h, fill, toast, runJob, plural } from '../ui.js';
+import { plan, capNumber } from '../plan.js';
 import { state, makeSheet, setDataset } from '../state.js';
 import { card, numberField, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab } from '../../lib/tab.js';
@@ -49,11 +50,13 @@ export default {
         found = await discoverSitemaps(origin, { signal });
         if (!found.length) throw new Error('No sitemap found (checked robots.txt and common locations).');
         progress(`Reading ${plural(found.length, 'sitemap')}…`);
-        const res = await crawlSitemaps(found, { maxUrls: maxUrls.get(), signal, onProgress: (n, s) => progress(`${plural(n, 'URL')} from ${plural(s, 'sitemap')}`) });
+        const cap = capNumber(maxUrls.get(), 'sitemapUrls');
+        const res = await crawlSitemaps(found, { maxUrls: cap, signal, onProgress: (n, s) => progress(`${plural(n, 'URL')} from ${plural(s, 'sitemap')}`) });
         rows = res.rows;
         found = res.sitemaps;
         render();
-        toast(`Found ${plural(rows.length, 'URL')}.`, 'ok');
+        const capped = !plan.pro && rows.length >= cap && cap < maxUrls.get();
+        toast(`Found ${plural(rows.length, 'URL')}.${capped ? ` Free plan stops at ${cap.toLocaleString()} URLs — upgrade for no limit.` : ''}`, capped ? '' : 'ok');
       });
     }
 

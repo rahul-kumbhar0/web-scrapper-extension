@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { startServer } from './server.mjs';
+import { prepareExtension, enableConnector } from './setup.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
@@ -45,14 +46,10 @@ const GIBBERISH = /[bcdfghjklmnpqrstvwxz]{4}|\d[a-z]|[a-z]\d/i;
 try {
   const sw = ctx.serviceWorkers()[0] || (await ctx.waitForEvent('serviceworker'));
   const extId = new URL(sw.url()).host;
+  await prepareExtension(ctx, sw, { mcp: { allowLocal: true } });
   const sp = await ctx.newPage();
   await sp.goto(`chrome-extension://${extId}/sidepanel/sidepanel.html`);
-  await sp.getByRole('button', { name: /Settings/ }).click();
-  await sp.fill('#mcp-server', RELAY);
-  await sp.locator('#mcp-server').dispatchEvent('change');
-  await sp.check('#mcp-enabled');
-  await sp.waitForFunction(() => /Connected/.test(document.getElementById('mcp-status').textContent), null, { timeout: 20000 });
-  MCP = await sp.inputValue('#mcp-link');
+  MCP = await enableConnector(sp, RELAY);
   console.log(`Extension ${extId} connected · fixtures ${BASE}`);
 
   await step('LinkedIn-like: readable column names from auto-detect', async () => {

@@ -7,6 +7,7 @@ import { pick } from '../picker.js';
 import { card, numberField, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab, clickAndWait, sleep } from '../../lib/tab.js';
 import { runList } from '../../lib/list-runner.js';
+import { plan, capNumber } from '../plan.js';
 
 const MODES = [
   { value: 'none', label: 'This page only (scrolls through it)' },
@@ -148,7 +149,10 @@ export default {
 
     async function run() {
       if (!config) { toast('Pick a list first.', 'error'); return; }
-      const cfg = { ...activeConfig(), pagination };
+      const cfg = { ...activeConfig(), pagination: { ...pagination } };
+      const limitKey = pagination.mode === 'scroll' ? 'scrollSteps' : 'listPages';
+      const capped = pagination.mode !== 'none' && pagination.max > plan.limits[limitKey];
+      if (capped) cfg.pagination.max = capNumber(pagination.max, limitKey);
       await runJob('Extracting list…', async (signal, progress) => {
         const tab = await getActiveTab();
         await callInTab(tab.id, 'clearHighlight').catch(() => {});
@@ -160,7 +164,8 @@ export default {
           onProgress: (n, steps, mode) => progress(`${plural(n, 'row')}${mode === 'none' ? '' : ` · ${steps} scroll steps`}`),
         });
         await setDataset({ title: r.title, url: r.url, source: 'List Extractor', sheets: [makeSheet('List', r.rows, r.cols)] });
-        toast(`Extracted ${plural(r.rows.length, 'row')}${r.pages > 1 ? ` from ${r.pages} pages` : ''}.${r.warning ? ` ⚠ ${r.warning}` : ''}`, r.warning ? '' : 'ok');
+        const capNote = capped && (r.pages >= cfg.pagination.max || r.steps >= cfg.pagination.max) ? ` Free plan stops at ${cfg.pagination.max} ${pagination.mode === 'scroll' ? 'scrolls' : 'pages'} — upgrade for no limit.` : '';
+        toast(`Extracted ${plural(r.rows.length, 'row')}${r.pages > 1 ? ` from ${r.pages} pages` : ''}.${r.warning ? ` ⚠ ${r.warning}` : ''}${capNote}`, r.warning || capNote ? '' : 'ok');
         ctx.go('table');
       });
     }
@@ -180,6 +185,7 @@ export default {
     renderAll();
     if (config) { runPreview(); highlightCurrent(); }
     if (ctx.autoRun && config) setTimeout(run, 50);
+    else if (ctx.autoDetect && !config) setTimeout(onAuto, 50);
     return { el, cleanup: () => getActiveTab().then((t) => callInTab(t.id, 'clearHighlight')).catch(() => {}) };
   },
 };

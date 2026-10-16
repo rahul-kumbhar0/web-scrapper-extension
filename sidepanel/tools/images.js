@@ -1,6 +1,7 @@
 // IMAGE DOWNLOADER — collect images from the page (incl. lazy-loaded, srcset, CSS backgrounds) or
 // from a Data Table column, filter by size/type, and download the selection into one folder.
 import { h, fill, toast, runJob, plural } from '../ui.js';
+import { capList } from '../plan.js';
 import { activeSheet, makeSheet, setDataset, urlColumns, isUrl } from '../state.js';
 import { card, numberField, checkbox, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab } from '../../lib/tab.js';
@@ -114,11 +115,11 @@ export default {
     }
 
     async function download() {
-      const chosen = images.filter((i) => selected.has(i.src));
+      const chosen = capList(images.filter((i) => selected.has(i.src)), 'images', 'image downloads');
       if (!chosen.length) { toast('Select some images first.', 'error'); return; }
       await runJob(`Downloading ${plural(chosen.length, 'image')}…`, async (signal, progress) => {
-        const n = await downloadImages(chosen, `web-scraper/${host}`, { signal, progress });
-        toast(`Saved ${plural(n, 'image')} to Downloads/web-scraper/${host}/`, 'ok');
+        const n = await downloadImages(chosen, `pullrows/${host}`, { signal, progress });
+        toast(`Saved ${plural(n, 'image')} to Downloads/pullrows/${host}/`, 'ok');
       });
     }
 

@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { prepareExtension } from './setup.mjs';
 import { startServer } from './server.mjs';
 
 const require = createRequire(import.meta.url);
@@ -40,6 +41,7 @@ async function step(name, fn) {
 const sw = ctx.serviceWorkers()[0] || (await ctx.waitForEvent('serviceworker'));
 const extId = new URL(sw.url()).host;
 console.log(`Extension loaded: ${extId} · fixtures at ${BASE}`);
+await prepareExtension(ctx, sw);
 
 const site = await ctx.newPage();
 await site.goto(`${BASE}/catalog.html`);
@@ -408,6 +410,29 @@ try {
     assert.ok(n >= 10, `history ${n}`);
     await sp.locator('.item-list li').nth(1).getByRole('button', { name: 'Open' }).click();
     await sp.waitForSelector('table.data');
+  });
+
+  await step('plan: free limits, upsell, licence activation and deactivation', async () => {
+    await sp.evaluate((base) => chrome.storage.local.set({ license: { plan: 'free' }, devLicenseApi: base }), BASE);
+    await sp.waitForFunction(() => document.getElementById('plan-badge').textContent === 'Free');
+    await home();
+    await sp.locator('.table-banner').click();
+    await sp.getByRole('button', { name: /^Excel/ }).click();
+    await dialog().getByRole('button', { name: 'See plans' }).click();
+    await sp.waitForSelector('#title:text("Upgrade")');
+    await sp.fill('#license-key', 'PR-BAD-KEY-123');
+    await sp.click('#activate-license');
+    await waitToast(/not valid/);
+    await sp.fill('#license-key', 'PR-GOOD-KEY');
+    await sp.click('#activate-license');
+    await waitToast(/Welcome to PullRows Pro/);
+    await sp.waitForFunction(() => document.getElementById('plan-badge').textContent === 'Pro');
+    const lic = await sp.evaluate(async () => (await chrome.storage.local.get('license')).license);
+    assert.equal(lic.instanceId, 'lki_123');
+    await sp.getByRole('button', { name: 'Deactivate this browser' }).click();
+    await dialog().getByRole('button', { name: 'Deactivate' }).click();
+    await sp.waitForFunction(() => document.getElementById('plan-badge').textContent === 'Free');
+    await sp.evaluate(() => chrome.storage.local.set({ license: { plan: 'pro', key: 'PR-GOOD-KEY', instanceId: 'lki_123', validatedAt: Date.now(), status: 'active' } }));
   });
 
   await step('no uncaught errors in the side panel', async () => {

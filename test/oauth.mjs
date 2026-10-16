@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const PORT = 20000 + Math.floor(Math.random() * 20000);
-const relay = spawn(process.execPath, [path.join(ROOT, 'server', 'mcp-relay.mjs')], { env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1' }, stdio: ['ignore', 'pipe', 'inherit'] });
+const relay = spawn(process.execPath, [path.join(ROOT, 'server', 'mcp-relay.mjs')], { env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', TRUST_PROXY: '1' }, stdio: ['ignore', 'pipe', 'inherit'] });
 await new Promise((r) => relay.stdout.on('data', (d) => String(d).includes('listening') && r()));
 const BASE = `http://127.0.0.1:${PORT}`;
 const MCP = `${BASE}/mcp/${'x'.repeat(32)}`;
@@ -70,9 +70,9 @@ try {
   await step('MCP initialize with the Bearer token (and without one)', async () => {
     const init = (headers) => fetch(MCP, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', ...headers }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'claude-ai', version: '1' } } }) }).then(json);
     const a = await init({ authorization: `Bearer ${tokens.access_token}` });
-    assert.equal(a.body.result.serverInfo.name, 'web-scraper');
+    assert.equal(a.body.result.serverInfo.name, 'pullrows');
     const b = await init({});
-    assert.equal(b.body.result.serverInfo.name, 'web-scraper');
+    assert.equal(b.body.result.serverInfo.name, 'pullrows');
   });
 
   await step('behind a proxy (Render): metadata uses the public https URL', async () => {

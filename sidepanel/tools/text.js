@@ -1,5 +1,6 @@
 // PAGE TEXT EXTRACTOR — clean, AI-ready main content (plain text + Markdown) with metadata.
 import { h, fill, toast, runJob, plural } from '../ui.js';
+import { capList } from '../plan.js';
 import { makeSheet, setDataset } from '../state.js';
 import { urlSource, card, numberField, select, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab, runInNewTab } from '../../lib/tab.js';
@@ -46,7 +47,7 @@ export default {
     }
 
     async function run() {
-      const list = urls.get();
+      const list = capList(urls.get(), 'textUrls', 'Page Text');
       if (!list.length) { toast('Add some URLs, or use “This page”.', 'error'); return; }
       const m = mode.get();
       await runJob(`Reading ${plural(list.length, 'page')}…`, async (signal, progress) => {

@@ -2,7 +2,8 @@
 import { h, fill, toast, runJob, plural, formDialog, confirmDialog, menu, markdown } from '../ui.js';
 import { state, activeSheet, changed, columnsOf, isUrl, urlColumns, onChange } from '../state.js';
 import { toCSV, toTSV, toJSON, toXLSX, download, fileStem } from '../../lib/export.js';
-import { exportToSheets, sheetsConfigured } from '../../lib/sheets.js';
+import { plan, requirePro, capList } from '../plan.js';
+import { ensureAiConsent } from '../consent.js';
 import { aiColumn, aiAsk } from '../../lib/ai.js';
 import { downloadImages } from '../tools/images.js';
 
@@ -41,7 +42,9 @@ export default {
       fill(tabs, ...d.sheets.map((s, i) => h('button', {
         type: 'button', class: `sheet-tab ${i === d.active ? 'on' : ''}`,
         onclick: () => { d.active = i; page = 0; sortState = null; renderAll(); },
+        title: 'Right-click (or double-click) for sheet options',
         oncontextmenu: (e) => { e.preventDefault(); sheetMenu(e.currentTarget, i); },
+        ondblclick: (e) => sheetMenu(e.currentTarget, i),
       }, s.name, h('span', { class: 'count' }, s.rows.length))));
     }
 
@@ -81,7 +84,7 @@ export default {
       const shown = idx.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
       const table = h('table', { class: 'data' },
         h('thead', {}, h('tr', {}, h('th', { class: 'rownum' }, '#'),
-          s.cols.map((c) => h('th', { title: 'Click for column options', onclick: (e) => colMenu(e.currentTarget, c) },
+          s.cols.map((c) => h('th', { title: 'Click for column options', tabIndex: 0, 'aria-haspopup': 'menu', onclick: (e) => colMenu(e.currentTarget, c), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); colMenu(e.currentTarget, c); } } },
             c, sortState?.col === c ? (sortState.dir > 0 ? ' ▲' : ' ▼') : '')))),
         h('tbody', {}, shown.length ? shown.map((ri) => h('tr', { dataset: { row: ri } },
           h('td', { class: 'rownum' }, h('span', {}, ri + 1), h('button', { type: 'button', class: 'row-del', title: 'Delete row', onclick: () => { s.rows.splice(ri, 1); commit(); } }, '×')),
@@ -106,7 +109,10 @@ export default {
         td.contentEditable = 'true';
         td.classList.add('editing');
         td.focus();
+        let finished = false;
         const done = (save) => {
+          if (finished) return; // Escape/Enter remove the cell, which can also fire blur
+          finished = true;
           td.contentEditable = 'false';
           td.classList.remove('editing');
           if (save) { s.rows[ri][c] = td.textContent; changed(); }
@@ -196,6 +202,7 @@ export default {
 
     async function addAiColumn() {
       if (!ctx.settings.apiKey) { toast('Add your Anthropic API key in Settings first.', 'error'); ctx.go('settings'); return; }
+      if (!(await ensureAiConsent(ctx))) return;
       const s = sheet();
       const r = await formDialog({
         title: '✦ AI column',
@@ -227,6 +234,7 @@ export default {
 
     async function ask() {
       if (!ctx.settings.apiKey) { toast('Add your Anthropic API key in Settings first.', 'error'); ctx.go('settings'); return; }
+      if (!(await ensureAiConsent(ctx))) return;
       const r = await formDialog({
         title: '✦ Ask Claude about this data',
         fields: [{ name: 'q', label: 'Question', type: 'textarea', placeholder: 'e.g. Which 5 products have the best rating for the price? Summarise the main trends.' }],
@@ -256,9 +264,9 @@ export default {
 
     async function downloadCol(col) {
       const s = sheet();
-      const imgs = rowsView().map((i) => ({ src: String(s.rows[i][col] || '').trim(), alt: '' })).filter((x) => isUrl(x.src));
+      const imgs = capList(rowsView().map((i) => ({ src: String(s.rows[i][col] || '').trim(), alt: '' })).filter((x) => isUrl(x.src)), 'images', 'image downloads');
       await runJob(`Downloading ${plural(imgs.length, 'image')}…`, async (signal, progress) => {
-        const n = await downloadImages(imgs, 'web-scraper/table-images', { signal, progress });
+        const n = await downloadImages(imgs, 'pullrows/table-images', { signal, progress });
         toast(`Saved ${plural(n, 'file')}.`, 'ok');
       });
     }
@@ -266,6 +274,7 @@ export default {
     async function exportAs(kind) {
       const d = state.dataset;
       const s = sheet();
+      if ((kind === 'xlsx' || kind === 'json') && !requirePro(kind)) return;
       if (!s) return;
       const stem = fileStem(d.title);
       const visible = rowsView().map((i) => Object.fromEntries(s.cols.map((c) => [c, s.rows[i][c] ?? ''])));
@@ -275,13 +284,6 @@ export default {
         if (kind === 'copy') { await navigator.clipboard.writeText(toTSV(visible)); toast(`Copied ${plural(visible.length, 'row')} — paste into any spreadsheet.`, 'ok'); }
         if (kind === 'xlsx') download(toXLSX(sheets), `${stem}.xlsx`);
         if (kind === 'json') download(toJSON({ title: d.title, url: d.url, source: d.source, exportedAt: new Date().toISOString(), sheets: Object.fromEntries(sheets.map((x) => [x.name, x.rows])) }), `${stem}.json`, 'application/json');
-        if (kind === 'sheets') {
-          await runJob('Creating Google Sheet…', async () => {
-            const url = await exportToSheets(`${d.title || 'Scrape'} — ${new Date().toLocaleString()}`, sheets);
-            chrome.tabs.create({ url });
-            toast('Google Sheet created.', 'ok');
-          });
-        }
       } catch (e) { toast(e.message, 'error'); }
     }
 
@@ -307,10 +309,9 @@ export default {
     const exportBar = h('div', { class: 'export' },
       h('span', { class: 'muted small' }, 'Export:'),
       h('button', { type: 'button', class: 'btn secondary', onclick: () => exportAs('csv') }, 'CSV'),
-      h('button', { type: 'button', class: 'btn secondary', onclick: () => exportAs('xlsx') }, 'Excel'),
-      h('button', { type: 'button', class: 'btn secondary', onclick: () => exportAs('json') }, 'JSON'),
       h('button', { type: 'button', class: 'btn secondary', onclick: () => exportAs('copy') }, 'Copy'),
-      h('button', { type: 'button', class: 'btn secondary', title: sheetsConfigured() ? '' : 'Needs a Google OAuth client ID — see README', onclick: () => exportAs('sheets') }, 'Google Sheets'));
+      h('button', { type: 'button', class: 'btn secondary', title: 'All sheets as an Excel workbook (Pro)', onclick: () => exportAs('xlsx') }, 'Excel', plan.pro ? null : h('span', { class: 'badge pro' }, 'Pro')),
+      h('button', { type: 'button', class: 'btn secondary', title: 'All sheets as JSON (Pro)', onclick: () => exportAs('json') }, 'JSON', plan.pro ? null : h('span', { class: 'badge pro' }, 'Pro')));
 
     renderAll();
     const off = onChange(() => {}); // table re-renders itself on edits; keep hook for future live updates

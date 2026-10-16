@@ -17,6 +17,17 @@ export async function startServer() {
       res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
       return res.end(page === 1 ? fs.readFileSync(path.join(FIXTURES, 'products-page1.json')) : '{"products":[]}');
     }
+    // Fake Dodo Payments licence API: key "PR-GOOD-KEY" is valid, anything else is not.
+    if (u.pathname.startsWith('/licenses/') && req.method === 'POST') {
+      let raw = '';
+      for await (const c of req) raw += c;
+      const body = JSON.parse(raw || '{}');
+      const good = body.license_key === 'PR-GOOD-KEY';
+      const reply = (code, obj) => { res.writeHead(code, { 'content-type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      if (u.pathname === '/licenses/activate') return good ? reply(201, { id: 'lki_123', license_key_id: 'lic_1', name: body.name }) : reply(404, { code: 'NOT_FOUND', message: 'License key not found' });
+      if (u.pathname === '/licenses/validate') return reply(200, { valid: good });
+      if (u.pathname === '/licenses/deactivate') return reply(200, {});
+    }
     if (u.pathname.startsWith('/img/')) { res.writeHead(200, { 'content-type': 'image/jpeg' }); return res.end(JPG); }
     const file = path.join(FIXTURES, path.normalize(decodeURIComponent(u.pathname)));
     if (!file.startsWith(FIXTURES) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }

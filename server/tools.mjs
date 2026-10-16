@@ -1,11 +1,11 @@
-// MCP tool definitions exposed to Claude. Every call is forwarded to the Web Scraper extension
+// MCP tool definitions exposed to Claude. Every call is forwarded to the PullRows extension
 // running in the user's Chrome, which executes it and sends the result back.
 
 const tabOrUrl = {
   tab_id: { type: 'integer', description: 'Tab to use (from browser_tabs). Default: the active tab.' },
   url: { type: 'string', description: 'Open this URL first (in the tab) before running.' },
 };
-const returned = { max_rows_returned: { type: 'integer', default: 100, description: 'How many rows to include in the reply (all rows are saved to the extension Data Table).' } };
+const returned = { max_rows_returned: { type: 'integer', default: 100, description: 'How many rows to include in the reply (all rows are saved to the PullRows Data Table).' } };
 
 export const TOOLS = [
   {
@@ -15,12 +15,13 @@ export const TOOLS = [
   },
   {
     name: 'browser_open',
-    description: 'Open a URL in the user\'s Chrome (navigates the active tab, or a new tab) and wait for it to load. Use before tools that work on "the current page".',
+    description: 'Open a URL in a new tab in the user\'s Chrome (default) or navigate an existing tab_id (with new_tab: false; without a tab_id the active tab is navigated), and wait for it to load. Use before tools that work on "the current page".',
     inputSchema: {
       type: 'object',
       properties: {
         url: { type: 'string' },
-        new_tab: { type: 'boolean', default: false },
+        tab_id: { type: 'integer', description: 'Navigate this existing tab instead of opening a new one.' },
+        new_tab: { type: 'boolean', default: true },
         wait_ms: { type: 'integer', default: 1500, description: 'Extra wait after load for JavaScript-rendered content.' },
       },
       required: ['url'],
@@ -182,7 +183,7 @@ export const TOOLS = [
   },
   {
     name: 'images_download',
-    description: 'Download images into the user\'s Downloads/web-scraper/<folder>/ directory.',
+    description: 'Download images into the user\'s Downloads/pullrows/<folder>/ directory.',
     inputSchema: {
       type: 'object',
       properties: { urls: { type: 'array', items: { type: 'string' } }, folder: { type: 'string', default: 'claude' } },
@@ -191,7 +192,7 @@ export const TOOLS = [
   },
   {
     name: 'data_table_read',
-    description: 'Read rows currently in the extension\'s Data Table (results of the last scrape, by the user or by Claude).',
+    description: 'Read rows currently in the PullRows Data Table (results of the last scrape, by the user or by Claude).',
     inputSchema: {
       type: 'object',
       properties: { sheet: { type: 'string' }, offset: { type: 'integer', default: 0 }, limit: { type: 'integer', default: 100 } },
@@ -209,9 +210,10 @@ export const TOOLS = [
   },
 ];
 
-export const INSTRUCTIONS = `Tools for the user's "Web Scraper" Chrome extension. Every tool runs inside the user's own Chrome (their logged-in sessions), and results are also saved to the extension's Data Table so the user can export them (CSV, Excel, Google Sheets).
+export const INSTRUCTIONS = `Tools for the user's PullRows Chrome extension. Every tool runs inside the user's own Chrome (their logged-in sessions), and results are also saved to the PullRows Data Table so the user can export them (CSV, Excel, Google Sheets).
 Typical flows:
 - Lists (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed).
 - Details for many pages: page_extract with selectors/built-ins (use sitemap_urls or list_extract link columns to get URLs).
 - Leads: find_emails / find_social_links on a list of websites.
-Use browser_screenshot or page_read to understand an unfamiliar page. Keep scrapes polite (reasonable page counts and delays).`;
+Use browser_screenshot or page_read to understand an unfamiliar page. Keep scrapes polite (reasonable page counts and delays).
+Some sites are blocked by the user's safety settings (email, banking, password managers, local network); clicking/typing (page_action click/fill) and images_download only work if the user enabled 'Allow actions' in PullRows Settings — if a tool says it's disabled, tell the user how to enable it rather than retrying.`;
