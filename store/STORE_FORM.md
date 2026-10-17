@@ -1,6 +1,6 @@
-# PullRows 1.0.0: Chrome Web Store form, field by field
+# PullRows 1.0.1: Chrome Web Store form, field by field
 
-Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.0.0.zip`.
+Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.0.1.zip`.
 Every image named below is in this kit's `images/` folder.
 
 ---
@@ -8,7 +8,7 @@ Every image named below is in this kit's `images/` folder.
 ## 1. Package
 | Field | Value |
 |---|---|
-| Upload | `pullrows-1.0.0.zip` |
+| Upload | `pullrows-1.0.1.zip` |
 
 ## 2. Store listing
 | Field | Paste this |
@@ -37,6 +37,8 @@ Open a page with a list: search results, a directory, a shop category, a map, a 
 • Next buttons, "Load more" buttons and infinite scroll, including scrolling panels
 • Scrolls one screen at a time, so lazy-loaded and virtualised items are captured
 • Merges half-loaded rows and skips duplicates
+• Tables, div grids, two-row lists (forums, Hacker News) and single-page apps; column names from table headers
+• Finds "Next" and "Load more" in 35+ languages
 • Built-in presets for map results, job listings, social posts and reels, video lists and product search
 
 TEN TOOLS IN ONE PANEL

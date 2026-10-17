@@ -1,0 +1,8 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Shadow</title>
+<style>body{font-family:sans-serif;margin:0} .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px} img{width:60px;height:40px}</style></head><body>
+<header><nav class="navbar"><ul class="nav-menu"><li class="nav-item"><a class="nav-link" href="/home">Home</a></li><li class="nav-item"><a class="nav-link" href="/products">Products</a></li><li class="nav-item"><a class="nav-link" href="/pricing">Pricing</a></li><li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li><li class="nav-item"><a class="nav-link" href="/about">About</a></li><li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li><li class="nav-item"><a class="nav-link" href="/careers">Careers</a></li></ul></nav></header>
+<main><shop-list></shop-list></main><script>
+class ShopList extends HTMLElement{connectedCallback(){const s=this.attachShadow({mode:'open'});s.innerHTML='<ul>'+['Aurora', 'Basil', 'Cedar', 'Delta', 'Ember', 'Fjord', 'Garnet', 'Harbor', 'Indigo', 'Juniper'].map((n,i)=>`<li class="it"><a href="/s/${i}">${n} Shoe</a><span class="pr">$${20+i}.00</span></li>`).join('')+'</ul>';}}
+customElements.define('shop-list',ShopList);</script>
+<footer class="site-footer"><ul class="footer-links"><li><a href="/f/privacy">Privacy</a></li><li><a href="/f/terms">Terms</a></li><li><a href="/f/cookies">Cookies</a></li><li><a href="/f/support">Support</a></li><li><a href="/f/status">Status</a></li><li><a href="/f/press">Press</a></li><li><a href="/f/jobs">Jobs</a></li><li><a href="/f/partners">Partners</a></li></ul></footer>
+</body></html>

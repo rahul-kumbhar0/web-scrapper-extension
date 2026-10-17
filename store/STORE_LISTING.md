@@ -1,6 +1,6 @@
-# Chrome Web Store listing: PullRows 1.0.0
+# Chrome Web Store listing: PullRows 1.0.1
 
-Upload `dist/pullrows-1.0.0.zip`, which you build with `npm run package`. Images are in `store/`.
+Upload `dist/pullrows-1.0.1.zip`, which you build with `npm run package`. Images are in `store/`.
 
 ## Store listing tab
 
@@ -20,6 +20,8 @@ Open a page with a list: search results, a directory, a shop category, a map, a 
 • Next buttons, "Load more" buttons and infinite scroll, including scrolling panels
 • Scrolls one screen at a time, so lazy-loaded and virtualised items are captured
 • Merges half-loaded rows and skips duplicates
+• Tables, div grids, two-row lists (forums, Hacker News) and single-page apps; column names from table headers
+• Finds "Next" and "Load more" in 35+ languages
 • Built-in presets for map results, job listings, social posts and reels, video lists and product search
 
 TEN TOOLS IN ONE PANEL

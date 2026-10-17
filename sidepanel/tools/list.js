@@ -62,7 +62,7 @@ export default {
     async function onAuto() {
       try {
         const tab = await getActiveTab();
-        setCandidates(await callInTab(tab.id, 'autoDetectLists'));
+        setCandidates(await callInTab(tab.id, 'autoDetectListsReady'));
         if (candidates.length) await autoPagination();
       } catch (e) { toast(e.message, 'error'); }
     }

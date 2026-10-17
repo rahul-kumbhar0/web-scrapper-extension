@@ -89,6 +89,28 @@
   </section>
 
   <div class="container legal">
+    <section class="release" aria-labelledby="v101">
+      <div class="release__meta">
+        <h2 class="release__v" id="v101">v1.0.1</h2>
+        <p class="release__d">October 17, 2026</p>
+        <span class="release__tag">Improved</span>
+      </div>
+      <div class="prose">
+        <h3>Works on more kinds of websites</h3>
+        <ul>
+          <li><strong>Tables</strong>: column names come from the table's headers, including Wikipedia-style header rows and old sites that use bold cells; the header row is no longer extracted as data. Grids built from divs (role="grid") work the same way.</li>
+          <li><strong>Two-row items</strong>: lists where each item spans two rows (Hacker News, many forums) and term/definition lists come out as one row per item.</li>
+          <li><strong>Right value in every column</strong>: fixed a case where a column could read a neighbouring element on sites with generated class names (search results, Hacker News).</li>
+          <li><strong>Menus and footers</strong>: navigation, mega-menus, sidebars and footers no longer win over the real list.</li>
+          <li><strong>Single-page apps</strong>: Auto-detect waits a few seconds for lists that appear after the page loads.</li>
+          <li><strong>“Next” in 35+ languages and “Load more” in 20+</strong>, including Hindi, Japanese, Chinese, Korean, Arabic, Russian, Spanish, French, German and Portuguese, plus wordings like “Show 20 more”.</li>
+          <li><strong>More data per item</strong>: background images, star ratings in image alt text, data-* attributes (SKU, IDs) and web-component attributes, and constant values such as a shared location are now kept.</li>
+          <li><strong>Reddit preset</strong> for the new and old Reddit layouts.</li>
+          <li><strong>Clearer errors</strong> on pages Chrome won't let extensions read (PDF viewer, error pages, local files).</li>
+        </ul>
+      </div>
+    </section>
+
     <section class="release" aria-labelledby="v100">
       <div class="release__meta">
         <h2 class="release__v" id="v100">v1.0.0</h2>

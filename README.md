@@ -63,7 +63,7 @@ Claude's cloud can't reach your browser, so a small **relay** (`server/`, zero d
 2. Pin PullRows and click the icon to open the side panel.
 
 ```bash
-NODE_PATH=$(npm root -g) npm test        # relay, oauth, e2e, mcp, realistic (headless Chromium)
+NODE_PATH=$(npm root -g) npm test        # relay, oauth, e2e, mcp, realistic, patterns (headless Chromium)
 NODE_PATH=$(npm root -g) node test/e2e.mjs "list"   # steps matching a pattern
 npm run package                          # → dist/pullrows-<version>.zip (allow-listed files only)
 NODE_PATH=$(npm root -g) node scripts/store-assets.mjs   # → store/*.png screenshots + promo tiles

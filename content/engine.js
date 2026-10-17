@@ -304,13 +304,17 @@
     return rows;
   }
 
-  const NEXT_TEXT = /^(next|next page|next ›|next »|›|»|→|>|>>|older posts|older|more results|siguiente|suivant|weiter|próxima|avanti|volgende)$/i;
+  // "Next" in the languages of most of the web; arrows and chevrons around the word are ignored.
+  const NEXT_WORDS = /^(next|next page|next results|older posts|older entries|older|more results|siguiente|página siguiente|siguientes|próxima|próxima página|seguinte|suivant|suivante|page suivante|weiter|nächste|nächste seite|vor|avanti|successivo|successiva|pagina successiva|volgende|volgende pagina|nästa|neste|næste|następna|następna strona|další|következő|următoarea|επόμενη|следующая|следующая страница|далее|вперед|вперёд|наступна|далі|sonraki|ileri|sonraki sayfa|التالي|الصفحة التالية|הבא|अगला|अगले|आगे|अगला पृष्ठ|পরবর্তী|அடுத்து|తదుపరి|ಮುಂದೆ|അടുത്തത്|पुढे|આગળ|ਅਗਲਾ|berikutnya|selanjutnya|seterusnya|tiếp|tiếp theo|trang sau|ถัดไป|下一页|下一頁|下页|次へ|次のページ|次|다음|다음 페이지)$/i;
+  const nextLabel = (s) => clean(s, 40).replace(/^[\s›»→>⟩❯▶▸⇒«‹←<⟨❮◀◂]+|[\s›»→>⟩❯▶▸⇒«‹←<⟨❮◀◂]+$/g, '').trim();
+  const isNextText = (s) => { const t = clean(s, 40); return /^(›|»|→|>|>>|⟩|❯|▶|▸)$/.test(t) || NEXT_WORDS.test(nextLabel(t)); };
   function findNextUrl(doc = document) {
     const candidates = [
       ...qsa(doc, 'link[rel="next"], a[rel~="next"]'),
       ...qsa(doc, 'a[href]').filter((a) => {
-        const label = clean(a.innerText || a.textContent || a.getAttribute('aria-label') || a.title, 40);
-        return NEXT_TEXT.test(label) || /^next/i.test(a.getAttribute('aria-label') || '');
+        if (a.closest('nav[aria-label*="breadcrumb" i], .breadcrumb, .breadcrumbs')) return false;
+        return isNextText(a.innerText || a.textContent || a.getAttribute('aria-label') || a.title) ||
+          /^next\b|^go to next/i.test(a.getAttribute('aria-label') || '');
       }),
     ];
     for (const el of candidates) {
@@ -399,13 +403,15 @@
   const INLINE = new Set(['B', 'I', 'EM', 'STRONG', 'SMALL', 'SUP', 'SUB', 'BR', 'U', 'S', 'MARK', 'ABBR', 'CODE', 'WBR', 'FONT', 'BDI', 'Q']);
   const SKIP = 'script,style,noscript,template,svg,iframe,button[aria-hidden="true"]';
 
-  const GENERIC_WORDS = /^(container|wrapper|wrap|inner|outer|content|contents|block|root|ember|view|item|items|card|cell|row|col|box|link|links|text|disabled|visually|hidden|main|body|section|component|module|el|elem|element|default|base|ui|js|x|is|has|the|of|font|small|medium|large|bold|regular|light|primary|secondary|full|entity|lockup|artdeco|t|flex|grid|clearfix|truncate|ellipsis|anchor|wide|mobile|desktop|show|hide|label|value|info|meta|detail|details|data|field|list|group|layout|style|styles|top|bottom|left|right|center|line|lines|area|part|piece|unit|tile|panel|pane|holder|outline|plain|normal|base|tiny|xs|sm|md|lg|xl)$/i;
+  const GENERIC_WORDS = /^(container|wrapper|wrap|inner|outer|content|contents|block|root|ember|view|item|items|card|cell|row|col|box|link|links|text|disabled|visually|hidden|main|body|section|component|module|el|elem|element|default|base|ui|js|x|is|has|the|of|font|small|medium|large|bold|regular|light|primary|secondary|full|entity|lockup|artdeco|t|flex|grid|clearfix|truncate|ellipsis|anchor|wide|mobile|desktop|show|hide|label|value|info|meta|detail|details|data|field|list|group|layout|style|styles|top|bottom|left|right|center|line|lines|area|part|piece|unit|tile|panel|pane|holder|outline|plain|normal|base|tiny|xs|sm|md|lg|xl|result|results|entry|entries|record|records|listing|listings|product|products|story|stories|article|articles|search|feed|footer|header)$/i;
+  // Short words only count as whole words ("tel" is not in "votelinks", "tag" is not in "vintage").
   const SEMANTIC = [
-    [/headline|heading|title|name|subject/i, 'title'], [/price|amount|cost|fare/i, 'price'], [/rating|stars?|score/i, 'rating'],
-    [/reviews?|ratings?count/i, 'reviews'], [/date|time|posted|ago|published/i, 'date'], [/author|byline|user(name)?|creator/i, 'author'],
-    [/company|employer|brand|vendor|seller|shop|store/i, 'company'], [/location|address|city|place|region/i, 'location'],
-    [/desc|summary|excerpt|snippet|caption|body/i, 'description'], [/phone|tel/i, 'phone'], [/email|mail/i, 'email'],
-    [/category|tag|type|genre/i, 'category'], [/thumb|image|img|photo|picture|avatar|logo/i, 'image'], [/subtitle/i, 'subtitle'], [/caption/i, 'caption'],
+    [/salary|\bpay\b|compensation|\bwages?\b/i, 'salary'],
+    [/headline|heading|title|subject/i, 'title'], [/price|amount|\bcost\b|\bfare\b/i, 'price'], [/rating|\bstars?\b|\bscore\b/i, 'rating'],
+    [/reviews?|ratings?count/i, 'reviews'], [/\bdate\b|\btime\b|timestamp|posted|\bago\b|\bage\b|\bwhen\b|published/i, 'date'], [/author|byline|user|creator|poster|\bowner\b/i, 'author'], [/name/i, 'name'],
+    [/company|employer|brand|vendor|seller|\bshop\b|\bstore\b/i, 'company'], [/location|address|\bcity\b|\bplace\b|region/i, 'location'],
+    [/\bdesc|summary|excerpt|snippet|caption|\bbody\b/i, 'description'], [/\bphone\b|\btel\b|telephone|mobile/i, 'phone'], [/\be-?mail\b/i, 'email'],
+    [/category|\btags?\b|\btype\b|genre/i, 'category'], [/thumb|image|\bimg\b|photo|picture|avatar|\blogo\b/i, 'image'], [/subtitle/i, 'subtitle'], [/caption/i, 'caption'],
   ];
   // Readable hint from itemprop / data-testid / meaningful class names (BEM element part preferred).
   function nameHint(el) {
@@ -421,21 +427,44 @@
     }
     return '';
   }
+  // A header row: all <th>, or every cell is just bold text (old sites style headers with <b>).
+  const isHeaderRow = (tr) => tr.cells.length > 1 && [...tr.cells].every((c) => c.tagName === 'TH' ||
+    (clean(c.textContent) && [...c.childNodes].every((n) => (n.nodeType === 3 && !n.textContent.trim()) || /^(B|STRONG)$/.test(n.tagName))));
+  // Visual column index of a cell, counting colspans.
+  const colIndex = (cell) => { let i = 0; for (let c = cell.previousElementSibling; c; c = c.previousElementSibling) i += c.colSpan || 1; return i; };
+  const cellAt = (row, idx) => { let i = 0; for (const c of row.cells) { if (idx < i + (c.colSpan || 1)) return c; i += c.colSpan || 1; } return null; };
   const tableHeaderFor = (cell) => {
     const table = cell.closest('table');
     const tr = cell.parentElement;
-    if (!table || !tr) return '';
-    const head = table.tHead?.rows[0] || [...table.rows].find((r) => [...r.cells].every((c) => c.tagName === 'TH'));
-    if (!head || head === tr) return '';
-    return clean(head.cells[[...tr.cells].indexOf(cell)]?.textContent, 40);
+    if (!table || !tr || tr.tagName !== 'TR') return '';
+    const head = table.tHead?.rows[table.tHead.rows.length - 1] || [...table.rows].find(isHeaderRow);
+    if (!head || head === tr || head.closest('table') !== table) return '';
+    return clean(cellAt(head, colIndex(cell))?.textContent, 40);
+  };
+  // ARIA grids built from divs: role=row / role=cell|gridcell with role=columnheader names.
+  const ariaHeaderFor = (cell) => {
+    const row = cell.closest('[role="row"]');
+    const grid = row?.closest('[role="grid"], [role="table"], [role="treegrid"]');
+    if (!grid) return '';
+    const cells = [...row.querySelectorAll('[role="cell"], [role="gridcell"], [role="rowheader"]')];
+    const heads = qsa(grid, '[role="columnheader"]');
+    return clean(heads[cells.indexOf(cell)]?.textContent, 40);
+  };
+  // The column header above a table or grid cell, if there is one.
+  const headerNameFor = (el) => {
+    const cell = el.closest('td, th');
+    if (cell) { const h = tableHeaderFor(cell); if (h) return h; }
+    const aria = el.closest('[role="cell"], [role="gridcell"], [role="rowheader"]');
+    return aria ? ariaHeaderFor(aria) : '';
   };
   const fieldNameFrom = (el) => {
-    if (/^T[DH]$/.test(el.tagName)) { const h = tableHeaderFor(el); if (h) return h; }
+    const head = headerNameFor(el);
+    if (head) return head;
     if (el.getAttribute('role') === 'img' && /star|rating/i.test(el.getAttribute('aria-label') || '')) return 'rating';
     // Unclassed links/spans take their name from the parent (h3.name > a → "name").
     return nameHint(el) || (/^(A|SPAN|STRONG|B|EM)$/.test(el.tagName) && el.parentElement ? nameHint(el.parentElement) : '');
   };
-  const TAG_NAMES = { h1: 'title', h2: 'title', h3: 'title', h4: 'subtitle', h5: 'subtitle', p: 'description', time: 'date', img: 'image', strong: 'title', b: 'title' };
+  const TAG_NAMES = { h1: 'title', h2: 'title', h3: 'title', h4: 'subtitle', h5: 'subtitle', p: 'description', time: 'date', img: 'image', strong: 'title', b: 'title', dt: 'term', dd: 'description', figcaption: 'caption', cite: 'source', address: 'address', blockquote: 'quote' };
 
   // Name a column from what its values look like (most reliable on sites with obfuscated classes).
   function nameFromValues(values) {
@@ -448,9 +477,14 @@
     if (share(/^[\d.,]+\s*[KkMm]?\s*(views?|plays?)\b/i)) return 'views';
     if (share(/^[\d.,]+\s*[KkMm]?\s*likes?\b/i)) return 'likes';
     if (share(/^[\d.,]+\s*[KkMm]?\s*(comments?|replies)\b/i)) return 'comments';
+    if (share(/^[\d.,]+\s*[KkMm]?\s*(points?|pts|votes?|upvotes?)$/i)) return 'points';
+    if (share(/^(rated\s+)?[0-5]([.,]\d)?\s*(out\s+of|\/)\s*5(\s*stars?)?$/i)) return 'rating';
     if (share(/(^|\s)(US\$|C\$|A\$|[$£€¥₹₩])\s?\d|\d\s?(USD|EUR|GBP|INR)\b/)) return 'price';
     if (share(/\b(ago|hours?|minutes?|days?|weeks?|months?|years?|yesterday|today|just now)\b|^\d{4}-\d{2}-\d{2}|^\d{1,2}\s\w{3,9}\s\d{4}$/i)) return 'date';
+    // "x ago" in other languages: Hindi, Japanese/Chinese, Korean, Russian, Spanish, French, German, Italian, Dutch, Swedish, Turkish.
+    if (share(/(पहले|前$|전$|назад|^hace\s|^il y a\s|^vor\s\d|\d.*\sfa$|geleden|sedan$|önce$)/i)) return 'date';
     if (share(/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i)) return 'email';
+    if (share(/^(https?:\/\/)?(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\s*›.*|\/\S*)?$/i)) return 'url';
     if (share(/^\+?[\d\s().-]{7,}$/)) return 'phone';
     if (share(/\((remote|hybrid|on-site|onsite)\)|,\s*(india|usa|uk|canada|germany|france|australia|united states|united kingdom)\b/i)) return 'location';
     return '';
@@ -465,13 +499,35 @@
       for (let cur = el; cur && cur !== item; cur = cur.parentElement) parts.unshift(sigOf(cur, 1));
       return ':scope > ' + parts.join(' > ');
     };
+    const matches = new Map();
     const push = (el, attr, value) => {
       if (!value) return;
       const path = el === item ? ':scope' : relPath(el);
       const k = path + '|' + attr;
-      const idx = counters.get(k) || 0;
-      counters.set(k, idx + 1);
+      // The index must be the element's position among everything the path matches when the list is
+      // extracted ("div" also matches div.snippet), not among leaves seen so far.
+      if (!matches.has(path)) matches.set(path, path === ':scope' ? [item] : qsa(item, path));
+      let idx = matches.get(path).indexOf(el);
+      if (idx < 0) { idx = counters.get(k) || 0; counters.set(k, idx + 1); }
       out.push({ key: `${k}|${idx}`, path, attr, idx, value, el });
+    };
+    // Data kept in attributes: web components (<shreddit-post post-title=…>) and data-* ids/prices.
+    const NOISE_ATTR = /^(class|style|id|role|slot|tabindex|hidden|lang|dir|draggable|is|loading|decoding|width|height|aria-|on|data-(v-|reactid|testid|test|index|state|track|analytics|gtm|ga|event|click|component|module|ved|hveid|jsname|jsaction|jscontroller|lazy|src|srcset|bg|ll|nimg)|jsname|jsaction|jscontroller|jsmodel|jslog|ved|href$|src$)/i;
+    const attrLeaves = (el) => {
+      const custom = el.tagName.includes('-');
+      let n = 0;
+      for (const a of el.attributes) {
+        if (n >= 8 || NOISE_ATTR.test(a.name) || !(custom || a.name.startsWith('data-'))) continue;
+        const v = a.value.trim();
+        if (!v || v.length > 300 || /^(true|false|null|undefined|\{.*\}|\[.*\])$/i.test(v)) continue;
+        push(el, a.name, /^(https?:|\/)/.test(v) && /(link|url|href|permalink)/i.test(a.name) ? abs(v, el.ownerDocument) : clean(v, 300));
+        n++;
+      }
+    };
+    const bgOf = (el) => {
+      const st = el.getAttribute('style');
+      const m = st && /background(-image)?\s*:[^;]*url\(\s*["']?([^"')]+)["']?\s*\)/i.exec(st);
+      return m && !m[2].startsWith('data:') ? abs(m[2], el.ownerDocument) : '';
     };
     const isTextLeaf = (el) => {
       const t = (el.innerText ?? el.textContent ?? '').trim();
@@ -492,22 +548,73 @@
         if (label && !(el.textContent || '').trim()) push(el, 'aria-label', clean(label, 300));
       }
       if (el.tagName === 'IMG') {
-        const src = el.currentSrc || el.getAttribute('src') || el.dataset.src || el.dataset.lazySrc;
+        const lazy = el.dataset.src || el.dataset.lazySrc || el.dataset.original;
+        const src = (el.currentSrc || el.getAttribute('src') || '').startsWith('data:') ? lazy : el.currentSrc || el.getAttribute('src') || lazy;
         if (src && !src.startsWith('data:')) push(el, 'src', abs(src, el.ownerDocument));
+        const alt = clean(el.getAttribute('alt'), 300);
+        if (alt.length > 2) push(el, 'alt', alt);
+      } else if (el.getAttribute('style')?.includes('url(')) {
+        const bg = bgOf(el);
+        if (bg) push(el, 'bg', bg);
       }
       if (el.tagName === 'TIME' && el.getAttribute('datetime')) push(el, 'datetime', el.getAttribute('datetime'));
+      if (el !== item && el.tagName.includes('-')) attrLeaves(el);
       for (const c of el.children) visit(c, leaf);
     };
     visit(item, false);
+    attrLeaves(item);
     return out;
   }
 
+  // Items that span several sibling elements (Hacker News: a title row + a details row; <dt>/<dd> pairs).
+  // `comp` lists the offsets of the companion siblings; their leaves carry `sib`.
+  const nthNext = (el, n) => { let cur = el; for (let i = 0; i < n && cur; i++) cur = cur.nextElementSibling; return cur; };
+  function rowLeaves(item, comp = []) {
+    const out = leavesOf(item);
+    for (const o of comp) {
+      const sib = nthNext(item, o);
+      if (sib) for (const l of leavesOf(sib)) out.push({ ...l, key: `+${o}|${l.key}`, sib: o });
+    }
+    return out;
+  }
+  const hasData = (el) => !!(clean(el.textContent) || el.querySelector('img, a[href]'));
+  function companionsOf(group) {
+    if (group.length < 3) return [];
+    const set = new Set(group);
+    const parent = group[0].parentElement;
+    if (!parent || [...parent.children].length < group.length * 2) return [];
+    const runs = group.slice(0, -1).map((g) => {
+      const run = [];
+      for (let cur = g.nextElementSibling; cur && !set.has(cur) && run.length < 4; cur = cur.nextElementSibling) run.push(cur);
+      return run;
+    });
+    const shape = (run) => run.map((el) => sigOf(el, 1) + (hasData(el) ? '' : '~')).join(' ');
+    const counts = new Map();
+    for (const r of runs) counts.set(shape(r), (counts.get(shape(r)) || 0) + 1);
+    const [best, n] = [...counts].sort((a, b) => b[1] - a[1])[0];
+    if (!best || n < runs.length * 0.7) return [];
+    const run = runs.find((r) => shape(r) === best);
+    const comp = run.map((el, i) => (hasData(el) ? i + 1 : 0)).filter(Boolean);
+    if (!comp.length || comp.length > 3) return [];
+    // The group must start the pattern: if a companion-shaped element comes right before the first
+    // item, these are the second rows of items that start earlier (HN's details rows).
+    const prev = group[0].previousElementSibling;
+    const compSigs = new Set(comp.map((o) => sigOf(run[o - 1], 1)));
+    if (prev && compSigs.has(sigOf(prev, 1)) && hasData(prev)) return [];
+    return comp;
+  }
+
   // Columns shared by enough items, with readable names.
-  function fieldsFor(items) {
+  // Text that is the same on every item and only labels a control ("View", "Add to cart") isn't data.
+  const ACTION_TEXT = /^(view|view details|details|more|read more|learn more|see more|show more|more info|add to (cart|bag|basket|wishlist)|buy( now)?|shop now|order now|book( now)?|apply( now)?|save|share|follow|subscribe|select|choose|compare|quick ?view|download|open|visit|go|reply|report|like|comment|hide|edit|delete|remove|close|·|•|\||-|–|—)$/i;
+  const PRIMARY_ATTR = new Set(['text', 'href', 'src', 'datetime', 'bg']);
+  const attrName = (a) => classWords(a.replace(/^data-/, '')).join(' ').toLowerCase();
+  function fieldsFor(items, comp = []) {
     const stats = new Map();
     const sample = items.slice(0, 60);
-    for (const item of sample) {
-      for (const l of leavesOf(item)) {
+    const leaves = sample.map((it) => rowLeaves(it, comp));
+    for (const ls of leaves) {
+      for (const l of ls) {
         const s = stats.get(l.key) || { ...l, count: 0, values: new Set(), order: stats.size };
         s.count++;
         s.values.add(l.value);
@@ -516,63 +623,106 @@
     }
     const minCount = Math.max(2, Math.ceil(sample.length * 0.2));
     let fields = [...stats.values()].filter((s) => s.count >= Math.min(minCount, sample.length));
-    // Drop columns whose value never changes (decorations like "View", "Add to cart") unless only one item.
-    if (sample.length > 2) fields = fields.filter((f) => f.values.size > 1 || f.attr === 'text' && f.count < sample.length);
-    // Drop columns that duplicate an earlier column value-for-value.
-    const sig = (f) => sample.map((item) => leavesOf(item).find((l) => l.key === f.key)?.value || '').join('\u0001');
+    // Drop columns whose value never changes when they're decoration: button labels, the same link or
+    // placeholder image on every item, constant attributes. Constant real data ("Pune, India") stays.
+    if (sample.length > 2) {
+      fields = fields.filter((f) => {
+        if (f.values.size > 1 || f.count < sample.length) return true;
+        if (f.attr !== 'text') return false;
+        const v = [...f.values][0];
+        return !(ACTION_TEXT.test(v) || v.length < 3 || /^[\d\W]+$/.test(v) || f.el.closest('button, [role="button"]'));
+      });
+    }
+    // Drop columns that duplicate another column value-for-value, keeping text/links/images over
+    // alt texts and attributes.
+    const byKey = leaves.map((ls) => new Map(ls.map((l) => [l.key, l.value])));
+    const sig = (f) => byKey.map((m) => m.get(f.key) || '').join('\u0001');
     const seenSig = new Set();
-    fields = fields.sort((a, b) => a.order - b.order).filter((f) => {
+    const rank = (f) => (PRIMARY_ATTR.has(f.attr) ? 0 : 1);
+    const keep = new Set(fields.slice().sort((a, b) => rank(a) - rank(b) || a.order - b.order).filter((f) => {
       const k = sig(f);
       if (seenSig.has(k)) return false;
       seenSig.add(k);
       return true;
-    });
+    }));
+    fields = fields.filter((f) => keep.has(f)).sort((a, b) => a.order - b.order);
     const names = new Set();
     let titled = false;
     return fields.slice(0, 40).map((f) => {
       const values = [...f.values];
-      const hint = fieldNameFrom(f.el);
+      const hint = f.path === ':scope' && f.attr !== 'text' ? '' : fieldNameFrom(f.el);
+      const avgLen = values.reduce((n, x) => n + x.length, 0) / (values.length || 1);
       let base;
       if (f.attr === 'href') base = hint && !/^(title|link)$/.test(hint) ? `${hint} link` : 'link';
       else if (f.attr === 'src') base = 'image';
-      else if (f.attr === 'datetime') base = 'date';
+      else if (f.attr === 'bg') base = 'image';
+      else if (f.attr === 'datetime') base = 'datetime';
       else if (f.attr === 'aria-label') base = 'name';
+      else if (f.attr === 'alt') base = nameFromValues(values) === 'rating' ? 'rating' : 'image alt';
+      else if (f.attr !== 'text') base = nameFromValues(values) === 'price' ? 'price' : attrName(f.attr) || f.attr;
       else {
         const fromValues = nameFromValues(values);
-        const tagName = TAG_NAMES[f.el.tagName.toLowerCase()] || (f.el.closest('h1,h2,h3,h4') ? 'title' : '');
-        base = fromValues || (hint && hint !== 'image' ? hint : '') || tagName;
+        const inlineParent = /^(A|SPAN|STRONG|B|EM)$/.test(f.el.tagName) ? f.el.parentElement : null;
+        const tagName = TAG_NAMES[f.el.tagName.toLowerCase()] || (f.el.closest('h1,h2,h3,h4') ? 'title' : '') ||
+          (inlineParent && TAG_NAMES[inlineParent.tagName.toLowerCase()]) || '';
+        // Table/grid headers and pay columns are more precise than a guess from the values.
+        const exact = hint && (headerNameFor(f.el) || hint === 'salary');
+        base = exact ? hint : fromValues || (hint && hint !== 'image' ? hint : '') || tagName;
+        // Headings are the item's title even when their class says "name".
+        if (base === 'name' && f.el.closest('h1,h2,h3,h4,h5,h6')) base = 'title';
+        // A "review" class on long text is the review itself, not a review count.
+        if (base === 'reviews' && avgLen > 30) base = 'review';
         // The first longish text column is usually the item's title.
         if (!base || base === 'text') {
-          const avg = values.reduce((n, x) => n + x.length, 0) / (values.length || 1);
-          base = !titled && avg >= 6 && avg <= 160 ? 'title' : 'text';
+          base = !titled && avgLen >= 6 && avgLen <= 160 ? 'title' : avgLen >= 50 ? 'description' : 'text';
         }
       }
-      if (base === 'title') titled = true;
+      if (base === 'title' || base === 'name') titled = true;
       let name = base;
       for (let i = 2; names.has(name); i++) name = `${base} ${i}`;
       names.add(name);
-      return { name, path: f.path, idx: f.idx, attr: f.attr };
+      return { name, path: f.path, idx: f.idx, attr: f.attr, ...(f.sib ? { sib: f.sib } : {}) };
     });
   }
 
-  const pathsOf = (item) => new Set(leavesOf(item).map((l) => l.key));
+  const pathsOf = (item, comp) => new Set(rowLeaves(item, comp).map((l) => l.key));
   const jaccard = (a, b) => {
     let inter = 0;
     for (const x of a) if (b.has(x)) inter++;
     return inter / (a.size + b.size - inter || 1);
   };
 
+  // Page furniture (menus, headers, footers, sidebars, breadcrumbs) repeats too, but is rarely the data.
+  const CHROME_SEL = 'nav, header, footer, aside, [role="navigation"], [role="banner"], [role="contentinfo"], [role="menu"], [role="menubar"], [role="complementary"], [role="tablist"]';
+  const CHROME_CLASS = /(^|[-_\s])(nav|navbar|navigation|menu|megamenu|footer|header|breadcrumbs?|sidebar|toolbar|topbar|tabs)([-_\s]|$)/i;
+  function isChrome(el) {
+    if (el.closest('main, [role="main"]')) return false;
+    if (el.closest(CHROME_SEL)) return true;
+    for (let cur = el.parentElement, i = 0; cur && i < 5; cur = cur.parentElement, i++) {
+      if (CHROME_CLASS.test(cur.className && typeof cur.className === 'string' ? cur.className : '') || CHROME_CLASS.test(cur.id || '')) return true;
+    }
+    return false;
+  }
+
   // Score a group of sibling elements as "the list": many items × rich items × similar structure.
-  function scoreGroup(group) {
+  function scoreGroup(group, comp = []) {
     const sample = group.slice(0, 12);
-    const sets = sample.map(pathsOf);
+    const sets = sample.map((el) => pathsOf(el, comp));
     const richness = Math.min(12, sets.reduce((n, s) => n + s.size, 0) / sets.length);
     if (richness < 1) return 0;
     let sim = 0;
     for (let i = 1; i < sets.length; i++) sim += jaccard(sets[0], sets[i]);
     sim = sets.length > 1 ? sim / (sets.length - 1) : 0;
     const visible = sample.filter((el) => el.getClientRects?.().length !== 0).length / sample.length;
-    return group.length * richness * sim * sim * (0.2 + 0.8 * visible);
+    const place = isChrome(group[0]) ? 0.3 : group[0].closest('main, [role="main"], article, #content, #main') ? 1.2 : 1;
+    return group.length * richness * sim * sim * (0.2 + 0.8 * visible) * place;
+  }
+
+  // Normalise a sibling group: drop a table's header row, find companion rows.
+  function prepGroup(group) {
+    let items = group;
+    if (items[0]?.tagName === 'TR' && items.length > 2 && isHeaderRow(items[0]) && !isHeaderRow(items[1])) items = items.slice(1);
+    return { items, comp: companionsOf(items) };
   }
 
   const similarSiblings = (el) => {
@@ -599,13 +749,18 @@
     if (!items[0].classList.length && items.every((i) => !i.classList.length) && ok(`${parentSel} > ${tag}:not([class])`)) return `${parentSel} > ${tag}:not([class])`;
     const sel = `${parentSel} > ${sig}`;
     if (ok(sel)) return sel;
+    // A table without its header row, or items after some differently-shaped first children.
+    const first = [...items[0].parentElement.children].indexOf(items[0]) + 1;
+    for (const base of [sel, `${parentSel} > ${tag}`]) {
+      for (const s of [`${base}:not(:first-child)`, `${base}:nth-child(n+${first})`]) if (ok(s)) return s;
+    }
     return `${parentSel} > ${items[0].tagName.toLowerCase()}`;
   }
 
-  function describeGroup(items, score) {
+  function describeGroup(items, score, comp = []) {
     const itemSelector = itemSelectorFor(items);
-    const fields = fieldsFor(items);
-    return { itemSelector, count: qsa(items[0].ownerDocument, itemSelector).length, fields, score: Math.round(score) };
+    const fields = fieldsFor(items, comp);
+    return { itemSelector, count: qsa(items[0].ownerDocument, itemSelector).length, fields, score: Math.round(score), ...(isChrome(items[0]) ? { chrome: true } : {}) };
   }
 
   // From one clicked element: candidate lists at each ancestor level, best first.
@@ -618,13 +773,15 @@
   function listsFromGeneric(el) {
     const cands = [];
     for (let cur = el, depth = 0; cur && cur !== cur.ownerDocument.body && depth < 10; cur = cur.parentElement, depth++) {
-      const group = similarSiblings(cur);
-      if (group.length < 2) continue;
-      const score = scoreGroup(group) / (1 + depth * 0.05);
-      if (score > 0) cands.push({ group, score });
+      const sibs = similarSiblings(cur);
+      if (sibs.length < 2) continue;
+      const { items, comp } = prepGroup(sibs);
+      if (items.length < 2) continue;
+      const score = scoreGroup(items, comp) / (1 + depth * 0.05);
+      if (score > 0) cands.push({ group: items, comp, score });
     }
     cands.sort((a, b) => b.score - a.score);
-    return cands.slice(0, 5).map((c) => describeGroup(c.group, c.score));
+    return cands.slice(0, 5).map((c) => describeGroup(c.group, c.score, c.comp));
   }
 
   // Without a click: scan the page for the best repeating groups (Instant-Data-Scraper style).
@@ -632,6 +789,18 @@
     const preset = presetFor(doc);
     const rest = autoDetectGeneric(doc).filter((c) => !preset || c.itemSelector !== preset.itemSelector);
     return preset ? [preset, ...rest].slice(0, 6) : rest;
+  }
+
+  // Single-page apps render their lists after load: keep looking (up to a few seconds) while the
+  // best thing on the page is still a menu/footer or nothing at all.
+  async function autoDetectListsReady({ timeoutMs = 4000 } = {}) {
+    const t0 = Date.now();
+    let c = autoDetectLists();
+    while ((!c.length || (c[0].chrome && !c[0].preset)) && Date.now() - t0 < timeoutMs) {
+      await new Promise((r) => setTimeout(r, 400));
+      c = autoDetectLists();
+    }
+    return c;
   }
 
   function autoDetectGeneric(doc = document) {
@@ -644,28 +813,35 @@
         if (!groups.has(k)) groups.set(k, []);
         groups.get(k).push(c);
       }
-      for (const group of groups.values()) {
-        if (group.length < 3) continue;
-        const score = scoreGroup(group);
-        if (score > 0) cands.push({ group, score });
+      for (const sibs of groups.values()) {
+        if (sibs.length < 3) continue;
+        if (sibs.every((el) => el.tagName === 'TH')) continue;
+        const { items, comp } = prepGroup(sibs);
+        if (items.length < 3) continue;
+        const score = scoreGroup(items, comp);
+        if (score > 0) cands.push({ group: items, comp, score });
       }
     }
     cands.sort((a, b) => b.score - a.score);
-    // Skip groups nested inside a better group.
+    // Skip groups nested inside a better group, and the second rows of multi-row items already picked.
     const picked = [];
+    const companions = new Set();
     for (const c of cands) {
+      if (companions.has(c.group[0]) || companions.has(c.group[1])) continue;
       if (picked.some((p) => p.group.some((g) => g.contains(c.group[0]) || c.group[0].contains(g)))) continue;
       picked.push(c);
+      for (const g of c.group) for (const o of c.comp) { const n = nthNext(g, o); if (n) companions.add(n); }
       if (picked.length === 6) break;
     }
-    return picked.map((c) => describeGroup(c.group, c.score));
+    return picked.map((c) => describeGroup(c.group, c.score, c.comp));
   }
 
   // Auto-generated fields for a user-supplied item selector.
   function describeSelector(itemSelector, doc = document) {
     const items = qsa(doc, itemSelector);
     if (!items.length) throw new Error(`No elements match ${itemSelector}`);
-    return { itemSelector, count: items.length, fields: fieldsFor(items), score: 0 };
+    const { comp } = prepGroup(items);
+    return { itemSelector, count: items.length, fields: fieldsFor(items, comp), score: 0 };
   }
 
   // ======================================================================
@@ -747,6 +923,39 @@
       pagination: { mode: 'scroll', max: 40 },
     },
     {
+      name: 'Reddit posts',
+      match: (doc) => qsa(doc, 'shreddit-post[post-title]').length > 0,
+      itemSelector: 'shreddit-post[post-title]',
+      fields: [
+        { name: 'title', path: ':scope', attr: 'post-title' },
+        { name: 'subreddit', path: ':scope', attr: 'subreddit-prefixed-name' },
+        { name: 'author', path: ':scope', attr: 'author' },
+        { name: 'score', path: ':scope', attr: 'score' },
+        { name: 'comments', path: ':scope', attr: 'comment-count' },
+        { name: 'posted', path: ':scope', attr: 'created-timestamp' },
+        { name: 'type', path: ':scope', attr: 'post-type' },
+        { name: 'link', path: ':scope', attr: 'permalink' },
+        { name: 'content_link', path: ':scope', attr: 'content-href' },
+      ],
+      pagination: { mode: 'scroll', max: 40 },
+    },
+    {
+      name: 'Reddit posts (old)',
+      match: (doc) => qsa(doc, '#siteTable > div.thing[data-fullname]').length > 0,
+      itemSelector: '#siteTable > div.thing[data-fullname]:not(.promoted)',
+      fields: [
+        { name: 'title', path: 'a.title', attr: 'text' },
+        { name: 'subreddit', path: ':scope', attr: 'data-subreddit-prefixed' },
+        { name: 'author', path: ':scope', attr: 'data-author' },
+        { name: 'score', path: ':scope', attr: 'data-score' },
+        { name: 'comments', path: ':scope', attr: 'data-comments-count' },
+        { name: 'posted', path: 'time', attr: 'datetime' },
+        { name: 'link', path: ':scope', attr: 'data-permalink' },
+        { name: 'content_link', path: ':scope', attr: 'data-url' },
+      ],
+      pagination: { mode: 'next', selector: 'span.next-button a', max: 5 },
+    },
+    {
       name: 'Amazon search',
       match: (doc) => qsa(doc, 'div[data-component-type="s-search-result"]').length > 0,
       itemSelector: 'div[data-component-type="s-search-result"][data-asin]:not([data-asin=""])',
@@ -791,12 +1000,24 @@
     if (!el) return '';
     if (attr === 'text') return clean(el.innerText ?? el.textContent, 2000).replace(/^[\s·•|]+|[\s·•|]+$/g, '');
     if (attr === 'href') return abs(el.getAttribute('href'), doc);
-    if (attr === 'src') return abs(el.currentSrc || el.getAttribute('src') || el.dataset.src || el.dataset.lazySrc || '', doc);
-    return clean(el.getAttribute(attr) || '', 2000);
+    if (attr === 'src') {
+      const lazy = el.dataset.src || el.dataset.lazySrc || el.dataset.original || '';
+      const src = el.currentSrc || el.getAttribute('src') || '';
+      return abs(src && !src.startsWith('data:') ? src : lazy || src, doc);
+    }
+    if (attr === 'bg') {
+      const m = /url\(\s*["']?([^"')]+)["']?\s*\)/i.exec(el.getAttribute('style') || '');
+      return m ? abs(m[1], doc) : '';
+    }
+    const v = clean(el.getAttribute(attr) || '', 2000);
+    // Link-like attributes (permalink="/r/…", data-url) become absolute URLs.
+    return /(href|url|link|permalink)$/i.test(attr) && /^\/(?!\/)/.test(v) ? abs(v, doc) : v;
   };
 
   // One field of one item. `path` may list fallbacks: "a.title strong || a.title" (first non-empty wins).
   function readItemField(item, f, doc) {
+    if (f.sib) item = nthNext(item, f.sib);
+    if (!item) return '';
     for (const path of String(f.path || ':scope').split('||').map((x) => x.trim())) {
       const els = path === ':scope' ? [item] : qsa(item, path);
       const v = f.multiple
@@ -829,17 +1050,17 @@
     const cands = [
       ...qsa(doc, 'a[rel~="next"]'),
       ...qsa(doc, 'a, button, [role="button"]').filter((el) => {
-        const label = clean(el.innerText || el.getAttribute('aria-label') || el.title, 40);
-        return NEXT_TEXT.test(label) || /^next/i.test(el.getAttribute('aria-label') || '') ||
+        return isNextText(el.innerText || el.getAttribute('aria-label') || el.title) || /^next\b|^go to next/i.test(el.getAttribute('aria-label') || '') ||
           (/\bnext\b/i.test(el.className) && /pag/i.test(el.closest('[class]')?.parentElement?.className || el.className));
       }),
     ].filter((el) => isVisible(el) && !isDisabled(el));
     return cands[0] ? selectorFor(cands[0]) : null;
   }
 
-  const LOAD_MORE = /^(load|show|see|view)\s+more\b|^more\s+(results|items|products)|^mehr\b|^ver m[aá]s|^voir plus|^carica altri/i;
+  const LOAD_MORE = /^(load|show|see|view|display|get)\s+(\d+\s+)?more\b|^(load|show)\s+(all|older|next)\b|^more\s+(results|items|products|posts|reviews|jobs|articles|stories|videos)\b|^(mehr|weitere)\b|^(mehr|weitere)\s+(anzeigen|laden|ergebnisse)|^(ver|mostrar|cargar)\s+m[aá]s|^(voir|afficher|charger)\s+plus|^plus de résultats|^carica(re)?\s+altr|^mostra\s+altr|^(ver|mostrar|carregar)\s+mais|^meer\s+(laden|tonen|weergeven)|^toon\s+meer|^visa\s+fler|^vis\s+flere|^pokaż\s+więcej|^załaduj\s+więcej|^показать\s+(ещё|еще|больше)|^загрузить\s+(ещё|еще)|^ещё|^daha\s+fazla|^(और|अधिक)\s+(देखें|दिखाएं|लोड)|^もっと(見る|読み込む)|^さらに表示|^(加载|載入|显示|顯示|查看)更多|^더\s?보기|^tampilkan\s+lebih|^muat\s+lebih|^xem\s+thêm|^ดูเพิ่มเติม|^عرض\s+المزيد|^הצג\s+עוד/i;
   function findLoadMoreButton(doc = document) {
     const el = qsa(doc, 'button, a, [role="button"]').find((b) => isVisible(b) && !isDisabled(b) &&
+      !b.closest('nav, header, footer, [role="navigation"]') &&
       LOAD_MORE.test(clean(b.innerText || b.getAttribute('aria-label'), 40)));
     return el ? selectorFor(el) : null;
   }
@@ -1266,7 +1487,7 @@
     // quick scan
     quick, findNextUrl,
     // list extractor
-    listsFromElement, autoDetectLists, describeSelector, extractList, fingerprint, waitForChange,
+    listsFromElement, autoDetectLists, autoDetectListsReady, describeSelector, extractList, fingerprint, waitForChange,
     findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, scrollToTop, jiggle, pageState, autoScroll, presetFor,
     // page extractor
     extractPage, jsonLd, BUILTIN_FIELDS: Object.keys(BUILTINS),
