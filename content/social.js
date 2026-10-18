@@ -284,6 +284,19 @@
 
   // ---------- page-level readers ----------
 
+  // schema.org microdata YouTube renders on watch / Shorts pages: exact view (WatchAction) and like
+  // (LikeAction) counts, even when the player JSON leaves them out.
+  function microCounts(doc) {
+    const out = {};
+    let type = '';
+    for (const m of doc.querySelectorAll('meta[itemprop="interactionType"], meta[itemprop="userInteractionCount"]')) {
+      const v = m.getAttribute('content') || '';
+      if (m.getAttribute('itemprop') === 'interactionType') type = v.replace(/^.*\//, '');
+      else if (type) { out[type] = num(v); type = ''; }
+    }
+    return out;
+  }
+
   // YouTube watch / Shorts page: ytInitialPlayerResponse holds the video; likes are in ytInitialData.
   function youtubeWatch(blobs, doc) {
     const player = blobs.find((b) => b.name === 'ytInitialPlayerResponse')?.data;
@@ -300,6 +313,7 @@
       data.match(/"title"\s*:\s*"([\d.,]+\s*[KMB]?)"\s*,\s*"[^"]*"\s*:\s*[^,]*,\s*"iconName"\s*:\s*"LIKE"/)?.[1];
     const comments = data.match(/"commentCount"\s*:\s*\{[^}]*?"content"\s*:\s*"([^"]+)"/)?.[1] || data.match(/"contextualInfo"\s*:\s*\{\s*"runs"\s*:\s*\[\s*\{\s*"text"\s*:\s*"([\d.,]+\s*[KMB]?)"/)?.[1];
     const short = /\/shorts\//.test(baseOf(doc)) || mf.isShortsEligible;
+    const micro = microCounts(doc);
     const desc = vd.shortDescription || '';
     return finish({
       platform: 'youtube', id: vd.videoId, type: short ? 'short' : 'video',
@@ -308,7 +322,7 @@
       caption: clean(`${vd.title || ''}${desc ? `\n${desc}` : ''}`, 5000),
       hashtags: uniq([...tagsIn(`${vd.title} ${desc}`), ...(vd.keywords || []).map((k) => (k.startsWith('#') ? k : ''))]),
       mentions: uniq(mentionsIn(desc)),
-      views: num(vd.viewCount), likes: num(likes), comments: num(comments),
+      views: micro.WatchAction ?? num(vd.viewCount) ?? num(mf.viewCount), likes: micro.LikeAction ?? num(likes), comments: micro.CommentAction ?? num(comments),
       duration_s: seconds(vd.lengthSeconds), posted: toIso(mf.publishDate || mf.uploadDate),
       thumbnail: vd.thumbnail?.thumbnails?.slice(-1)[0]?.url || '',
       transcript_url: track?.baseUrl || '',
