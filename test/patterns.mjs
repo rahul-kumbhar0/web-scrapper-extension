@@ -158,6 +158,21 @@ try {
     assert.equal((await blockOf('login-wall'))?.kind, 'login');
     for (const p of ['bootstrap-cards', 'hn', 'feed-cookie', 'jobs']) assert.equal(await blockOf(p), null, `${p} is not blocked`);
   });
+  await check('X timeline preset: one row per post, counts as numbers, ads skipped', async () => {
+    await page.goto(`${BASE}/social/x/search/`);
+    await page.addScriptTag({ path: path.join(ROOT, 'content/engine.js') });
+    const r = await page.evaluate(() => {
+      const W = globalThis.__webScraper;
+      const top = W.autoDetectLists()[0];
+      const ex = W.extractList(top);
+      return { preset: top.preset, rows: ex.data.map((v) => Object.fromEntries(ex.cols.map((c, i) => [c, v[i]]))) };
+    });
+    assert.equal(r.preset, 'X posts');
+    assert.equal(r.rows.length, 11);
+    assert.match(r.rows[0].likes, /^\d+$/);
+    assert.match(r.rows[0].views, /^\d+$/);
+    assert.match(r.rows[0].link, /\/status\/\d+$/);
+  });
   await check('Cookie banner over the page does not hide the list', async () => {
     const r = await detect('feed-cookie');
     assert.equal(r.rows.length, 10);

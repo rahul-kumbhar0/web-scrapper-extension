@@ -91,6 +91,37 @@ try {
     assert.ok(ig.views > 5);
   });
 
+  await step('Claude: Reddit listing JSON → ranked by upvotes/momentum in the background', async () => {
+    const r = await tool('trends_find', { page_url: `${BASE}/social/r/aitools/top.json`, top: 5 });
+    console.log(`    scanned ${r.scanned} · tabs ${r.needed_a_tab} · #1: ${r.top[0].caption.split(' ').slice(0, 6).join(' ')}… — ${r.top[0].why}`);
+    assert.equal(r.scanned, 12);
+    assert.equal(r.needed_a_tab, 0);
+    assert.ok(sorted(r.top.map((p) => p.score)));
+    for (const p of r.top) assert.ok(p.platform === 'reddit' && p.likes > 0 && p.comments >= 0 && /^r\//.test(p.community) && /reddit\.com\/r\/.+\/comments\//.test(p.url), `reddit post ${p.url}`);
+    assert.match(r.top[0].why, /upvotes/);
+    assert.ok(r.patterns.some((x) => x.insight === 'Communities the winners were posted in'));
+  });
+
+  await step('Claude: X search timeline → posts with views, likes, reposts; ads skipped', async () => {
+    const r = await tool('trends_find', { page_url: `${BASE}/social/x/search/`, top: 5, rank_by: 'views' });
+    console.log(`    scanned ${r.scanned} · #1 ${r.top[0].views} views · ${r.top[0].likes} likes · ${r.top[0].url}`);
+    assert.equal(r.scanned, 11, '12 articles minus 1 ad');
+    assert.ok(sorted(r.top.map((p) => p.views)));
+    for (const p of r.top) assert.ok(p.platform === 'x' && p.views > 0 && p.likes >= 0 && p.shares >= 0 && p.hashtags.includes('#AI') && p.posted && p.author, `x post ${p.url}`);
+  });
+
+  await step('Claude: post_details on a Reddit post and an X post', async () => {
+    const r = await tool('post_details', { urls: [`${BASE}/social/r/aitools/comments/abc005/post_5/`, `${BASE}/social/x/builder3/status/1840000000000000003/`] });
+    const [rd, x] = r.rows;
+    assert.equal(rd.platform, 'reddit');
+    assert.equal(rd.likes, 45000);
+    assert.equal(rd.comments, 3120);
+    assert.equal(rd.community, 'r/aitools');
+    assert.match(rd.caption, /Best free AI image generators/);
+    assert.equal(x.id, '1840000000000000003', 'the post itself, not a reply');
+    assert.ok(x.views > 0 && x.likes > 3);
+  });
+
   await step('Side panel: Trend Finder from pasted Reel links → Top / All posts / Patterns sheets', async () => {
     await sp.goto(`chrome-extension://${extId}/sidepanel/sidepanel.html`);
     await sp.locator('.tool-card', { hasText: 'Trend Finder' }).click();

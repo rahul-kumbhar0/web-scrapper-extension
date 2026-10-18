@@ -154,13 +154,15 @@
 
   // ---------- one platform object → one normalised post ----------
 
-  const POST_FIELDS = ['platform', 'url', 'type', 'author', 'author_followers', 'caption', 'hashtags', 'mentions', 'views', 'likes', 'comments', 'shares', 'saves', 'music', 'original_audio', 'duration_s', 'posted', 'thumbnail', 'transcript_url', 'id'];
+  const POST_FIELDS = ['platform', 'url', 'type', 'author', 'author_followers', 'community', 'caption', 'hashtags', 'mentions', 'views', 'likes', 'comments', 'shares', 'saves', 'music', 'original_audio', 'duration_s', 'posted', 'thumbnail', 'transcript_url', 'id'];
 
   function platformOf(doc, o) {
     const h = hostOf(doc);
     if (/instagram\.com$/.test(h)) return 'instagram';
     if (/tiktok\.com$/.test(h)) return 'tiktok';
     if (/youtube\.com$|youtu\.be$/.test(h)) return 'youtube';
+    if (/(^|\.)(x|twitter)\.com$/.test(h)) return 'x';
+    if (/reddit\.com$/.test(h)) return 'reddit';
     if (o?.videoId) return 'youtube';
     if (o?.aweme_id || o?.diggCount != null || o?.stats?.diggCount != null) return 'tiktok';
     if (o?.shortcode || o?.code || o?.taken_at != null) return 'instagram';
@@ -323,11 +325,85 @@
       thumbnail: doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || '' });
   }
 
+  // ---------- Reddit ----------
+
+  const REDDIT = 'https://www.reddit.com';
+  function redditPost(d) {
+    if (!d?.id || !d.permalink) return null;
+    const media = d.media?.reddit_video || d.secure_media?.reddit_video;
+    const thumb = /^https?:/.test(d.thumbnail || '') ? d.thumbnail : (d.preview?.images?.[0]?.source?.url || '').replace(/&amp;/g, '&');
+    const caption = clean(`${d.title || ''}${d.selftext ? `\n${d.selftext}` : ''}`, 5000);
+    return finish({
+      platform: 'reddit', id: d.id, url: REDDIT + d.permalink,
+      type: d.is_video ? 'video' : d.is_gallery ? 'gallery' : d.is_self ? 'text' : d.post_hint === 'image' ? 'image' : 'link',
+      author: d.author || '', community: d.subreddit_name_prefixed || (d.subreddit ? `r/${d.subreddit}` : ''),
+      caption, hashtags: tagsIn(caption), mentions: uniq((caption.match(/\bu\/[\w-]+/g) || [])),
+      views: num(d.view_count), likes: num(d.score ?? d.ups), comments: num(d.num_comments), shares: num(d.num_crossposts),
+      duration_s: seconds(media?.duration), posted: toIso(d.created_utc), thumbnail: thumb,
+    });
+  }
+  /** Posts in Reddit listing JSON (/search.json, /r/sub/top.json, /comments/id.json). */
+  function redditFromJson(json) {
+    const out = [];
+    walk(json, (o) => { if (o.kind === 't3' && o.data) { const p = redditPost(o.data); if (p) out.push(p); } });
+    return out;
+  }
+  // New Reddit renders each post as <shreddit-post> with its data in attributes.
+  function redditFromDom(doc) {
+    return [...doc.querySelectorAll('shreddit-post[permalink], shreddit-post[post-title]')].map((el) => {
+      const a = (k) => el.getAttribute(k) || '';
+      const caption = clean(`${a('post-title')}${el.querySelector('[slot="text-body"]')?.textContent ? `\n${el.querySelector('[slot="text-body"]').textContent}` : ''}`, 5000);
+      return finish({
+        platform: 'reddit', id: (a('id') || a('thingid') || '').replace(/^t3_/, '') || urlId(a('permalink')), url: abs(a('permalink'), doc).replace(/^https?:\/\/[^/]+/, (h) => (/reddit\.com$/.test(new URL(h).hostname) ? REDDIT : h)),
+        type: a('post-type'), author: a('author'), community: a('subreddit-prefixed-name'), caption, hashtags: tagsIn(caption),
+        likes: num(a('score')), comments: num(a('comment-count')), posted: toIso(a('created-timestamp')),
+        thumbnail: el.querySelector('img[src*="preview"], img[src*="redd.it"]')?.getAttribute('src') || '',
+      });
+    }).filter((p) => p.id);
+  }
+
+  // ---------- X (Twitter) ----------
+  // X builds its pages with JavaScript, so posts are read from the rendered timeline. Counts come from
+  // the action buttons' labels ("1,234 Likes. Like"), which start with the number in every language.
+  const firstNumber = (s) => num(String(s || '').match(/[\d][\d.,\s]*\s*[KkMmBb万萬亿億]?/)?.[0]);
+  function xFromDom(doc) {
+    const out = [];
+    for (const art of doc.querySelectorAll('article[data-testid="tweet"], article[role="article"]')) {
+      if (art.querySelector('[data-testid="placementTracking"]')) continue; // ads
+      const time = art.querySelector('time');
+      const link = time?.closest('a[href*="/status/"]') || art.querySelector('a[href*="/status/"]');
+      const url = link ? abs(link.getAttribute('href'), doc).split('?')[0].replace(/\/(analytics|photo|video)\/.*$/, '') : '';
+      const id = urlId(url);
+      if (!id) continue;
+      const textEl = art.querySelector('[data-testid="tweetText"]');
+      const caption = clean(textEl ? (doc.defaultView ? textEl.innerText : textEl.textContent) : '', 5000);
+      const label = (t) => art.querySelector(`[data-testid="${t}"], [data-testid="un${t}"]`)?.getAttribute('aria-label') || art.querySelector(`[data-testid="${t}"], [data-testid="un${t}"]`)?.textContent;
+      const views = art.querySelector('a[href$="/analytics"]')?.getAttribute('aria-label') || art.querySelector('a[href$="/analytics"]')?.textContent;
+      const group = art.querySelector('[role="group"][aria-label]')?.getAttribute('aria-label') || '';
+      const fromGroup = (re) => num(group.match(re)?.[1]);
+      out.push(finish({
+        platform: 'x', id, url: url.replace(/^https?:\/\/(www\.)?twitter\.com/, 'https://x.com'),
+        type: art.querySelector('[data-testid="videoPlayer"], [data-testid="videoComponent"], video') ? 'video' : art.querySelector('[data-testid="tweetPhoto"]') ? 'photo' : 'text',
+        author: url.match(/\/([^/]+)\/status\//)?.[1] || '',
+        caption, hashtags: tagsIn(caption), mentions: mentionsIn(caption),
+        comments: firstNumber(label('reply')) ?? fromGroup(/([\d.,]+[KMB]?)\s+repl/i),
+        shares: firstNumber(label('retweet')) ?? fromGroup(/([\d.,]+[KMB]?)\s+(?:repost|retweet)/i),
+        likes: firstNumber(label('like')) ?? fromGroup(/([\d.,]+[KMB]?)\s+like/i),
+        saves: firstNumber(label('bookmark')) ?? fromGroup(/([\d.,]+[KMB]?)\s+bookmark/i),
+        views: firstNumber(views) ?? fromGroup(/([\d.,]+[KMB]?)\s+view/i),
+        posted: toIso(time?.getAttribute('datetime')),
+        thumbnail: abs(art.querySelector('[data-testid="tweetPhoto"] img, video[poster]')?.getAttribute('src') || art.querySelector('video[poster]')?.getAttribute('poster') || '', doc),
+      }));
+    }
+    return out;
+  }
+
   // The id a post URL points at.
   function urlId(u) {
     const s = String(u || '');
     return s.match(/\/(?:p|reels?|tv)\/([\w-]+)/)?.[1] || s.match(/\/(?:video|photo)\/(\d+)/)?.[1] || s.match(/[?&]v=([\w-]{6,})/)?.[1] ||
-      s.match(/\/shorts\/([\w-]+)/)?.[1] || s.match(/youtu\.be\/([\w-]+)/)?.[1] || '';
+      s.match(/\/shorts\/([\w-]+)/)?.[1] || s.match(/youtu\.be\/([\w-]+)/)?.[1] ||
+      s.match(/\/status(?:es)?\/(\d+)/)?.[1] || s.match(/\/comments\/(\w+)/)?.[1] || '';
   }
 
   /** Every post the page carries data for (search results, hashtag pages, feeds, profiles). */
@@ -337,6 +413,7 @@
     const add = (p) => { if (p?.id) byId.set(p.id, mergePost(byId.get(p.id), p)); };
     add(youtubeWatch(blobs, doc));
     for (const b of blobs) walk(b.data, (o) => add(postFrom(o, doc)));
+    for (const p of [...redditFromDom(doc), ...xFromDom(doc)]) add(p);
     // Tiles in the visible page that the JSON didn't cover (content loaded while scrolling).
     for (const a of doc.querySelectorAll('a[href*="/reel/"], a[href*="/reels/"], a[href*="/p/"], a[href*="/video/"], a[href*="/shorts/"], a[href*="/watch?v="]')) {
       const url = abs(a.getAttribute('href'), doc).split('#')[0];
@@ -364,6 +441,10 @@
       const same = all.filter((p) => want && p.id === want);
       best = (same.length ? same : all).reduce((acc, p) => (same.length ? mergePost(acc, p) : !acc || filled(p) > filled(acc) ? p : acc), null);
     }
+    // Reddit / X post pages: the post itself, not replies or related posts.
+    const domPosts = [...redditFromDom(doc), ...xFromDom(doc)];
+    const own = domPosts.find((p) => want && p.id === want) || (!best && domPosts[0]);
+    if (own) best = mergePost(own, best && best.id === own.id ? best : null);
     best = mergePost(best, instagramMeta(doc));
     if (!best) {
       const og = (p) => doc.querySelector(`meta[property="og:${p}"]`)?.getAttribute('content') || '';
@@ -375,5 +456,5 @@
     return best;
   }
 
-  Object.assign(W, { socialPost, socialPosts, POST_FIELDS, _social: { pageJson, num, toIso, seconds, tagsIn, urlId, mergePost } });
+  Object.assign(W, { socialPost, socialPosts, redditFromJson, POST_FIELDS, _social: { pageJson, num, toIso, seconds, tagsIn, urlId, mergePost } });
 })();

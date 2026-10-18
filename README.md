@@ -20,7 +20,7 @@
 | **Sitemap Explorer** | Reads robots.txt, sitemap indexes and `.gz` files. Groups URLs by section, filters them, and can send them to other tools. |
 | **Page Text Extractor** | Clean main-content text and Markdown. |
 | **Quick Scan** | Emails, phones, links, images, tables, socials and prices on the current page. |
-| **Trend Finder** | Best Reels / TikToks / YouTube Shorts for a topic or #hashtag, ranked (momentum, engagement, reach), with caption, hashtags, views, likes, shares, sound, length, transcript (Pro) and the patterns the winners share. Background first; opens a tab only when a platform needs it. |
+| **Trend Finder** | Best Reels / TikToks / YouTube Shorts / X posts / Reddit threads for a topic, #hashtag or subreddit, ranked (momentum, engagement, reach), with caption, hashtags, views, likes, shares, sound, length, transcript (Pro) and the patterns the winners share. Background first; opens a tab only when a platform needs it. |
 | **AI Extract** | Describe what you want; Claude, using the user's own API key, returns a table. |
 
 **Data Table:** sheets, search, editing, rename, sort, dedupe, clean, merge, an AI column and Ask Claude. Export to CSV or the clipboard (free), or to Excel and JSON (Pro). **Recipes** re-run any setup in one click. **History** keeps the last 30 results.

@@ -940,6 +940,23 @@
       pagination: { mode: 'scroll', max: 40 },
     },
     {
+      name: 'X posts',
+      match: (doc) => qsa(doc, 'article[data-testid="tweet"]').length > 0,
+      itemSelector: 'article[data-testid="tweet"]:not(:has([data-testid="placementTracking"]))',
+      fields: [
+        { name: 'text', path: '[data-testid="tweetText"]', attr: 'text' },
+        { name: 'author', path: '[data-testid="User-Name"]', attr: 'text' },
+        { name: 'posted', path: 'time', attr: 'datetime' },
+        { name: 'replies', path: '[data-testid="reply"]', attr: 'aria-label' },
+        { name: 'reposts', path: '[data-testid="retweet"] || [data-testid="unretweet"]', attr: 'aria-label' },
+        { name: 'likes', path: '[data-testid="like"] || [data-testid="unlike"]', attr: 'aria-label' },
+        { name: 'views', path: 'a[href$="/analytics"]', attr: 'aria-label' },
+        { name: 'link', path: 'a:has(> time)', attr: 'href' },
+        { name: 'image', path: '[data-testid="tweetPhoto"] img', attr: 'src' },
+      ],
+      pagination: { mode: 'scroll', max: 40 },
+    },
+    {
       name: 'Reddit posts (old)',
       match: (doc) => qsa(doc, '#siteTable > div.thing[data-fullname]').length > 0,
       itemSelector: '#siteTable > div.thing[data-fullname]:not(.promoted)',
@@ -982,6 +999,12 @@
     },
     'LinkedIn jobs': (r) => { r.title = r.title.replace(/\s+with verification$/i, ''); r.link = r.link && stripQuery(r.link); return r; },
     'LinkedIn jobs (public)': (r) => { r.link = r.link && stripQuery(r.link); return r; },
+    // Counts come as "1,234 Likes. Like" labels: keep the number.
+    'X posts': (r) => {
+      for (const k of ['replies', 'reposts', 'likes', 'views']) r[k] = (String(r[k] || '').match(/^[\d.,]+\s*[KMB]?/i)?.[0] || '').trim();
+      r.author = r.author.replace(/·.*$/, '').trim();
+      return r;
+    },
     // Tiles carry a small icon: "Clip"/"Reel"/"Video" for Reels, "Carousel" for multi-photo posts.
     'Instagram posts': (r) => {
       const icon = (r.type || '').toLowerCase();

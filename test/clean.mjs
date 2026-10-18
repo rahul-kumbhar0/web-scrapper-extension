@@ -2,7 +2,7 @@
 //   node test/clean.mjs
 import assert from 'node:assert/strict';
 import { toNumber, cleanUrl } from '../lib/clean.js';
-import { captionsToText, rankPosts, searchUrl } from '../lib/trends.js';
+import { captionsToText, rankPosts, searchUrl, redditJsonUrl } from '../lib/trends.js';
 
 const cases = [['₹1,299', 1299], ['$87.53', 87.53], ['€25,00', 25], ['1.2M views', 1200000], ['12.3K likes', 12300], ['(1,234)', -1234],
   ['4.5 out of 5 stars', 4.5], ['Rated 3 out of 5', 3], ['1 234,56 €', 1234.56], ['1.234.567', 1234567], ['3,4 Mio', 3400000],
@@ -28,4 +28,14 @@ assert.equal(rankPosts(posts, 'views', now)[0].url, 'old-big');
 assert.equal(rankPosts(posts, 'views', now)[2].rank, 3);
 assert.match(searchUrl('instagram', '#AI tools'), /explore\/tags\/AItools\/$/);
 assert.match(searchUrl('tiktok', 'ai tools'), /search\/video\?q=ai%20tools$/);
+assert.equal(searchUrl('reddit', 'r/ChatGPT', { maxAgeDays: 30 }), 'https://www.reddit.com/r/ChatGPT/top.json?t=month&limit=100');
+assert.match(searchUrl('reddit', 'ai tools'), /^https:\/\/www\.reddit\.com\/search\.json\?q=ai%20tools&sort=top&t=week/);
+assert.equal(searchUrl('x', '#AI'), 'https://x.com/search?q=%23AI&src=typed_query&f=top');
+assert.equal(redditJsonUrl('https://www.reddit.com/r/aitools/'), 'https://www.reddit.com/r/aitools.json?limit=100');
+assert.equal(redditJsonUrl('https://www.reddit.com/search/?q=claude'), 'https://www.reddit.com/search.json?q=claude&limit=100');
+assert.equal(redditJsonUrl('https://example.com/page'), '');
+const reddit = rankPosts([{ platform: 'reddit', url: 'a', likes: 900, comments: 50, posted: '2026-10-17T20:00:00Z' }, { platform: 'reddit', url: 'b', likes: 5000, comments: 100, posted: '2026-09-01T00:00:00Z' }], 'trending', now);
+assert.equal(reddit[0].url, 'a');
+assert.match(reddit[0].why, /upvotes/);
+assert.equal(reddit[0].views_per_day, '');
 console.log('All clean/trends unit checks passed');

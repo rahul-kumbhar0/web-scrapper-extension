@@ -1,6 +1,6 @@
-# Chrome Web Store listing: PullRows 1.1.0
+# Chrome Web Store listing: PullRows 1.2.0
 
-Upload `dist/pullrows-1.1.0.zip`, which you build with `npm run package`. Images are in `store/`.
+Upload `dist/pullrows-1.2.0.zip`, which you build with `npm run package`. Images are in `store/`.
 
 ## Store listing tab
 
@@ -22,7 +22,7 @@ Open a page with a list: search results, a directory, a shop category, a map, a 
 • Merges half-loaded rows and skips duplicates
 • Tables, div grids, two-row lists (forums, Hacker News) and single-page apps; column names from table headers
 • Finds "Next" and "Load more" in 35+ languages
-• Built-in presets for map results, job listings, social posts and reels, video lists and product search
+• Built-in presets for map results, job listings, social posts and reels, X and Reddit feeds, video lists and product search
 
 ELEVEN TOOLS IN ONE PANEL
 • List Extractor: lists, grids and tables, with pagination
@@ -34,7 +34,7 @@ ELEVEN TOOLS IN ONE PANEL
 • Sitemap Explorer: every URL of a site, grouped and filterable
 • Page Text: clean article text and Markdown
 • Quick Scan: emails, phones, links, tables and prices on the current page
-• Trend Finder: the best Reels, TikToks and YouTube Shorts for any topic or #hashtag, ranked, with views, likes, shares, hashtags, sound, length, the spoken script (Pro) and the patterns the winners share
+• Trend Finder: the best Reels, TikToks, YouTube Shorts, X posts and Reddit threads for any topic, #hashtag or subreddit, ranked, with views, likes, shares, hashtags, sound, length, the spoken script (Pro) and the patterns the winners share
 • AI Extract: describe what you want in plain English (uses your own Anthropic API key)
 
 AN EDITABLE DATA TABLE

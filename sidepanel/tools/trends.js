@@ -5,7 +5,7 @@ import { h, toast, runJob, plural } from '../ui.js';
 import { makeSheet, setDataset } from '../state.js';
 import { urlSource, card, numberField, checkbox, select, actions, primary } from '../widgets.js';
 import { getActiveTab, runInNewTab, collectPosts, sleep } from '../../lib/tab.js';
-import { fetchDoc, fetchText } from '../../lib/net.js';
+import { fetchDoc, fetchText, fetchJson } from '../../lib/net.js';
 import { findTrends, PLATFORMS, RANKINGS, TOP_COLUMNS, ALL_COLUMNS } from '../../lib/trends.js';
 import { aiAsk } from '../../lib/ai.js';
 import { plan, capNumber, requirePro } from '../plan.js';
@@ -28,12 +28,12 @@ export default {
   id: 'trends',
   title: 'Trend Finder',
   icon: '↗',
-  desc: 'Best Reels, TikToks and Shorts for any topic — views, hashtags, sound, script — ranked, with why they work.',
+  desc: 'Best Reels, TikToks, Shorts, X posts and Reddit threads for any topic — ranked, with views, hashtags, sound, script and why they work.',
   render(ctx) {
     const preset = ctx.preset || {};
     const source = select('Find posts from', SOURCES, preset.source || 'topic');
     const platform = select('Platform', Object.entries(PLATFORMS).map(([value, label]) => ({ value, label })), preset.platform || 'instagram');
-    const query = h('input', { type: 'text', value: preset.query || '', placeholder: 'e.g. ai tools   or   #aitools', spellcheck: false });
+    const query = h('input', { type: 'text', value: preset.query || '', placeholder: 'e.g. ai tools · #aitools · r/ChatGPT (Reddit)', spellcheck: false });
     const urls = urlSource({ placeholder: 'Paste Reel / TikTok / YouTube links, one per line…', initial: preset.urls || [] });
     const rankBy = select('Rank by', Object.entries(RANKINGS).map(([value, label]) => ({ value, label })), preset.rankBy || 'trending');
     const scan = numberField('Posts to scan', preset.scan || 30, { min: 5, max: 500 });
@@ -45,7 +45,7 @@ export default {
 
     const topicBox = h('div', { class: 'stack' }, platform.el, h('label', { class: 'field' }, 'Topic or #hashtag', query));
     const urlBox = h('div', { class: 'stack' }, urls.el);
-    const tabHint = h('p', { class: 'hint' }, 'Open a search, hashtag, profile or feed page on Instagram, TikTok or YouTube (logged in if the site needs it), then run.');
+    const tabHint = h('p', { class: 'hint' }, 'Open a search, hashtag, profile, subreddit or feed page on Instagram, TikTok, YouTube, X or Reddit (logged in if the site needs it), then run.');
     const syncSource = () => {
       topicBox.hidden = source.get() !== 'topic';
       urlBox.hidden = source.get() !== 'urls';
@@ -70,7 +70,7 @@ export default {
       }
       await runJob('Finding the best posts…', async (signal, progress) => {
         const io = {
-          fetchDoc, fetchText, signal, sleep,
+          fetchDoc, fetchText, fetchJson, signal, sleep,
           progress: (msg, done, total) => progress(msg, done, total),
           renderInTab: (url, method, args) => runInNewTab(url, method, args, { waitMs: 2500 }),
           collectPosts: (url, o) => collectPosts(url, { ...o, signal, reuseTabId: tab?.id }),
@@ -102,7 +102,7 @@ export default {
     const el = h('div', { class: 'stack' },
       card('1. What to look for', source.el, topicBox, urlBox, tabHint),
       card('2. How to pick the best', rankBy.el, h('div', { class: 'row' }, scan.el, top.el), days.el, scripts.el, ai.el,
-        h('p', { class: 'hint' }, 'Posts are read in the background where possible. Instagram and TikTok search pages need you to be logged in; PullRows opens and scrolls them in a tab. Scripts come from the captions a platform publishes (YouTube, many TikToks); Reels without captions get their caption text only.')),
+        h('p', { class: 'hint' }, 'Posts are read in the background where possible (Reddit and YouTube fully). Instagram, TikTok and X search pages need you to be logged in; PullRows opens and scrolls them in a tab. Scripts come from the captions a platform publishes (YouTube, many TikToks); Reels without captions get their caption text only.')),
       actions(primary('Find the best posts', run), h('button', { type: 'button', class: 'btn secondary', onclick: () => ctx.saveRecipe(ctx.tool, getConfig(), `Trends — ${query.value || 'this page'}`) }, 'Save recipe')));
     if (ctx.autoRun) setTimeout(run, 50);
     return el;

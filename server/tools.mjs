@@ -123,12 +123,12 @@ export const TOOLS = [
   },
   {
     name: 'trends_find',
-    description: 'Find the best-performing Reels / TikToks / YouTube Shorts & videos for a topic or #hashtag (or from a search/profile page, or a list of post links) and rank them. Each post comes with caption, hook, hashtags, views, likes, comments, shares, saves, engagement rate, views per day, sound/music, duration, upload time, creator followers and (Pro, where the platform publishes captions) the spoken transcript. Also returns patterns the winners share (hashtags, sounds, length, hooks, timing). Posts are read in the background where possible; Instagram/TikTok search pages are opened in a tab (the user must be logged in there). After calling, analyse why the top posts work and suggest ideas.',
+    description: 'Find the best-performing Reels / TikToks / YouTube Shorts & videos / X posts / Reddit posts for a topic or #hashtag (or from a search/profile page, or a list of post links) and rank them. Each post comes with caption, hook, hashtags, views, likes, comments, shares, saves, engagement rate, views per day, sound/music, duration, upload time, creator followers and (Pro, where the platform publishes captions) the spoken transcript. Also returns patterns the winners share (hashtags, sounds, length, hooks, timing). Posts are read in the background where possible; Instagram/TikTok search pages are opened in a tab (the user must be logged in there). After calling, analyse why the top posts work and suggest ideas.',
     inputSchema: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Topic ("ai tools") or hashtag ("#aitools").' },
-        platform: { type: 'string', enum: ['instagram', 'tiktok', 'youtube', 'youtube-shorts'], default: 'youtube' },
+        platform: { type: 'string', enum: ['instagram', 'tiktok', 'youtube', 'youtube-shorts', 'x', 'reddit'], default: 'youtube', description: 'reddit: query can be a topic or r/subreddit (read fully in the background; scores are upvotes). x: needs the user logged in to x.com (opened and scrolled in a tab).' },
         page_url: { type: 'string', description: 'Instead of query: a search, hashtag, profile or feed page to collect posts from.' },
         urls: { type: 'array', items: { type: 'string' }, description: 'Instead of query: post / Reel / video links to compare.' },
         scan: { type: 'integer', default: 30, description: 'How many posts to read before ranking (free plan: 30).' },
@@ -142,7 +142,7 @@ export const TOOLS = [
   },
   {
     name: 'post_details',
-    description: 'Full data for one or more social posts (Instagram post/Reel, TikTok, YouTube video/Short): caption, hashtags, mentions, views, likes, comments, shares, saves, sound/music, original audio or not, duration, upload time, author, followers, thumbnail, and the transcript where captions exist (Pro). Read in the background; a hidden tab is used only when the page needs it.',
+    description: 'Full data for one or more social posts (Instagram post/Reel, TikTok, YouTube video/Short, X post, Reddit post): caption, hashtags, mentions, views, likes, comments, shares, saves, sound/music, original audio or not, duration, upload time, author, followers, thumbnail, and the transcript where captions exist (Pro). Read in the background; a hidden tab is used only when the page needs it.',
     inputSchema: {
       type: 'object',
       properties: {
