@@ -1,6 +1,6 @@
-# PullRows 1.2.0: Chrome Web Store form, field by field
+# PullRows 1.2.1: Chrome Web Store form, field by field
 
-Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.2.0.zip`.
+Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.2.1.zip`.
 Every image named below is in this kit's `images/` folder.
 
 ---
@@ -8,7 +8,7 @@ Every image named below is in this kit's `images/` folder.
 ## 1. Package
 | Field | Value |
 |---|---|
-| Upload | `pullrows-1.2.0.zip` |
+| Upload | `pullrows-1.2.1.zip` |
 
 ## 2. Store listing
 | Field | Paste this |

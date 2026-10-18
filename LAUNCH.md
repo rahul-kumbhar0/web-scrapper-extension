@@ -35,7 +35,7 @@ Dodo is a merchant of record for founders in India: it handles global tax, pays 
 
 ## 5. Chrome Web Store (you, $5 one-time)
 - [ ] Register at https://chrome.google.com/webstore/devconsole and turn on 2-step verification.
-- [ ] Run `npm run package` and upload `dist/pullrows-1.2.0.zip`.
+- [ ] Run `npm run package` and upload `dist/pullrows-1.2.1.zip`.
 - [ ] Fill in the listing, privacy tab and permission justifications from `store/STORE_LISTING.md`, and upload the images in `store/`.
 - [ ] Privacy policy URL: `https://pullrows.com/privacy`, or the vercel.app URL until the domain is live.
 - [ ] Add the reviewer test instructions, including the test-mode licence key.

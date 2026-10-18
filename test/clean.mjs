@@ -26,7 +26,7 @@ const posts = [
 assert.equal(rankPosts(posts, 'trending', now)[0].url, 'fresh-hot');
 assert.equal(rankPosts(posts, 'views', now)[0].url, 'old-big');
 assert.equal(rankPosts(posts, 'views', now)[2].rank, 3);
-assert.match(searchUrl('instagram', '#AI tools'), /explore\/tags\/AItools\/$/);
+assert.equal(searchUrl('instagram', '#AI tools'), 'https://www.instagram.com/explore/search/keyword/?q=AItools');
 assert.match(searchUrl('tiktok', 'ai tools'), /search\/video\?q=ai%20tools$/);
 assert.equal(searchUrl('reddit', 'r/ChatGPT', { maxAgeDays: 30 }), 'https://www.reddit.com/r/ChatGPT/top.json?t=month&limit=100');
 assert.match(searchUrl('reddit', 'ai tools'), /^https:\/\/www\.reddit\.com\/search\.json\?q=ai%20tools&sort=top&t=week/);

@@ -139,10 +139,10 @@ const OPS = {
     return runInNewTab(url, method, args, { waitMs });
   },
   // Open a feed / search page, scroll it and collect the posts it shows (Trend Finder).
-  async collectPosts({ url, tabId, steps, want }) {
+  async collectPosts({ url, tabId, steps, want, stepMs, patience }) {
     assertAllowed(url, await guardOpts());
     if (tabId != null) await allowedTab(tabId);
-    return collectPosts(url, { steps: Math.min(Number(steps) || 12, 120), want: Math.min(Number(want) || 50, 500), reuseTabId: tabId ?? undefined });
+    return collectPosts(url, { steps: Math.min(Number(steps) || 12, 120), want: Math.min(Number(want) || 50, 500), stepMs: Math.min(Math.max(Number(stepMs) || 1200, 500), 5000), patience: Math.min(Number(patience) || 3, 8), reuseTabId: tabId ?? undefined });
   },
   async clickAndWait({ tabId, buttonSelector, itemSelector }) {
     await allowedTab(tabId);

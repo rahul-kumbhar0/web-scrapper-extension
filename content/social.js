@@ -148,7 +148,7 @@
 
   const HASHTAG = /(?:^|[^\p{L}\p{N}_&/])#([\p{L}\p{N}_][\p{L}\p{N}_.]*[\p{L}\p{N}_]|[\p{L}\p{N}_])/gu;
   const MENTION = /(?:^|[^\p{L}\p{N}_@/])@([\w.]{2,30}\w)/gu;
-  const tagsIn = (s) => [...String(s || '').matchAll(HASHTAG)].map((m) => '#' + m[1]);
+  const tagsIn = (s) => [...String(s || '').matchAll(HASHTAG)].map((m) => m[1]).filter((t) => /\p{L}/u.test(t)).map((t) => '#' + t);
   const mentionsIn = (s) => [...String(s || '').matchAll(MENTION)].map((m) => '@' + m[1]);
   const uniq = (a) => [...new Set(a.filter(Boolean).map((x) => String(x)))];
 
@@ -293,7 +293,10 @@
     const tracks = player.captions?.playerCaptionsTracklistRenderer?.captionTracks || [];
     const track = tracks.find((t) => /^en/.test(t.languageCode) && t.kind !== 'asr') || tracks.find((t) => /^en/.test(t.languageCode)) || tracks[0];
     const data = JSON.stringify(blobs.find((b) => b.name === 'ytInitialData')?.data || {});
-    const likes = data.match(/along with ([\d,.\s]+) other/)?.[1] || data.match(/"likeCount(?:IfLiked|WithLikeText)?"\s*:\s*\{[^}]*?"content"\s*:\s*"([^"]+)"/)?.[1] ||
+    // Exact counts first (likeCountIfIndifferentNumber / numeric likeCount); "along with N other people"
+    // only for the video itself — comments carry the same phrase.
+    const likes = data.match(/"likeCountIfIndifferentNumber"\s*:\s*"(\d+)"/)?.[1] || data.match(/"likeCount"\s*:\s*(\d+)/)?.[1] ||
+      data.match(/like this video along with ([\d,.\s]+) other/)?.[1] || data.match(/"likeCount(?:IfLiked|WithLikeText)?"\s*:\s*\{[^}]*?"content"\s*:\s*"([^"]+)"/)?.[1] ||
       data.match(/"title"\s*:\s*"([\d.,]+\s*[KMB]?)"\s*,\s*"[^"]*"\s*:\s*[^,]*,\s*"iconName"\s*:\s*"LIKE"/)?.[1];
     const comments = data.match(/"commentCount"\s*:\s*\{[^}]*?"content"\s*:\s*"([^"]+)"/)?.[1] || data.match(/"contextualInfo"\s*:\s*\{\s*"runs"\s*:\s*\[\s*\{\s*"text"\s*:\s*"([\d.,]+\s*[KMB]?)"/)?.[1];
     const short = /\/shorts\//.test(baseOf(doc)) || mf.isShortsEligible;
@@ -328,11 +331,13 @@
   // ---------- Reddit ----------
 
   const REDDIT = 'https://www.reddit.com';
+  // Reddit's JSON escapes &, < and > in titles and text.
+  const unescape = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x200B;/gi, '').replace(/&amp;/g, '&');
   function redditPost(d) {
     if (!d?.id || !d.permalink) return null;
     const media = d.media?.reddit_video || d.secure_media?.reddit_video;
     const thumb = /^https?:/.test(d.thumbnail || '') ? d.thumbnail : (d.preview?.images?.[0]?.source?.url || '').replace(/&amp;/g, '&');
-    const caption = clean(`${d.title || ''}${d.selftext ? `\n${d.selftext}` : ''}`, 5000);
+    const caption = clean(unescape(`${d.title || ''}${d.selftext ? `\n${d.selftext}` : ''}`), 5000);
     return finish({
       platform: 'reddit', id: d.id, url: REDDIT + d.permalink,
       type: d.is_video ? 'video' : d.is_gallery ? 'gallery' : d.is_self ? 'text' : d.post_hint === 'image' ? 'image' : 'link',
