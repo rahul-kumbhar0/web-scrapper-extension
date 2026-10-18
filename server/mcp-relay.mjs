@@ -75,7 +75,8 @@ export function idForToken(token) {
   return crypto.createHash('sha256').update(String(token), 'utf8').digest('base64url').replace(/=+$/, '').slice(0, 32);
 }
 
-const NOT_CONNECTED = 'The PullRows extension is not connected. Ask the user to open Chrome, open the PullRows side panel → Settings → Claude connector, and make sure it says "Connected".';
+const STARTED = Date.now();
+const NOT_CONNECTED = 'The PullRows extension is not connected to this link. Ask the user to open Chrome → PullRows side panel → Settings → Claude connector and check it says "Connected", then press "Test connection". If PullRows was reinstalled or "Generate new link" was used, the link changed: the user must copy the new link there and replace the PullRows connector in Claude (Settings → Connectors → remove PullRows → Add custom connector).';
 const toolError = (text) => ({ isError: true, content: [{ type: 'text', text }] });
 
 // ---------- rate limiting (token buckets) ----------
@@ -318,7 +319,17 @@ async function handleRpc(id, msg) {
   }
 }
 
+// When Claude last called each link (bounded): lets the extension's "Test connection" tell the user
+// whether Claude is using this link at all.
+const lastClaudeCall = new Map();
+function noteClaudeCall(id) {
+  lastClaudeCall.delete(id);
+  lastClaudeCall.set(id, Date.now());
+  if (lastClaudeCall.size > 50000) lastClaudeCall.delete(lastClaudeCall.keys().next().value);
+}
+
 async function handleMcp(req, res, id) {
+  noteClaudeCall(id);
   if (req.method === 'GET') return send(res, 405, { error: 'This server does not offer an SSE stream; use POST.' }, { allow: 'POST, DELETE' });
   if (req.method === 'DELETE') return send(res, 200, {});
   if (req.method !== 'POST') return send(res, 405, { error: 'Method not allowed' }, { allow: 'POST, DELETE' });
@@ -452,6 +463,20 @@ async function onRequest(req, res) {
     if (!parts.length) return send(res, 200, STATUS_PAGE);
     if (parts[0] === 'health' && parts.length === 1) return send(res, 200, { ok: true, version: VERSION });
 
+    // Connection check used by the extension's "Test connection" button (needs the secret link id).
+    if (parts[0] === 'link' && parts.length === 2 && req.method === 'GET') {
+      res.corsHeaders = { ...CORS_BASE, 'access-control-allow-origin': '*' };
+      if (!ID_RE.test(parts[1])) return send(res, 404, { error: 'Unknown or invalid connector link' });
+      if (!ipAllowed(req, 'bridge', BRIDGE_REQ_PER_MIN)) return send(res, 429, { error: 'too many requests' }, { 'retry-after': '30' });
+      const b = browsers.get(parts[1]);
+      const last = lastClaudeCall.get(parts[1]);
+      return send(res, 200, {
+        browser_connected: !!b && offlineFor(b) <= CONNECT_GRACE_MS,
+        claude_last_call_seconds_ago: last ? Math.round((Date.now() - last) / 1000) : null,
+        relay_started_seconds_ago: Math.round((Date.now() - STARTED) / 1000),
+        version: VERSION,
+      });
+    }
     if (isMcp && parts.length === 2) {
       if (!ID_RE.test(parts[1])) return send(res, 404, { error: 'Unknown or invalid connector link' });
       return await handleMcp(req, res, parts[1]);

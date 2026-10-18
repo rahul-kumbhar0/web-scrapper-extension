@@ -14,7 +14,15 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
   chrome.runtime.setUninstallURL(LINKS.uninstall).catch(() => {});
   const s = await getSettings();
-  if (!s.mcp?.token) await saveSettings({ mcp: { ...s.mcp, token: newToken() } });
+  if (!s.mcp?.token) {
+    // Reinstalled? Reuse the previous link so the connector already added in Claude keeps working.
+    const { connectorToken } = await chrome.storage.sync.get('connectorToken').catch(() => ({}));
+    const token = /^[A-Za-z0-9_-]{32,}$/.test(connectorToken || '') ? connectorToken : newToken();
+    await saveSettings({ mcp: { ...s.mcp, token } });
+    chrome.storage.sync.set({ connectorToken: token }).catch(() => {});
+  } else {
+    chrome.storage.sync.set({ connectorToken: s.mcp.token }).catch(() => {});
+  }
   if (reason === 'install') chrome.tabs.create({ url: chrome.runtime.getURL('onboarding/welcome.html') }).catch(() => {});
   if (reason === 'update') await chrome.storage.local.set({ whatsNew: chrome.runtime.getManifest().version });
   syncBridge();
@@ -28,6 +36,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local' || !changes.settings) return;
   const a = changes.settings.oldValue?.mcp || {};
   const b = changes.settings.newValue?.mcp || {};
+  if (b.token && a.token !== b.token) chrome.storage.sync.set({ connectorToken: b.token }).catch(() => {}); // "Generate new link"
   if (a.enabled !== b.enabled || a.server !== b.server || a.token !== b.token || !!a.consentAt !== !!b.consentAt) {
     // Tell the relay right away that the old connection is gone, so Claude gets a clear error
     // instead of waiting for a timeout.

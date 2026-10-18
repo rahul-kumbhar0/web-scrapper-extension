@@ -53,6 +53,7 @@ export default {
     const local = h('input', { id: 'mcp-local', type: 'checkbox', checked: !!mcp.allowLocal, role: 'switch' });
     const blocked = h('textarea', { id: 'mcp-blocked', rows: 4, spellcheck: false, value: (mcp.blocked || DEFAULT_BLOCKED).join('\n') });
     const statusEl = h('p', { id: 'mcp-status', class: 'hint' });
+    const testEl = h('p', { id: 'mcp-test', class: 'hint', hidden: true });
     const logEl = h('ul', { class: 'mini-log' });
 
     const serverUrl = () => (server.value.trim() || DEFAULT_RELAY).replace(/\/+$/, '');
@@ -105,6 +106,35 @@ export default {
         h('span', { class: 'muted' }, new Date(e.at).toLocaleTimeString()), ` ${e.ok ? '✓' : '✗'} ${e.tool} `, h('span', { class: 'muted' }, `${(e.ms / 1000).toFixed(1)}s`))));
     }
     renderStatus();
+
+    // End-to-end check: does the relay see this browser, and has Claude ever used THIS link?
+    const ago = (s) => (s < 90 ? `${s} seconds ago` : s < 5400 ? `${Math.round(s / 60)} minutes ago` : `${Math.round(s / 3600)} hours ago`);
+    async function testConnection() {
+      testEl.hidden = false;
+      testEl.className = 'hint';
+      testEl.textContent = 'Testing the connection…';
+      let msg;
+      let ok = false;
+      try {
+        if (!(mcp.enabled && mcp.consentAt)) throw new Error('Turn on “Allow Claude to use this browser” first.');
+        const res = await fetch(`${serverUrl()}/link/${await connectorId(mcp.token)}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`The relay answered ${res.status}. It may be restarting; try again in 30 seconds.`);
+        const j = await res.json();
+        if (!j.browser_connected) {
+          msg = '✗ The relay doesn’t see this browser yet. If it was just updated or was asleep, wait 30 seconds and test again. Check your internet connection.';
+        } else if (j.claude_last_call_seconds_ago == null) {
+          ok = true;
+          msg = `✓ This browser is connected. Claude hasn’t used this link${j.relay_started_seconds_ago < 3600 ? ' since the relay restarted' : ''}. If Claude says “not connected”, it has an OLD link: in Claude → Settings → Connectors, remove PullRows and add this link again (Copy link above).`;
+        } else {
+          ok = true;
+          msg = `✓ Connected end to end. Claude last used this link ${ago(j.claude_last_call_seconds_ago)}.`;
+        }
+      } catch (e) {
+        msg = `✗ ${/Failed to fetch|NetworkError/i.test(e.message) ? 'Couldn’t reach the relay server. Check your internet connection.' : e.message}`;
+      }
+      testEl.className = `hint ${ok ? 'ok' : 'error'}`;
+      testEl.textContent = msg;
+    }
     const onStorage = (changes, area) => { if (area === 'local' && (changes.mcpStatus || changes.mcpLog)) renderStatus(); };
     chrome.storage.onChanged.addListener(onStorage);
 
@@ -135,6 +165,8 @@ export default {
       h('p', { class: 'hint' }, 'Let Claude run PullRows for you: it opens pages, extracts lists, finds emails… in this Chrome, and results land in your Data Table. Works with claude.ai, Claude Desktop and Claude Code.'),
       sw('Allow Claude to use this browser', enabled),
       statusEl,
+      h('div', { class: 'row' }, h('button', { type: 'button', id: 'mcp-test-btn', class: 'btn tiny secondary', onclick: testConnection }, 'Test connection')),
+      testEl,
       h('label', { class: 'field' }, 'Your private connector link',
         h('div', { class: 'row' }, link,
           h('button', { type: 'button', class: 'btn secondary', onclick: async () => {

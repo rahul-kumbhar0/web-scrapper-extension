@@ -64,11 +64,30 @@ try {
     assert.match(MCP, new RegExp(`^${RELAY}/mcp/[A-Za-z0-9_-]{32}$`));
   });
 
+  await step('Test connection: browser connected, Claude not yet using this link', async () => {
+    await sp.click('#mcp-test-btn');
+    await sp.waitForFunction(() => /^[✓✗]/.test(document.getElementById('mcp-test').textContent), null, { timeout: 15000 });
+    const t = await sp.textContent('#mcp-test');
+    console.log(`    ${t.slice(0, 90)}…`);
+    assert.match(t, /^✓ This browser is connected\. Claude hasn’t used this link/);
+  });
+
   await step('MCP handshake: initialize + tools/list', async () => {
     const init = await rpc('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test-claude', version: '1' } });
     assert.equal(init.serverInfo.name, 'pullrows');
     const { tools } = await rpc('tools/list');
     assert.ok(tools.length >= 18);
+  });
+
+  await step('Test connection after Claude used the link: "Connected end to end"', async () => {
+    await sp.click('#mcp-test-btn');
+    await sp.waitForFunction(() => /Connected end to end/.test(document.getElementById('mcp-test').textContent), null, { timeout: 15000 });
+  });
+
+  await step('An old / unknown link tells Claude the link may have changed', async () => {
+    const res = await fetch(MCP.replace(/[^/]{32}$/, 'A'.repeat(32)), { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'browser_tabs', arguments: {} } }) });
+    const text = (await res.json()).result.content[0].text;
+    assert.match(text, /link changed/);
   });
 
   let tabId;
