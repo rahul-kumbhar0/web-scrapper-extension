@@ -72,8 +72,8 @@ export default {
       const tab = await getActiveTab();
       const next = await callInTab(tab.id, 'findNextButton').catch(() => null);
       const more = next ? null : await callInTab(tab.id, 'findLoadMoreButton').catch(() => null);
-      if (next) pagination = { ...pagination, mode: 'next', selector: next };
-      else if (more) pagination = { ...pagination, mode: 'loadmore', selector: more };
+      if (next) pagination = { ...pagination, mode: 'next', selector: next, redetect: true };
+      else if (more) pagination = { ...pagination, mode: 'loadmore', selector: more, redetect: true };
       if (config) config.pagination = pagination;
       renderPagination();
     }
@@ -108,7 +108,7 @@ export default {
       const mode = h('select', { onchange: (e) => { pagination.mode = e.target.value; if (config) config.pagination = pagination; renderPagination(); } },
         MODES.map((m) => h('option', { value: m.value, selected: m.value === pagination.mode }, m.label)));
       const needsButton = pagination.mode === 'next' || pagination.mode === 'loadmore';
-      const sel = h('input', { value: pagination.selector || '', placeholder: 'CSS selector of the button', spellcheck: false, onchange: (e) => { pagination.selector = e.target.value.trim(); } });
+      const sel = h('input', { value: pagination.selector || '', placeholder: 'CSS selector of the button', spellcheck: false, onchange: (e) => { pagination.selector = e.target.value.trim(); pagination.redetect = false; } });
       const max = numberField(pagination.mode === 'scroll' ? 'Max scrolls' : pagination.mode === 'loadmore' ? 'Max clicks' : 'Max pages', pagination.max, { min: 1, max: 1000 });
       max.input.addEventListener('change', () => { pagination.max = max.get(); });
       const delay = numberField('Delay (ms)', pagination.delayMs, { min: 0, max: 60000, step: 250 });
@@ -118,12 +118,12 @@ export default {
         needsButton ? h('div', { class: 'row' }, sel,
           h('button', { type: 'button', class: 'btn secondary', onclick: async () => {
             const r = await pick('element');
-            if (r) { pagination.selector = r.selector; sel.value = r.selector; toast(`Button set: “${r.text || r.selector}”`, 'ok'); }
+            if (r) { pagination.selector = r.selector; pagination.redetect = false; sel.value = r.selector; toast(`Button set: “${r.text || r.selector}”`, 'ok'); }
           } }, 'Pick'),
           h('button', { type: 'button', class: 'btn secondary', title: 'Find it automatically', onclick: async () => {
             const tab = await getActiveTab();
             const found = await callInTab(tab.id, pagination.mode === 'next' ? 'findNextButton' : 'findLoadMoreButton');
-            if (found) { pagination.selector = found; sel.value = found; } else toast('No such button found — use Pick.', 'error');
+            if (found) { pagination.selector = found; pagination.redetect = true; sel.value = found; } else toast('No such button found — use Pick.', 'error');
           } }, 'Auto')) : null,
         pagination.mode !== 'none' ? h('div', { class: 'row' }, max.el, delay.el) : null);
     }

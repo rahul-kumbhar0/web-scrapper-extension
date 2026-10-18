@@ -73,7 +73,10 @@ function pump() {
 function accept(cmd) {
   if (cmd.tool === '__cancel') {
     const id = cmd.args?.id;
-    running.get(id)?.abort();
+    // Free the slot at once: browser work started for the call may take a while to wind down, and
+    // two zombie calls would otherwise block every new one.
+    const ctrl = running.get(id);
+    if (ctrl) { ctrl.abort(); running.delete(id); pump(); }
     const i = waiting.findIndex((c) => c.id === id);
     if (i >= 0) waiting.splice(i, 1);
     setBusy();

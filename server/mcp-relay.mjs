@@ -103,7 +103,8 @@ function ipAllowed(req, kind, perMin) {
 }
 function clientIp(req) {
   if (TRUST_PROXY) {
-    const fwd = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+    // The trusted proxy appends the real client address last; earlier entries are client-supplied.
+    const fwd = String(req.headers['x-forwarded-for'] || '').split(',').map((s) => s.trim()).filter(Boolean).pop();
     if (fwd) return fwd;
   }
   return req.socket.remoteAddress || 'unknown';

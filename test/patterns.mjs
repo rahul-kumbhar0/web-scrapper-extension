@@ -52,6 +52,15 @@ try {
     has(r.names, 'Rank', 'City', 'Population', 'Area', 'Country', 'City link');
     assert.equal(r.rows[0].City, 'Aurora City');
   });
+  await check('Wikipedia two-level headers with rowspan/colspan: names and columns line up', async () => {
+    const r = await detect('wiki-2level');
+    assert.equal(r.rows.length, 4, 'both header rows skipped');
+    has(r.names, 'City', 'Country', 'City proper · Population', 'City proper · Area', 'City proper · Density', 'Urban area · Population');
+    assert.ok(!r.names.some((n) => /nobold|\[/.test(n)), `no style/footnote junk in names: ${r.names.join(', ')}`);
+    const dhaka = r.rows.find((x) => x.City === 'Dhaka');
+    assert.equal(dhaka['City proper · Area'], '338');
+    assert.equal(dhaka['Urban area · Population'], '19,134,000');
+  });
   await check('Old table with bold header cells', async () => {
     const r = await detect('old-table');
     assert.equal(r.rows.length, 14);
@@ -172,6 +181,26 @@ try {
     assert.match(r.rows[0].likes, /^\d+$/);
     assert.match(r.rows[0].views, /^\d+$/);
     assert.match(r.rows[0].link, /\/status\/\d+$/);
+  });
+  await check('Next link without a unique class gets a selector that matches only it; "…" titles read in full', async () => {
+    const r = await detect('pager-plain');
+    const count = await page.evaluate((sel) => document.querySelectorAll(sel).length, r.nextBtn);
+    assert.equal(count, 1, `next selector "${r.nextBtn}" must match exactly one element`);
+    assert.equal(await page.evaluate((sel) => document.querySelector(sel).textContent, r.nextBtn), 'next');
+    assert.equal(r.rows[0].title, 'A Light in the Attic and Other Very Long Titles');
+  });
+  await check('Huge pages without emails/phones scan fast (no catastrophic regex)', async () => {
+    await page.setContent(`<html><body><p>${'a'.repeat(400000)}</p><p>${'1 '.repeat(50000)}</p><a href="mailto:%E0%A4%A">bad</a><a href="tel:100%">bad</a><p>${Array.from({ length: 4000 }, (_, i) => `+91 98${String(i).padStart(8, '0')}`).join(' , ')}</p>contact: hello@ok.com</body></html>`);
+    await page.addScriptTag({ path: path.join(ROOT, 'content/engine.js') });
+    const r = await page.evaluate(() => {
+      const t0 = performance.now();
+      const res = globalThis.__webScraper.quick(['emails', 'phones'], {});
+      return { ms: performance.now() - t0, emails: res.results.emails.data.length, phones: res.results.phones.data.length, errors: res.errors };
+    });
+    console.log(`    ${Math.round(r.ms)} ms · ${r.emails} emails · ${r.phones} phones`);
+    assert.ok(r.ms < 3000, `took ${r.ms} ms`);
+    assert.deepEqual(r.errors, {});
+    assert.ok(r.emails >= 1 && r.phones >= 4000);
   });
   await check('Cookie banner over the page does not hide the list', async () => {
     const r = await detect('feed-cookie');

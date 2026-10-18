@@ -19,6 +19,19 @@
   };
   const hostOf = (doc) => { try { return new URL(baseOf(doc)).host; } catch { return ''; } };
   const textOf = (el) => clean(el?.innerText ?? el?.textContent, 5000);
+  // Text shortened with "…" on screen often has the full version in a title / aria-label attribute.
+  const fullText = (el, max = 2000) => {
+    const t = clean(el.innerText ?? el.textContent, max);
+    if (!/(\.\.\.|…)$/.test(t)) return t;
+    const head = t.replace(/\s*(\.\.\.|…)$/, '');
+    for (const cand of [el, el.closest('a,[title]'), el.querySelector?.('[title]')]) {
+      for (const a of ['title', 'aria-label']) {
+        const v = clean(cand?.getAttribute?.(a), max);
+        if (v.length > head.length && v.startsWith(head)) return v;
+      }
+    }
+    return t;
+  };
   // Visible text of a document. Pages fetched in the background (DOMParser) have no layout, so
   // innerText degrades to textContent and glues adjacent elements together ("a@b.comYouTube");
   // join their text nodes with spaces instead.
@@ -86,7 +99,7 @@
     for (let n = 1; n <= parts.length; n++) {
       const sel = parts.slice(-n).join(' > ');
       const m = qsa(doc, sel);
-      if (m.includes(el) && (!unique || m.length === 1)) return unique ? sel : sel;
+      if (m.includes(el) && (!unique || m.length === 1)) return sel;
     }
     // Fall back to nth-of-type from the body.
     const path = [];
@@ -115,6 +128,24 @@
     } catch { return ''; }
   }
 
+  // Merged text windows [i-before, i+after] around every match of `marker` (max 5,000 windows).
+  function windowsAround(text, marker, before, after) {
+    const out = [];
+    let start = -1;
+    let end = -1;
+    let n = 0;
+    for (const m of text.matchAll(marker)) {
+      if (++n > 5000) break;
+      const a = Math.max(0, m.index - before);
+      const b = Math.min(text.length, m.index + after);
+      if (a <= end) end = b;
+      else { if (end > start) out.push(text.slice(start, end)); start = a; end = b; }
+    }
+    if (end > start) out.push(text.slice(start, end));
+    return out;
+  }
+  const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
+
   function emails(doc = document) {
     const found = new Map();
     const add = (e, source) => {
@@ -122,23 +153,28 @@
       if (e && /^[^@\s]+@[^@\s]+\.[a-z]{2,24}$/.test(e) && !JUNK_EMAIL_RE.test(e) && !found.has(e)) found.set(e, source);
     };
     for (const a of qsa(doc, 'a[href^="mailto:" i]')) {
-      decodeURIComponent(a.getAttribute('href').slice(7).split('?')[0]).split(',').forEach((e) => add(e, 'mailto link'));
+      safeDecode(a.getAttribute('href').slice(7).split('?')[0]).split(',').forEach((e) => add(e, 'mailto link'));
     }
     for (const el of qsa(doc, '[data-cfemail]')) add(decodeCf(el.getAttribute('data-cfemail')), 'cloudflare protected');
     for (const a of qsa(doc, 'a[href*="/cdn-cgi/l/email-protection#"]')) add(decodeCf(a.getAttribute('href').split('#')[1] || ''), 'cloudflare protected');
-    const text = doc.body ? docText(doc) : '';
-    for (const m of text.match(EMAIL_RE) || []) add(m, 'page text');
-    for (const m of text.matchAll(OBFUSCATED_EMAIL_RE)) add(`${m[1]}@${m[2]}.${m[3]}`, 'obfuscated text');
+    const text = doc.body ? docText(doc).slice(0, 2_000_000) : '';
+    // Match only short windows around each "@" / "[at]": a regex over megabytes of text without an
+    // "@" can take seconds (it retries from every character).
+    for (const w of windowsAround(text, /@/g, 64, 255)) for (const m of w.match(EMAIL_RE) || []) add(m, 'page text');
+    for (const w of windowsAround(text, /[[(]\s*at\s*[\])]/gi, 64, 120)) for (const m of w.matchAll(OBFUSCATED_EMAIL_RE)) add(`${m[1]}@${m[2]}.${m[3]}`, 'obfuscated text');
     return [...found].map(([email, source]) => ({ email, source }));
   }
 
   // Candidates: optional +country, optional (area), then digit groups split by space/dot/dash.
-  const PHONE_RE = /(?:\+\d{1,3}[\s.-]?)?(?:\(\d{1,5}\)[\s.-]?)?\d{2,5}(?:[\s.-]\d{2,5}){1,4}/g;
+  // Grouped numbers ("020 2612 3456", "+1 (555) 010-2233") or one unbroken block ("+91 9876543210").
+  const PHONE_RE = /(?:\+\d{1,3}[\s.-]?)?(?:\(\d{1,5}\)[\s.-]?)?(?:\d{2,5}(?:[\s.-]\d{2,5}){1,4}|\d{7,12})/g;
+  const PHONE_WORD = /(call|phone|tel|mobile|mob|cell|whatsapp|contact|ph|fax|helpline|hotline)\b[^\d]{0,12}$/i;
   function phones(doc = document) {
     const found = new Map();
+    const tails = new Set();
     for (const a of qsa(doc, 'a[href^="tel:" i]')) {
-      const p = decodeURIComponent(a.getAttribute('href').slice(4)).trim();
-      if (p) found.set(p.replace(/[^\d+]/g, ''), { phone: p, source: 'tel link' });
+      const p = safeDecode(a.getAttribute('href').slice(4)).trim();
+      if (p) { found.set(p.replace(/[^\d+]/g, ''), { phone: p, source: 'tel link' }); tails.add(p.replace(/\D/g, '').replace(/^0+/, '').slice(-10)); }
     }
     for (const node of textNodes(doc)) {
       const text = node.textContent;
@@ -148,12 +184,17 @@
         const before = text[m.index - 1] || '';
         const after = text[m.index + m[0].length] || '';
         const intl = raw.startsWith('+') || raw.includes('(');
+        // An unbroken digit block without "+" is often an ID or order number: only with a phone word before it.
+        if (/^\d+$/.test(raw) && !PHONE_WORD.test(text.slice(Math.max(0, m.index - 30), m.index))) continue;
         if (digits.length < (intl ? 7 : 10) || digits.length > 15) continue;
         if (/[\d$£€¥₹.,/:]/.test(before) || /[\d%/:]/.test(after)) continue; // prices, versions, ratios, times
         if (/^\d{4}[-./]\d{1,2}[-./]\d{1,2}$|^\d{1,2}[-./]\d{1,2}[-./]\d{2,4}$/.test(raw)) continue; // dates
         if (raw.split(/[\s.-]+/).every((g) => /^(19|20)\d\d$/.test(g))) continue; // year ranges
         const key = digits.replace(/^0+/, '');
-        if (![...found.keys()].some((k) => k.replace(/\D/g, '').endsWith(key))) {
+        // Same number written with/without country code: compare the last 10 digits (O(1) per match).
+        const tail = key.slice(-10);
+        if (!tails.has(tail)) {
+          tails.add(tail);
           found.set(key, { phone: raw, source: 'page text' });
         }
       }
@@ -430,16 +471,74 @@
   // A header row: all <th>, or every cell is just bold text (old sites style headers with <b>).
   const isHeaderRow = (tr) => tr.cells.length > 1 && [...tr.cells].every((c) => c.tagName === 'TH' ||
     (clean(c.textContent) && [...c.childNodes].every((n) => (n.nodeType === 3 && !n.textContent.trim()) || /^(B|STRONG)$/.test(n.tagName))));
-  // Visual column index of a cell, counting colspans.
-  const colIndex = (cell) => { let i = 0; for (let c = cell.previousElementSibling; c; c = c.previousElementSibling) i += c.colSpan || 1; return i; };
-  const cellAt = (row, idx) => { let i = 0; for (const c of row.cells) { if (idx < i + (c.colSpan || 1)) return c; i += c.colSpan || 1; } return null; };
+  // Header text without <style>/<script>, footnote markers ("[14]") or hidden sort keys.
+  const cellText = (c) => {
+    const x = c.cloneNode(true);
+    for (const e of x.querySelectorAll('style, script, sup, .sortkey, .reference, [style*="display:none"]')) e.remove();
+    return clean(x.textContent, 80).replace(/\[[^\]]{1,6}\]/g, '').trim();
+  };
+  // Visual column of every cell, honouring colspan AND rowspan (Wikipedia tables use both).
+  const LAYOUT = new WeakMap();
+  function layoutOf(table) {
+    let map = LAYOUT.get(table);
+    if (map) return map;
+    map = new Map();
+    const taken = [];
+    [...table.rows].slice(0, 3000).forEach((row, ri) => {
+      taken[ri] ||= [];
+      let ci = 0;
+      for (const c of row.cells) {
+        while (taken[ri][ci]) ci++;
+        map.set(c, ci);
+        for (let dr = 0; dr < Math.min(c.rowSpan || 1, 50); dr++) {
+          taken[ri + dr] ||= [];
+          for (let dc = 0; dc < Math.min(c.colSpan || 1, 50); dc++) taken[ri + dr][ci + dc] = true;
+        }
+        ci += c.colSpan || 1;
+      }
+    });
+    LAYOUT.set(table, map);
+    return map;
+  }
+  const colOf = (cell) => {
+    const table = cell.closest('table');
+    let col = layoutOf(table).get(cell);
+    if (col == null) { LAYOUT.delete(table); col = layoutOf(table).get(cell); } // rows added since
+    return col ?? 0;
+  };
+  // Column names from all header rows: two-level headers become "City proper · Population".
+  const HEADS = new WeakMap();
+  function headerNames(table) {
+    if (HEADS.has(table)) return HEADS.get(table);
+    let headRows = table.tHead ? [...table.tHead.rows] : [];
+    if (!headRows.length) {
+      for (const [i, r] of [...table.rows].entries()) {
+        if (isHeaderRow(r)) headRows.push(r);
+        else if (headRows.length || i > 2) break;
+      }
+    }
+    const names = [];
+    for (const r of headRows) {
+      for (const c of r.cells) {
+        const t = cellText(c);
+        const col = colOf(c);
+        for (let dc = 0; dc < Math.min(c.colSpan || 1, 50); dc++) {
+          const parts = (names[col + dc] ||= []);
+          if (t && parts[parts.length - 1] !== t) parts.push(t);
+        }
+      }
+    }
+    const out = { names: names.map((p) => (p || []).join(' · ').slice(0, 60)), rows: new Set(headRows) };
+    HEADS.set(table, out);
+    return out;
+  }
   const tableHeaderFor = (cell) => {
     const table = cell.closest('table');
     const tr = cell.parentElement;
     if (!table || !tr || tr.tagName !== 'TR') return '';
-    const head = table.tHead?.rows[table.tHead.rows.length - 1] || [...table.rows].find(isHeaderRow);
-    if (!head || head === tr || head.closest('table') !== table) return '';
-    return clean(cellAt(head, colIndex(cell))?.textContent, 40);
+    const { names, rows } = headerNames(table);
+    if (rows.has(tr)) return '';
+    return names[colOf(cell)] || '';
   };
   // ARIA grids built from divs: role=row / role=cell|gridcell with role=columnheader names.
   const ariaHeaderFor = (cell) => {
@@ -538,7 +637,7 @@
       if (el.matches(SKIP)) return;
       let leaf = insideLeaf;
       if (!insideLeaf && isTextLeaf(el)) {
-        push(el, 'text', clean(el.innerText ?? el.textContent, 2000));
+        push(el, 'text', fullText(el));
         leaf = true;
       }
       if (el.tagName === 'A' && el.getAttribute('href') && !/^(javascript:|#)/i.test(el.getAttribute('href'))) {
@@ -627,9 +726,10 @@
     // placeholder image on every item, constant attributes. Constant real data ("Pune, India") stays.
     if (sample.length > 2) {
       fields = fields.filter((f) => {
+        const v = [...f.values][0];
+        if (f.values.size === 1 && f.attr === 'text' && ACTION_TEXT.test(v)) return false; // "hide", "Reply"…
         if (f.values.size > 1 || f.count < sample.length) return true;
         if (f.attr !== 'text') return false;
-        const v = [...f.values][0];
         return !(ACTION_TEXT.test(v) || v.length < 3 || /^[\d\W]+$/.test(v) || f.el.closest('button, [role="button"]'));
       });
     }
@@ -721,7 +821,12 @@
   // Normalise a sibling group: drop a table's header row, find companion rows.
   function prepGroup(group) {
     let items = group;
-    if (items[0]?.tagName === 'TR' && items.length > 2 && isHeaderRow(items[0]) && !isHeaderRow(items[1])) items = items.slice(1);
+    if (items[0]?.tagName === 'TR') {
+      // Drop every leading header row (two-level headers have several).
+      let k = 0;
+      while (k < items.length && isHeaderRow(items[k])) k++;
+      if (k && items.length - k >= 2) items = items.slice(k);
+    }
     return { items, comp: companionsOf(items) };
   }
 
@@ -863,7 +968,7 @@
         { name: 'address', path: '.W4Efsd .W4Efsd:first-child > span:last-child', attr: 'text' },
         { name: 'status', path: '.W4Efsd .W4Efsd:nth-child(2)', attr: 'text' },
         { name: 'details', path: '.UaQhfb', attr: 'text' },
-        { name: 'website', path: 'a[data-value="Website"]', attr: 'href' },
+        { name: 'website', path: 'a[data-value="Website"] || a[aria-label*="website" i] || a.lcr4fd', attr: 'href' },
         { name: 'maps_link', path: 'a.hfpxzc', attr: 'href' },
       ],
       pagination: { mode: 'scroll', max: 60 },
@@ -995,10 +1100,22 @@
     'Google Maps results': (r) => {
       if (r.address === r.category) r.address = '';
       if (/^(open|closed|closes|opens)/i.test(r.address)) r.address = '';
+      // Some cards put a tagline in the second line; the opening hours are then at the end of the card.
+      if (r.status && !/\b(open|closed|closes|opens|hours)\b/i.test(r.status)) {
+        const hours = (r.details || '').match(/\b((?:Open 24 hours|Open|Closed|Temporarily closed|Permanently closed|Closes soon|Opens soon)\b[^·]*(?:·[^·]*)?)$/i);
+        r.note = r.status;
+        r.status = hours ? hours[1].trim() : '';
+      }
       return r;
     },
     'LinkedIn jobs': (r) => { r.title = r.title.replace(/\s+with verification$/i, ''); r.link = r.link && stripQuery(r.link); return r; },
     'LinkedIn jobs (public)': (r) => { r.link = r.link && stripQuery(r.link); return r; },
+    // Sponsored results link through an ad redirect: the product page is /dp/<ASIN> on the same store.
+    'Amazon search': (r) => {
+      r.sponsored = /\/sspa\/click|[?&]sp_csd=/.test(r.link || '') ? 'yes' : '';
+      if (r.asin && r.link) { try { r.link = `${new URL(r.link).origin}/dp/${r.asin}`; } catch { /* keep */ } }
+      return r;
+    },
     // Counts come as "1,234 Likes. Like" labels: keep the number.
     'X posts': (r) => {
       for (const k of ['replies', 'reposts', 'likes', 'views']) r[k] = (String(r[k] || '').match(/^[\d.,]+\s*[KMB]?/i)?.[0] || '').trim();
@@ -1021,7 +1138,7 @@
 
   const valueOf = (el, attr, doc) => {
     if (!el) return '';
-    if (attr === 'text') return clean(el.innerText ?? el.textContent, 2000).replace(/^[\s·•|]+|[\s·•|]+$/g, '');
+    if (attr === 'text') return fullText(el).replace(/^[\s·•|]+|[\s·•|]+$/g, '');
     if (attr === 'href') return abs(el.getAttribute('href'), doc);
     if (attr === 'src') {
       const lazy = el.dataset.src || el.dataset.lazySrc || el.dataset.original || '';
@@ -1109,7 +1226,8 @@
           (/\bnext\b/i.test(el.className) && /pag/i.test(el.closest('[class]')?.parentElement?.className || el.className));
       }),
     ].filter((el) => isVisible(el) && !isDisabled(el));
-    return cands[0] ? selectorFor(cands[0]) : null;
+    // Unique selector: a bare "a" would click the first link on the page (often the logo).
+    return cands[0] ? selectorFor(cands[0], { unique: true }) : null;
   }
 
   const LOAD_MORE = /^(load|show|see|view|display|get)\s+(\d+\s+)?more\b|^(load|show)\s+(all|older|next)\b|^more\s+(results|items|products|posts|reviews|jobs|articles|stories|videos)\b|^(mehr|weitere)\b|^(mehr|weitere)\s+(anzeigen|laden|ergebnisse)|^(ver|mostrar|cargar)\s+m[aá]s|^(voir|afficher|charger)\s+plus|^plus de résultats|^carica(re)?\s+altr|^mostra\s+altr|^(ver|mostrar|carregar)\s+mais|^meer\s+(laden|tonen|weergeven)|^toon\s+meer|^visa\s+fler|^vis\s+flere|^pokaż\s+więcej|^załaduj\s+więcej|^показать\s+(ещё|еще|больше)|^загрузить\s+(ещё|еще)|^ещё|^daha\s+fazla|^(और|अधिक)\s+(देखें|दिखाएं|लोड)|^もっと(見る|読み込む)|^さらに表示|^(加载|載入|显示|顯示|查看)更多|^더\s?보기|^tampilkan\s+lebih|^muat\s+lebih|^xem\s+thêm|^ดูเพิ่มเติม|^عرض\s+المزيد|^הצג\s+עוד/i;
@@ -1117,7 +1235,7 @@
     const el = qsa(doc, 'button, a, [role="button"]').find((b) => isVisible(b) && !isDisabled(b) &&
       !b.closest('nav, header, footer, [role="navigation"]') &&
       LOAD_MORE.test(clean(b.innerText || b.getAttribute('aria-label'), 40)));
-    return el ? selectorFor(el) : null;
+    return el ? selectorFor(el, { unique: true }) : null;
   }
 
   function clickElement(selector) {
@@ -1526,7 +1644,7 @@
     }
     if (mode === 'element') {
       const target = el.closest('a,button,[role="button"]') || el;
-      return { selector: selectorFor(target), text: clean(target.innerText || target.getAttribute('aria-label'), 60) };
+      return { selector: selectorFor(target, { unique: true }), text: clean(target.innerText || target.getAttribute('aria-label'), 60) };
     }
     const sel = selectorFor(el);
     return { selector: sel, count: qsa(document, sel).length };

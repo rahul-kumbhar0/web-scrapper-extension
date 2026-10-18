@@ -1,6 +1,6 @@
-# PullRows 1.2.2: Chrome Web Store form, field by field
+# PullRows 1.3.0: Chrome Web Store form, field by field
 
-Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.2.2.zip`.
+Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.3.0.zip`.
 Every image named below is in this kit's `images/` folder.
 
 ---
@@ -8,7 +8,7 @@ Every image named below is in this kit's `images/` folder.
 ## 1. Package
 | Field | Value |
 |---|---|
-| Upload | `pullrows-1.2.2.zip` |
+| Upload | `pullrows-1.3.0.zip` |
 
 ## 2. Store listing
 | Field | Paste this |
@@ -83,10 +83,10 @@ Extract structured data from web pages the user chooses (manually, or through th
 | Host permission (`<all_urls>`) | The user scrapes pages on any website they choose. The bundled extraction engine is injected into the page the user is on, and the multi-URL tools (Page Extractor, Email and Social finders, Sitemap Explorer) fetch the list of pages the user entered. |
 | scripting | Injects the extension's own bundled extraction script (content/engine.js) into the tab the user is scraping. No remote code is ever injected. |
 | storage | Saves the user's settings, current Data Table, recent results (history) and saved recipes locally on the device. |
-| unlimitedStorage | A scraped dataset or the history of results can exceed the default local storage quota. Data never leaves the device. |
+| unlimitedStorage | A scraped dataset or the history of results can exceed the default local storage quota. It is stored only on the user's device. |
 | sidePanel | The whole user interface is a Chrome side panel next to the page being scraped. |
 | downloads | Saves images the user selects in the Image Downloader, and exported CSV, Excel or JSON files, into the Downloads folder. |
-| offscreen | Uses DOMParser in an offscreen document to parse pages fetched in the background for scraping jobs the user starts from their Claude assistant. |
+| offscreen | Parses pages fetched in the background with DOMParser for scraping jobs the user starts from their own Claude assistant (Claude connector, off by default). The same document keeps the connector's connection to our relay open while the user has the connector turned on. |
 
 **Are you using remote code?** → **No, I am not using remote code.**
 *(If a reason box appears: "All JavaScript is bundled in the package. The optional relay server sends only data (a tool name plus JSON arguments) that call bundled functions.")*
@@ -95,8 +95,9 @@ Extract structured data from web pages the user chooses (manually, or through th
 - ☑ Personally identifiable information *(emails and phone numbers the user chooses to extract from websites)*
 - ☑ Authentication information *(the user's own Anthropic API key, stored locally and sent only to Anthropic; the Pro licence key, sent to the licence server)*
 - ☑ Web history *(when the user enables the Claude connector, open-tab titles and URLs are shared with the user's own Claude session)*
+- ☑ Personal communications *(only if the user asks their Claude assistant to read a messaging or email page that isn't on the blocked list; webmail is blocked by default)*
 - ☑ Website content *(pages the user scrapes)*
-- ☐ Health info, ☐ Financial and payment info, ☐ Personal communications, ☐ Location, ☐ User activity: leave unticked
+- ☐ Health info, ☐ Financial and payment info, ☐ Location, ☐ User activity: leave unticked
 
 **Certify all three:**
 - ☑ I do not sell or transfer user data to third parties, outside of the approved use cases

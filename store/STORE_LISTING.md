@@ -1,6 +1,6 @@
-# Chrome Web Store listing: PullRows 1.2.2
+# Chrome Web Store listing: PullRows 1.3.0
 
-Upload `dist/pullrows-1.2.2.zip`, which you build with `npm run package`. Images are in `store/`.
+Upload `dist/pullrows-1.3.0.zip`, which you build with `npm run package`. Images are in `store/`.
 
 ## Store listing tab
 
@@ -75,15 +75,16 @@ Use PullRows responsibly: respect each website's terms and privacy laws when col
 | `<all_urls>` host access | The user scrapes pages on any site they choose. The engine is injected into the page the user is on, and multi-URL tools fetch the list of pages the user pasted (for example, contact pages of companies) in the background. |
 | `scripting` | Injects the bundled extraction engine (`content/engine.js`) into the tab the user is scraping. No remote code is ever injected. |
 | `storage` | Saves the user's settings, Data Table, recent results (history) and saved recipes locally. |
-| `unlimitedStorage` | A scraped dataset or the history of results can exceed the default 10 MB local storage quota. |
+| `unlimitedStorage` | A scraped dataset or the history of results can exceed the default local storage quota. It is stored only on the user's device. |
 | `sidePanel` | The whole user interface lives in Chrome's side panel. |
 | `downloads` | Saves images the user selects in the Image Downloader (and exported files) into a Downloads subfolder. |
-| `offscreen` | Uses `DOMParser` in an offscreen document to parse pages fetched in the background for jobs the user starts from Claude while the side panel is closed. |
+| `offscreen` | Parses pages fetched in the background with DOMParser for scraping jobs the user starts from their own Claude assistant (Claude connector, off by default). The same document keeps the connector's connection to our relay open while the user has the connector turned on. |
 
 **Remote code:** No. All JavaScript is in the package. The relay server only sends data (a tool name and JSON arguments), which map to bundled functions.
 
 **Data usage disclosures:** check these:
-- **Website content.** Pages the user scrapes. This data is processed locally. It is sent to Anthropic only when the user uses AI features (with their own key), and through the relay only when the user turns on the Claude connector.
+- **Website content.** Pages the user scrapes. This data is processed locally. It is sent to Anthropic only when the user uses AI features (with their own key), and, when the user turns on the Claude connector, the results Claude asks for pass through our relay server (not stored) to the user's Claude session.
+- **Personal communications.** Only if the user asks their Claude assistant to read a messaging page that isn't blocked; webmail is blocked by default.
 - **Web history.** When the Claude connector is on, the titles and URLs of open tabs are shared with the user's Claude session (`browser_tabs`).
 - **Personally identifiable information.** Email addresses and phone numbers that the user chooses to extract from websites.
 - **Authentication information.** The user's own Anthropic API key, stored locally and sent only to api.anthropic.com. The licence key is sent to the licence server.

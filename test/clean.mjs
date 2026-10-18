@@ -2,6 +2,10 @@
 //   node test/clean.mjs
 import assert from 'node:assert/strict';
 import { toNumber, cleanUrl } from '../lib/clean.js';
+import { blockedReason } from '../lib/guard.js';
+import { urlMatcher } from '../lib/sitemap.js';
+import { toTSV } from '../lib/export.js';
+import { fetchWithTimeout, setFetchGuard } from '../lib/net.js';
 import { captionsToText, rankPosts, searchUrl, redditJsonUrl } from '../lib/trends.js';
 
 const cases = [['₹1,299', 1299], ['$87.53', 87.53], ['€25,00', 25], ['1.2M views', 1200000], ['12.3K likes', 12300], ['(1,234)', -1234],
@@ -38,4 +42,23 @@ const reddit = rankPosts([{ platform: 'reddit', url: 'a', likes: 900, comments: 
 assert.equal(reddit[0].url, 'a');
 assert.match(reddit[0].why, /upvotes/);
 assert.equal(reddit[0].views_per_day, '');
+// Safety guard: trailing dots, IPv6 literals, look-alike names
+for (const u of ['http://localhost./', 'https://mail.google.com./x', 'https://paypal.com.', 'http://metadata.google.internal./', 'http://[::1]/', 'http://[::ffff:127.0.0.1]/', 'http://[fd00::1]/', 'http://0x7f.1/', 'http://2130706433/', 'http://user@127.0.0.1/'])
+  assert.ok(blockedReason(u), `must block ${u}`);
+for (const u of ['https://fdic.gov/', 'https://www.fda.gov/', 'https://fcbarcelona.com/', 'https://fc2.com/', 'https://example.com/'])
+  assert.equal(blockedReason(u), '', `must allow ${u}`);
+// Regex filters that could hang on long URLs are treated as plain text
+for (const f of ['/(a+)+$/', '/((a+))+$/', '/(a|aa)*b/', '/(.*a){20}/', '/(a)\\1/']) {
+  const t0 = Date.now();
+  urlMatcher(f)('https://example.com/' + 'a'.repeat(5000) + '!');
+  assert.ok(Date.now() - t0 < 200, `filter ${f} must not hang`);
+}
+assert.equal(urlMatcher('/\\/p\\/\\d+/')('https://s.com/p/12'), true);
+// TSV headers can't smuggle formulas or extra columns
+assert.ok(!/^=/.test(toTSV([{ '=HYPERLINK("x")': 1 }]).split('\t')[0]));
+assert.equal(toTSV([{ 'a\tb': 1 }]).split('\n')[0].split('\t').length, 1);
+// The connector's fetch guard runs before any request
+setFetchGuard((u) => { const why = blockedReason(u); if (why) throw new Error(`Blocked by PullRows safety settings: ${why}`); });
+await assert.rejects(fetchWithTimeout('http://localhost./x'), /Blocked by PullRows/);
+setFetchGuard(null);
 console.log('All clean/trends unit checks passed');

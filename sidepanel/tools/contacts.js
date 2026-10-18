@@ -3,8 +3,10 @@ import { h, toast, runJob, plural } from '../ui.js';
 import { capList } from '../plan.js';
 import { makeSheet, setDataset } from '../state.js';
 import { urlSource, card, numberField, checkbox, actions, primary, secondary } from '../widgets.js';
-import { getActiveTab, callInTab } from '../../lib/tab.js';
+import { getActiveTab, callInTab, runInNewTab } from '../../lib/tab.js';
 import { crawlContacts } from '../../lib/crawl.js';
+
+const renderInTab = (url, method, args) => runInNewTab(url, method, args, { waitMs: 2000 });
 
 const PLATFORMS = ['LinkedIn', 'Twitter/X', 'Facebook', 'Instagram', 'YouTube', 'TikTok', 'GitHub', 'Pinterest', 'Threads', 'Telegram', 'WhatsApp', 'Discord', 'Reddit', 'Medium', 'Bluesky'];
 
@@ -42,7 +44,7 @@ export const emailTool = {
       if (!list.length) { toast('Add some websites.', 'error'); return; }
       const cfg = getConfig();
       await runJob(`Scanning ${plural(list.length, 'site')}…`, async (signal, progress) => {
-        const res = await crawlContacts(list, { ...cfg, emailDomainFilter: cfg.domain, signal, onProgress: (d, t) => progress(`${d} / ${t} sites`, d, t) });
+        const res = await crawlContacts(list, { ...cfg, emailDomainFilter: cfg.domain, signal, renderInTab, onProgress: (d, t) => progress(`${d} / ${t} sites`, d, t) });
         const sheets = [makeSheet('Emails', res.emails, ['site', 'email', 'found_on', 'source'])];
         if (cfg.phones) sheets.push(makeSheet('Phones', res.phones, ['site', 'phone', 'found_on']));
         if (res.failures.length) sheets.push(makeSheet('Failed', res.failures, ['url', 'error']));
@@ -94,7 +96,7 @@ export const socialTool = {
       if (!list.length) { toast('Add some websites.', 'error'); return; }
       const cfg = getConfig();
       await runJob(`Scanning ${plural(list.length, 'site')}…`, async (signal, progress) => {
-        const res = await crawlContacts(list, { ...cfg, signal, onProgress: (d, t) => progress(`${d} / ${t} sites`, d, t) });
+        const res = await crawlContacts(list, { ...cfg, signal, renderInTab, onProgress: (d, t) => progress(`${d} / ${t} sites`, d, t) });
         const found = res.socials.filter((s) => chosen.has(s.platform));
         let sheet;
         if (cfg.wide) {

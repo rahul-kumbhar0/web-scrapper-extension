@@ -89,6 +89,27 @@
   </section>
 
   <div class="container legal">
+    <section class="release" aria-labelledby="v130">
+      <div class="release__meta">
+        <h2 class="release__v" id="v130">v1.3.0</h2>
+        <p class="release__d">October 18, 2026</p>
+        <span class="release__tag">Hardened</span>
+      </div>
+      <div class="prose">
+        <h3>Full audit and live testing on real sites</h3>
+        <ul>
+          <li><strong>Pagination</strong>: auto-detected “Next” buttons get a selector that matches only that button and are found again on every page (some sites made PullRows click the logo instead).</li>
+          <li><strong>Tables</strong>: two-level headers with rowspan/colspan (Wikipedia) name columns like “City proper · Population”; footnotes and hidden styles are ignored.</li>
+          <li><strong>Full titles</strong> instead of “A Light in the …” when the site keeps the full text in a tooltip.</li>
+          <li><strong>Social &amp; email finder</strong> reads JavaScript-built sites (and sites that refuse background requests) in a hidden tab.</li>
+          <li><strong>Phones</strong>: unbroken numbers like +91 9876543210 are found; order numbers are not mistaken for phones.</li>
+          <li><strong>YouTube</strong>: exact views and likes on Shorts; <strong>Amazon</strong>: clean /dp/ links and a sponsored flag; <strong>Google Maps</strong>: website and opening hours fixes.</li>
+          <li><strong>Claude connector safety</strong>: safety rules now also apply after redirects and to links found inside pages; trailing-dot and IPv6 tricks blocked; buttons chosen by Claude are clicked only with “Allow actions”; long jobs return their rows before Claude’s 60-second limit.</li>
+          <li><strong>Speed and robustness</strong>: huge pages are scanned in milliseconds; a broken mailto/tel link no longer stops a scan; cancelled Claude jobs free their slot at once.</li>
+        </ul>
+      </div>
+    </section>
+
     <section class="release" aria-labelledby="v120">
       <div class="release__meta">
         <h2 class="release__v" id="v120">v1.2.0</h2>

@@ -89,7 +89,9 @@ async function guardOpts() {
 
 async function allowedTab(tabId) {
   const tab = tabId != null ? await chrome.tabs.get(tabId) : await getActiveTab();
-  assertAllowed(tab.url || tab.pendingUrl || '', await guardOpts());
+  const g = await guardOpts();
+  assertAllowed(tab.url || tab.pendingUrl || '', g);
+  if (tab.pendingUrl) assertAllowed(tab.pendingUrl, g); // a navigation to a blocked page is under way
   return tab;
 }
 
@@ -136,13 +138,15 @@ const OPS = {
   },
   async runInNewTab({ url, method, args = [], waitMs }) {
     assertAllowed(url, await guardOpts());
-    return runInNewTab(url, method, args, { waitMs });
+    const g = await guardOpts();
+    return runInNewTab(url, method, args, { waitMs, check: (u) => assertAllowed(u, g) });
   },
   // Open a feed / search page, scroll it and collect the posts it shows (Trend Finder).
-  async collectPosts({ url, tabId, steps, want, stepMs, patience }) {
+  async collectPosts({ url, tabId, steps, want, stepMs, patience, until }) {
     assertAllowed(url, await guardOpts());
     if (tabId != null) await allowedTab(tabId);
-    return collectPosts(url, { steps: Math.min(Number(steps) || 12, 120), want: Math.min(Number(want) || 50, 500), stepMs: Math.min(Math.max(Number(stepMs) || 1200, 500), 5000), patience: Math.min(Number(patience) || 3, 8), reuseTabId: tabId ?? undefined });
+    const g = await guardOpts();
+    return collectPosts(url, { until: Number(until) || 0, check: (u) => assertAllowed(u, g), steps: Math.min(Number(steps) || 12, 120), want: Math.min(Number(want) || 50, 500), stepMs: Math.min(Math.max(Number(stepMs) || 1200, 500), 5000), patience: Math.min(Number(patience) || 3, 8), reuseTabId: tabId ?? undefined });
   },
   async clickAndWait({ tabId, buttonSelector, itemSelector }) {
     await allowedTab(tabId);
