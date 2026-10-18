@@ -1100,6 +1100,8 @@
     'Google Maps results': (r) => {
       if (r.address === r.category) r.address = '';
       if (/^(open|closed|closes|opens)/i.test(r.address)) r.address = '';
+      // Price level shown on the card: "₹200–400", "$$", "€10–20".
+      r.price_range = ((r.details || '').match(/(?:[₹$€£¥]\s?[\d,]+\s?[–-]\s?[\d,]+|[₹$€£¥][\d,]+\+|(?<![\w₹$€£¥])[₹$€£¥]{1,4}(?=\s|$))/) || [''])[0];
       // Some cards put a tagline in the second line; the opening hours are then at the end of the card.
       if (r.status && !/\b(open|closed|closes|opens|hours)\b/i.test(r.status)) {
         const hours = (r.details || '').match(/\b((?:Open 24 hours|Open|Closed|Temporarily closed|Permanently closed|Closes soon|Opens soon)\b[^·]*(?:·[^·]*)?)$/i);
@@ -1506,6 +1508,18 @@
   // ======================================================================
 
   const CONTACT_LINK = /contact|about|impressum|imprint|team|support|kontakt|contacto|contatti|nous-contacter|legal|company|reach|get-in-touch/i;
+  // In a live tab: scroll to the bottom first, so lazily rendered footers (social icons, contact
+  // details) exist, then read contacts.
+  async function contactsAfterScroll() {
+    const el = document.scrollingElement || document.documentElement;
+    for (let i = 0; i < 4; i++) {
+      el.scrollTop = el.scrollHeight;
+      window.dispatchEvent(new Event('scroll'));
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    return contacts(document);
+  }
+
   function contacts(doc = document) {
     const host = hostOf(doc).replace(/^www\./, '');
     const contactLinks = [];
@@ -1665,7 +1679,7 @@
     // page extractor
     extractPage, jsonLd, BUILTIN_FIELDS: Object.keys(BUILTINS),
     // text / contacts / AI
-    readable, contacts, pageText,
+    readable, contacts, contactsAfterScroll, pageText,
     // picker + highlight
     startPicker, stopPicker, highlight, clearHighlight,
     countSelector: (s) => qsa(document, s).length,
