@@ -25,6 +25,17 @@ export function activeSheet() {
 }
 
 let saveTimer = null;
+
+// Edits still waiting to be saved when Claude's results arrive go to History in full.
+export async function snapshotUnsaved() {
+  if (!saveTimer || !state.dataset?.sheets?.length || state.dataset.updatedBy === 'claude') return false;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  const d = state.dataset;
+  await addHistory({ title: `${d.title || 'Data Table'} (your edits before Claude's results)`, url: d.url || '', source: d.source || 'Data Table',
+    pages: [d.url].filter(Boolean), results: Object.fromEntries(d.sheets.map((s) => [s.name, s.rows])) }, { keep: true });
+  return true;
+}
 async function persistNow() {
   clearTimeout(saveTimer);
   saveTimer = null;

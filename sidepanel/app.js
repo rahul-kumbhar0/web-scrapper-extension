@@ -1,6 +1,6 @@
 import { h, $, fill, toast, stopJob, plural } from './ui.js';
 import './picker.js';
-import { state, loadDataset, onChange } from './state.js';
+import { state, loadDataset, onChange, snapshotUnsaved } from './state.js';
 import { getSettings, saveRecipe, getRecipes } from '../lib/storage.js';
 import { getActiveTab, navigate } from '../lib/tab.js';
 import { icon, TOOL_ICONS } from './icons.js';
@@ -203,10 +203,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
   // Results written by Claude (via the MCP connector) appear live.
   const d = changes.dataset?.newValue;
   if (!d || d.updatedBy !== 'claude' || d.updatedAt === state.dataset?.updatedAt) return;
-  state.dataset = d;
-  for (const fn of state.listeners) fn();
-  if (currentId === 'table') go('table');
-  toast(`Claude added results: ${d.title}`, 'ok');
+  snapshotUnsaved().then((savedEdits) => {
+    state.dataset = d;
+    for (const fn of state.listeners) fn();
+    if (currentId === 'table') go('table');
+    const saved = d.savedPrevious || savedEdits ? ' Your previous table is saved in History.' : '';
+    toast(`Claude added results: ${d.title}.${saved}`, 'ok');
+  });
 });
 
 settings = await getSettings();

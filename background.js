@@ -2,7 +2,7 @@
 // browser operations the bridge asks for (tabs, screenshots, downloads, storage).
 // Only the extension's own offscreen bridge may call these operations, and every page Claude
 // touches is checked against the user's safety settings (lib/guard.js).
-import { getActiveTab, callInTab, navigate, waitForLoad, runInNewTab, clickAndWait, collectPosts, sleep } from './lib/tab.js';
+import { getActiveTab, callInTab, callInTabChecked, navigate, waitForLoad, runInNewTab, clickAndWait, collectPosts, sleep } from './lib/tab.js';
 import { getSettings, saveSettings, addHistory, newToken } from './lib/storage.js';
 import { blockedReason, assertAllowed } from './lib/guard.js';
 import { refreshLicense, getLicense, limitsFor, useMcpCall } from './lib/license.js';
@@ -134,7 +134,8 @@ const OPS = {
   },
   async callInTab({ tabId, method, args = [] }) {
     const tab = await allowedTab(tabId);
-    return callInTab(tab.id, method, ...args);
+    const g = await guardOpts();
+    return callInTabChecked(tab.id, (u) => assertAllowed(u, g), method, ...args);
   },
   async runInNewTab({ url, method, args = [], waitMs }) {
     assertAllowed(url, await guardOpts());
@@ -165,6 +166,7 @@ const OPS = {
     if (!tab.active) { await chrome.tabs.update(tab.id, { active: true }); await sleep(400); }
     await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 70 });
+    assertAllowed((await chrome.tabs.get(tab.id)).url || '', await guardOpts()); // still the same page?
     return { dataUrl, title: tab.title, url: tab.url };
   },
   async download({ urls, folder }) {
@@ -185,7 +187,14 @@ const OPS = {
     return { requested: urls.length, started: ok, folder: `Downloads/pullrows/${safe}/` };
   },
   async saveDataset({ title, url, source, sheets }) {
-    const dataset = { title, url, source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)), updatedBy: 'claude', updatedAt: Date.now() };
+    // The user's own table (perhaps edited by hand) is saved in full before Claude's results replace it.
+    const { dataset: prev } = await chrome.storage.local.get('dataset');
+    const ownTable = prev?.updatedBy !== 'claude' && prev?.sheets?.some((s) => s.rows?.length);
+    if (ownTable) {
+      await addHistory({ title: `${prev.title || 'Data Table'} (your table before Claude's results)`, url: prev.url || '', source: prev.source || 'Data Table',
+        pages: [prev.url].filter(Boolean), results: Object.fromEntries(prev.sheets.map((s) => [s.name, s.rows || []])) }, { keep: true });
+    }
+    const dataset = { title, url, source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)), updatedBy: 'claude', updatedAt: Date.now(), ...(ownTable ? { savedPrevious: true } : {}) };
     await chrome.storage.local.set({ dataset });
     await addHistory({ title, url, source, pages: [url], results: Object.fromEntries(sheets.map((s) => [s.name, s.rows])) });
     return true;

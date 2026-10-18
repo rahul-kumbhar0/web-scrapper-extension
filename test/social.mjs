@@ -122,6 +122,33 @@ try {
     assert.ok(x.views > 0 && x.likes > 3);
   });
 
+  await step('Safety: a page that redirects itself to a blocked site is never read', async () => {
+    await sp.evaluate(async () => { const { settings } = await chrome.storage.local.get('settings'); settings.mcp.blocked = [...(settings.mcp.blocked || []), 'localhost']; await chrome.storage.local.set({ settings }); });
+    let msg = '';
+    try {
+      const t = await tool('browser_open', { url: `${BASE}/patterns/sneaky-redirect.html`, wait_ms: 0 });
+      await new Promise((r) => setTimeout(r, 1500)); // the page moves to localhost after loading
+      await tool('page_read', { tab_id: t.tab_id });
+    } catch (e) { msg = e.message; }
+    assert.match(msg, /Blocked by PullRows safety settings: localhost/);
+    await sp.evaluate(async () => { const { settings } = await chrome.storage.local.get('settings'); settings.mcp.blocked = settings.mcp.blocked.filter((b) => b !== 'localhost'); await chrome.storage.local.set({ settings }); });
+  });
+
+  await step("Claude's results never wipe the user's own table: it is saved in full to History", async () => {
+    const rows = Array.from({ length: 7000 }, (_, i) => ({ name: `Lead ${i}`, email: `lead${i}@co.com`, note: i === 3 ? 'edited by hand' : '' }));
+    await sp.evaluate(async (rows) => chrome.storage.local.set({ dataset: { title: 'My leads', url: 'https://x.test', source: 'Email Extractor', sheets: [{ name: 'Emails', cols: ['name', 'email', 'note'], rows }], active: 0, updatedAt: Date.now() } }), rows);
+    await tool('post_details', { url: `${BASE}/social/reel/C01aiREEL/` });
+    const { history, dataset } = await sp.evaluate(() => chrome.storage.local.get(['history', 'dataset']));
+    const saved = history.find((h) => h.keep && /My leads/.test(h.title));
+    assert.ok(saved, 'snapshot in History');
+    assert.equal(saved.results.Emails.length, 7000, 'kept in full (beyond the 5,000-row history limit)');
+    assert.equal(saved.results.Emails[3].note, 'edited by hand');
+    assert.equal(dataset.savedPrevious, true);
+    for (let i = 0; i < 3; i++) await tool('post_details', { url: `${BASE}/social/reel/C0${i}aiREEL/` });
+    const again = (await sp.evaluate(() => chrome.storage.local.get('history'))).history;
+    assert.equal(again.filter((h) => h.keep).length, 1, 'only the user table is snapshotted, not Claude results');
+  });
+
   await step('Side panel: Trend Finder from pasted Reel links → Top / All posts / Patterns sheets', async () => {
     await sp.goto(`chrome-extension://${extId}/sidepanel/sidepanel.html`);
     await sp.locator('.tool-card', { hasText: 'Trend Finder' }).click();
