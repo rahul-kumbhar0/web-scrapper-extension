@@ -12,6 +12,8 @@ const ROWS = [
   ['Email & social finder sites per run', FREE_LIMITS.contactSites, 'Unlimited'],
   ['Images per download', FREE_LIMITS.images, 'Unlimited'],
   ['Shopify products · sitemap URLs', `${FREE_LIMITS.shopifyProducts} · ${FREE_LIMITS.sitemapUrls.toLocaleString()}`, 'Unlimited'],
+  ['Trend Finder posts scanned per run', FREE_LIMITS.trendPosts, 'Up to 500'],
+  ['Video scripts (transcripts) of winners', '—', '✓'],
   ['CSV & copy export', '✓', '✓'],
   ['Excel & JSON export', '—', '✓'],
   ['Saved recipes', FREE_LIMITS.recipes, 'Unlimited'],

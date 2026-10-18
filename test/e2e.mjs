@@ -64,7 +64,7 @@ const goSite = async (p) => { await site.goto(BASE + p); await site.waitForLoadS
 const home = async () => { if (await sp.locator('#back').isVisible()) await sp.click('#back'); };
 const openTool = async (title) => { await home(); await clearToast(); await sp.locator('.tool-card', { hasText: title }).click(); await sp.waitForSelector(`#title:text("${title}")`); };
 const fieldRow = async (name) => sp.locator('.field-row').nth(await sp.evaluate((n) => [...document.querySelectorAll('.field-row input.name-input')].findIndex((i) => i.value === n), name));
-const waitMode = (mode) => sp.waitForFunction((m) => document.querySelector('select')?.value === m, mode, { timeout: 10000 });
+const waitMode = (mode) => sp.waitForFunction((m) => [...document.querySelectorAll('label.field')].find((l) => /^Pagination/.test(l.textContent))?.querySelector('select')?.value === m, mode, { timeout: 10000 });
 const waitIdle = (timeout = 60000) => sp.waitForFunction(() => !document.body.classList.contains('is-busy'), null, { timeout });
 const toastText = () => sp.locator('#toast').textContent();
 const waitToast = (re, timeout = 60000) => sp.waitForFunction((src) => new RegExp(src).test(document.getElementById('toast').textContent), re.source, { timeout });
@@ -80,7 +80,7 @@ try {
   await step('home shows all tools', async () => {
     const cards = await sp.locator('.tool-card strong').allTextContents();
     console.log(`    ${cards.join(' · ')}`);
-    assert.equal(cards.length, 10);
+    assert.equal(cards.length, 11);
   });
 
   await step('settings: save delay 0', async () => {
@@ -147,7 +147,7 @@ try {
     await openTool('List Extractor');
     await btn('Auto-detect').click();
     await sp.waitForSelector('.list-summary strong:text("6 items found")');
-    await sp.locator('select').first().selectOption('scroll');
+    await sp.locator('label.field', { hasText: 'Pagination' }).locator('select').selectOption('scroll');
     await sp.locator('label:has-text("Max scrolls") input').fill('20');
     await sp.locator('label:has-text("Max scrolls") input').dispatchEvent('change');
     await btn('Extract list').click();

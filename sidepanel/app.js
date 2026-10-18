@@ -17,17 +17,18 @@ import sitemapTool from './tools/sitemap.js';
 import textTool from './tools/text.js';
 import quickTool from './tools/quick.js';
 import aiTool from './tools/ai.js';
+import trendsTool from './tools/trends.js';
 import tableView from './views/table.js';
 import recipesView from './views/recipes.js';
 import historyView from './views/history.js';
 import settingsView from './views/settings.js';
 import upgradeView from './views/upgrade.js';
 
-export const TOOLS = [listTool, pageTool, emailTool, socialTool, imagesTool, shopifyTool, sitemapTool, textTool, quickTool, aiTool];
+export const TOOLS = [listTool, pageTool, emailTool, socialTool, imagesTool, shopifyTool, sitemapTool, textTool, quickTool, trendsTool, aiTool];
 const GROUPS = [
   { label: 'On this page', ids: ['list', 'quick', 'images', 'text'] },
   { label: 'Across many pages', ids: ['page', 'email', 'social', 'sitemap', 'shopify'] },
-  { label: 'AI', ids: ['ai'] },
+  { label: 'Social & AI', ids: ['trends', 'ai'] },
 ];
 const VIEWS = { table: tableView, recipes: recipesView, history: historyView, settings: settingsView, upgrade: upgradeView };
 const ALL = Object.fromEntries([...TOOLS, ...Object.values(VIEWS)].map((t) => [t.id, t]));

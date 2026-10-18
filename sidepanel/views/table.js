@@ -1,4 +1,5 @@
 // DATA TABLE — the shared, editable workspace every tool writes into.
+import { toNumber, numericShare, cleanUrl } from '../../lib/clean.js';
 import { h, fill, toast, runJob, plural, formDialog, confirmDialog, menu, markdown } from '../ui.js';
 import { state, activeSheet, changed, columnsOf, isUrl, urlColumns, onChange } from '../state.js';
 import { toCSV, toTSV, toJSON, toXLSX, download, fileStem } from '../../lib/export.js';
@@ -68,7 +69,9 @@ export default {
         { label: 'Move left', disabled: i === 0, run: () => { s.cols.splice(i - 1, 0, s.cols.splice(i, 1)[0]); commit(); } },
         { label: 'Move right', disabled: i === s.cols.length - 1, run: () => { s.cols.splice(i + 1, 0, s.cols.splice(i, 1)[0]); commit(); } },
         { label: 'Remove duplicates by this column', run: () => dedupe([col]) },
+        !urlish && numericShare(s.rows.slice(0, 200).map((r) => r[col])) >= 0.5 && { label: 'Convert to numbers (₹1,299 → 1299, 1.2K → 1200)', run: () => toNumbers(col) },
         urlish && '-',
+        urlish && { label: 'Remove tracking from links', run: () => cleanLinks(col) },
         ...(urlish ? SEND_TARGETS.map(([id, label]) => ({ label: `Send URLs → ${label}`, run: () => sendUrls(col, id) })) : []),
         urlish && { label: 'Download as images', run: () => downloadCol(col) },
         '-',
@@ -141,9 +144,31 @@ export default {
       commit();
     }
 
+    function toNumbers(col) {
+      const s = sheet();
+      let changed = 0;
+      for (const r of s.rows) {
+        const n = toNumber(r[col]);
+        if (n !== null && n !== r[col]) { r[col] = n; changed++; }
+      }
+      commit();
+      toast(`Converted ${plural(changed, 'value')} in “${col}” to numbers.`, 'ok');
+    }
+
+    function cleanLinks(col) {
+      const s = sheet();
+      let changed = 0;
+      for (const r of s.rows) {
+        const v = cleanUrl(r[col]);
+        if (v !== r[col]) { r[col] = v; changed++; }
+      }
+      commit();
+      toast(`Removed tracking from ${plural(changed, 'link')}.`, 'ok');
+    }
+
     function sortBy(col, dir) {
       const s = sheet();
-      const num = (v) => { const n = parseFloat(String(v).replace(/[^\d.-]/g, '')); return Number.isNaN(n) ? null : n; };
+      const num = toNumber;
       const numeric = s.rows.slice(0, 50).every((r) => r[col] === '' || r[col] == null || num(r[col]) !== null);
       s.rows.sort((a, b) => {
         const x = a[col] ?? '';

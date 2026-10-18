@@ -2,7 +2,7 @@
 // browser operations the bridge asks for (tabs, screenshots, downloads, storage).
 // Only the extension's own offscreen bridge may call these operations, and every page Claude
 // touches is checked against the user's safety settings (lib/guard.js).
-import { getActiveTab, callInTab, navigate, waitForLoad, runInNewTab, clickAndWait, sleep } from './lib/tab.js';
+import { getActiveTab, callInTab, navigate, waitForLoad, runInNewTab, clickAndWait, collectPosts, sleep } from './lib/tab.js';
 import { getSettings, saveSettings, addHistory, newToken } from './lib/storage.js';
 import { blockedReason, assertAllowed } from './lib/guard.js';
 import { refreshLicense, getLicense, limitsFor, useMcpCall } from './lib/license.js';
@@ -137,6 +137,12 @@ const OPS = {
   async runInNewTab({ url, method, args = [], waitMs }) {
     assertAllowed(url, await guardOpts());
     return runInNewTab(url, method, args, { waitMs });
+  },
+  // Open a feed / search page, scroll it and collect the posts it shows (Trend Finder).
+  async collectPosts({ url, tabId, steps, want }) {
+    assertAllowed(url, await guardOpts());
+    if (tabId != null) await allowedTab(tabId);
+    return collectPosts(url, { steps: Math.min(Number(steps) || 12, 120), want: Math.min(Number(want) || 50, 500), reuseTabId: tabId ?? undefined });
   },
   async clickAndWait({ tabId, buttonSelector, itemSelector }) {
     await allowedTab(tabId);

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const FIXTURES = path.join(path.dirname(new URL(import.meta.url).pathname), 'fixtures');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml', '.json': 'application/json', '.txt': 'text/plain', '.gz': 'application/gzip', '.jpg': 'image/jpeg' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml', '.json': 'application/json', '.txt': 'text/plain', '.gz': 'application/gzip', '.jpg': 'image/jpeg', '.vtt': 'text/vtt' };
 // 1x1 JPEG so <img> loads succeed
 const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
 
@@ -29,10 +29,12 @@ export async function startServer() {
       if (u.pathname === '/licenses/deactivate') return reply(200, {});
     }
     if (u.pathname.startsWith('/img/')) { res.writeHead(200, { 'content-type': 'image/jpeg' }); return res.end(JPG); }
-    const file = path.join(FIXTURES, path.normalize(decodeURIComponent(u.pathname)));
+    let file = path.join(FIXTURES, path.normalize(decodeURIComponent(u.pathname)));
+    // Post-style URLs (/social/reel/CODE/) are folders with an index.html.
+    if (file.startsWith(FIXTURES) && fs.existsSync(file) && fs.statSync(file).isDirectory()) file = path.join(file, 'index.html');
     if (!file.startsWith(FIXTURES) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end('not found'); }
     let body = fs.readFileSync(file);
-    if (/\.(xml|txt)$/.test(file)) body = body.toString().replaceAll('BASE', base).replace('Sitemap: /', `Sitemap: ${base}/`);
+    if (/\.(xml|txt|vtt)$/.test(file) || file.includes(`${path.sep}social${path.sep}`)) body = body.toString().replaceAll('BASE', base).replace('Sitemap: /', `Sitemap: ${base}/`);
     if (file.endsWith('.gz')) {
       const zlib = await import('node:zlib');
       body = zlib.gzipSync(zlib.gunzipSync(body).toString().replaceAll('BASE', base));

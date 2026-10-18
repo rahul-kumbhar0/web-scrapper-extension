@@ -114,11 +114,43 @@ export const TOOLS = [
           description: 'Each: {name, selector, attr ("text" default, "href", "src", "html" or any attribute), multiple (join all matches)} or {name, builtin}. Built-ins: title, h1, description, canonical, og_image, author, published, language, word_count, emails, phones, socials, price, main_text, ig_type, ig_likes, ig_comments, ig_author, ig_date, ig_caption (Instagram post/Reel pages: likes & comments as numbers), maps_name, maps_rating, maps_reviews, maps_category, maps_address, maps_phone, maps_website, maps_hours.',
           items: { type: 'object', properties: { name: { type: 'string' }, selector: { type: 'string' }, attr: { type: 'string' }, multiple: { type: 'boolean' }, builtin: { type: 'string' } }, required: ['name'] },
         },
-        mode: { type: 'string', enum: ['fast', 'browser'], default: 'fast', description: 'fast = fetch HTML (no JS). browser = open each page in a background tab (JS sites, Google Maps).' },
+        mode: { type: 'string', enum: ['auto', 'fast', 'browser'], default: 'auto', description: 'auto = fetch each page in the background and open a hidden tab only for pages that need JavaScript or a login. fast = background only, never a tab. browser = always a background tab (Google Maps).' },
         concurrency: { type: 'integer', default: 3 },
         ...returned,
       },
       required: ['urls', 'fields'],
+    },
+  },
+  {
+    name: 'trends_find',
+    description: 'Find the best-performing Reels / TikToks / YouTube Shorts & videos for a topic or #hashtag (or from a search/profile page, or a list of post links) and rank them. Each post comes with caption, hook, hashtags, views, likes, comments, shares, saves, engagement rate, views per day, sound/music, duration, upload time, creator followers and (Pro, where the platform publishes captions) the spoken transcript. Also returns patterns the winners share (hashtags, sounds, length, hooks, timing). Posts are read in the background where possible; Instagram/TikTok search pages are opened in a tab (the user must be logged in there). After calling, analyse why the top posts work and suggest ideas.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Topic ("ai tools") or hashtag ("#aitools").' },
+        platform: { type: 'string', enum: ['instagram', 'tiktok', 'youtube', 'youtube-shorts'], default: 'youtube' },
+        page_url: { type: 'string', description: 'Instead of query: a search, hashtag, profile or feed page to collect posts from.' },
+        urls: { type: 'array', items: { type: 'string' }, description: 'Instead of query: post / Reel / video links to compare.' },
+        scan: { type: 'integer', default: 30, description: 'How many posts to read before ranking (free plan: 30).' },
+        top: { type: 'integer', default: 10 },
+        rank_by: { type: 'string', enum: ['trending', 'balanced', 'views', 'engaging'], default: 'trending', description: 'trending = fastest-growing (views per hour) + engagement; engaging = interactions per view.' },
+        transcripts: { type: 'boolean', default: true, description: 'Fetch the spoken script of the winners where captions exist (Pro).' },
+        max_age_days: { type: 'integer', description: 'Only posts newer than this.' },
+        min_views: { type: 'integer' },
+      },
+    },
+  },
+  {
+    name: 'post_details',
+    description: 'Full data for one or more social posts (Instagram post/Reel, TikTok, YouTube video/Short): caption, hashtags, mentions, views, likes, comments, shares, saves, sound/music, original audio or not, duration, upload time, author, followers, thumbnail, and the transcript where captions exist (Pro). Read in the background; a hidden tab is used only when the page needs it.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string' },
+        urls: { type: 'array', items: { type: 'string' } },
+        transcript: { type: 'boolean', default: true },
+        ...returned,
+      },
     },
   },
   {
@@ -215,5 +247,6 @@ Typical flows:
 - Lists (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed).
 - Details for many pages: page_extract with selectors/built-ins (use sitemap_urls or list_extract link columns to get URLs).
 - Leads: find_emails / find_social_links on a list of websites.
+- Social research ("best reels about X", "what's trending for #tag"): trends_find, then explain why the winners work from their hooks, transcripts, sounds and the patterns. post_details for specific post links.
 Use browser_screenshot or page_read to understand an unfamiliar page. Keep scrapes polite (reasonable page counts and delays).
 Some sites are blocked by the user's safety settings (email, banking, password managers, local network); clicking/typing (page_action click/fill) and images_download only work if the user enabled 'Allow actions' in PullRows Settings — if a tool says it's disabled, tell the user how to enable it rather than retrying.`;

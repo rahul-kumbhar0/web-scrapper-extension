@@ -20,6 +20,7 @@ const P = {
   crown: ['m3 7 4 4 5-7 5 7 4-4-2 12H5z'],
   scan: ['M3 7V5a2 2 0 0 1 2-2h2', 'M17 3h2a2 2 0 0 1 2 2v2', 'M21 17v2a2 2 0 0 1-2 2h-2', 'M7 21H5a2 2 0 0 1-2-2v-2', 'M7 12h10'],
   check: ['m5 12 5 5 9-10'],
+  trend: ['m3 17 6-6 4 4 8-8', 'M14 7h7v7'],
   lock: ['M5 11h14v10H5z', 'M8 11V7a4 4 0 0 1 8 0v4'],
   shield: ['M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z'],
   external: ['M14 4h6v6', 'M20 4 10 14', 'M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
@@ -27,7 +28,7 @@ const P = {
 
 export const TOOL_ICONS = {
   list: 'list', page: 'pages', email: 'mail', social: 'share', images: 'image', shopify: 'bag',
-  sitemap: 'sitemap', text: 'text', quick: 'bolt', ai: 'sparkle',
+  sitemap: 'sitemap', text: 'text', quick: 'bolt', ai: 'sparkle', trends: 'trend',
   table: 'table', recipes: 'book', history: 'clock', settings: 'gear', upgrade: 'crown',
 };
 

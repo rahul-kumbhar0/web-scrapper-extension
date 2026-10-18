@@ -6,7 +6,7 @@ import { makeSheet, setDataset } from '../state.js';
 import { pick } from '../picker.js';
 import { card, numberField, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab, clickAndWait, sleep } from '../../lib/tab.js';
-import { runList } from '../../lib/list-runner.js';
+import { runList, waitUntilUnblocked } from '../../lib/list-runner.js';
 import { plan, capNumber } from '../plan.js';
 
 const MODES = [
@@ -84,8 +84,12 @@ export default {
       fill(summary, 
         h('div', { class: 'row' },
           h('strong', { class: 'grow' }, c ? `${plural(c.count, 'item')} found` : 'Saved list', config.preset ? h('span', { class: 'badge preset' }, `Preset: ${config.preset}`) : null),
-          candidates.length > 1 ? h('button', { type: 'button', class: 'btn tiny', title: 'Try another list on this page', onclick: () => setCandidates(candidates, (index + 1) % candidates.length) }, `Try another (${index + 1}/${candidates.length})`) : null,
+          candidates.length > 1 ? h('button', { type: 'button', class: 'btn tiny', title: 'Not the right list? Try the next one found on this page', onclick: () => setCandidates(candidates, (index + 1) % candidates.length) }, `Next suggestion (${index + 1}/${candidates.length})`) : null,
           h('button', { type: 'button', class: 'btn tiny', onclick: highlightCurrent }, 'Show')),
+        candidates.length > 1 ? h('label', { class: 'field small' }, 'Lists found on this page',
+          h('select', { 'aria-label': 'Choose a list', onchange: (e) => setCandidates(candidates, Number(e.target.value)) },
+            candidates.map((x, i) => h('option', { value: i, selected: i === index },
+              `${i + 1}. ${x.preset ? `${x.preset} · ` : ''}${plural(x.count, 'item')} · ${x.fields.slice(0, 4).map((f) => f.name).join(', ')}${x.chrome ? ' (menu/footer)' : ''}`)))) : null,
         h('code', { class: 'selector', title: 'Item selector (editable)', contentEditable: 'true', spellcheck: false,
           onblur: (e) => { config.itemSelector = e.target.textContent.trim(); runPreview(); } }, config.itemSelector));
     }
@@ -162,6 +166,11 @@ export default {
           sleep,
           signal,
           onProgress: (n, steps, mode) => progress(`${plural(n, 'row')}${mode === 'none' ? '' : ` · ${steps} scroll steps`}`),
+          onBlocked: async (b) => {
+            progress(`⚠ ${b.label}. Solve it in the tab and PullRows carries on (waiting up to 5 min)…`);
+            await chrome.tabs.update(tab.id, { active: true }).catch(() => {});
+            return waitUntilUnblocked((m, ...a) => callInTab(tab.id, m, ...a), { sleep, signal });
+          },
         });
         await setDataset({ title: r.title, url: r.url, source: 'List Extractor', sheets: [makeSheet('List', r.rows, r.cols)] });
         const capNote = capped && (r.pages >= cfg.pagination.max || r.steps >= cfg.pagination.max) ? ` Free plan stops at ${cfg.pagination.max} ${pagination.mode === 'scroll' ? 'scrolls' : 'pages'} — upgrade for no limit.` : '';

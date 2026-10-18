@@ -1040,6 +1040,38 @@
   }
 
   // ======================================================================
+  // BLOCK DETECTION — CAPTCHAs, bot checks, login walls, rate limits
+  // Works on live pages and on fetched (DOMParser) documents, which have no layout.
+  // ======================================================================
+
+  const CAPTCHA_SEL = 'iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare.com"], iframe[src*="captcha" i], #challenge-form, #challenge-running, #cf-challenge-running, .cf-turnstile, .g-recaptcha, .h-captcha, #px-captcha, #captcha-form, form[action*="captcha" i], #distilIdentificationBlock, [data-sitekey]';
+  const CAPTCHA_TEXT = /verify (that )?you('| a)re (a )?human|are you a (robot|human)|unusual traffic|press (and|&) hold|complete the security check|checking (if the site connection is secure|your browser)|enable javascript and cookies to continue|why have i been blocked|access denied|request unsuccessful|bot detected|confirm you are not a robot|ich bin kein roboter|je ne suis pas un robot|no soy un robot/i;
+  const LOGIN_TEXT = /\b(log ?in|sign ?in|login)\b.{0,60}\b(to (continue|see|view|watch)|required)|\b(log ?in|sign ?in|create an account) to (continue|see|view|watch|keep)|you must (be )?log(ged)? ?in|please (log|sign) ?in/i;
+  const RATE_TEXT = /too many requests|rate limit(ed)?|you('ve| have) been (temporarily )?(blocked|limited)|try again later/i;
+
+  function pageBlock(doc = document) {
+    const live = !!doc.defaultView;
+    const vis = (el) => !live || isVisible(el);
+    const title = doc.title || '';
+    const bodyText = clean(doc.body ? (live ? doc.body.innerText : doc.body.textContent) : '', 6000);
+    const short = bodyText.length < 3000;
+    const captcha = qsa(doc, CAPTCHA_SEL).find(vis);
+    if (captcha || /just a moment|attention required|are you a robot|security check|captcha|access denied|pardon our interruption/i.test(title) ||
+        (short && CAPTCHA_TEXT.test(bodyText))) {
+      return { kind: 'captcha', label: 'A CAPTCHA or bot check is showing' };
+    }
+    if (short && RATE_TEXT.test(bodyText + ' ' + title)) return { kind: 'rate-limit', label: 'The site is rate-limiting requests' };
+    const pw = qsa(doc, 'input[type="password"]').find(vis);
+    const path = (() => { try { return new URL(baseOf(doc)).pathname; } catch { return ''; } })();
+    const loginPath = /\/(login|log-in|signin|sign-in|accounts\/login|auth|sso|session\/new|checkpoint)\b/i.test(path);
+    const modal = pw && pw.closest('[role="dialog"], [aria-modal="true"], dialog, .modal');
+    if ((pw && (loginPath || modal || short)) || (loginPath && short) || (short && LOGIN_TEXT.test(bodyText))) {
+      return { kind: 'login', label: 'The site is asking you to log in' };
+    }
+    return null;
+  }
+
+  // ======================================================================
   // pagination actions (run in the live page)
   // ======================================================================
 
@@ -1485,7 +1517,7 @@
   globalThis.__webScraper = {
     version: ENGINE_VERSION,
     // quick scan
-    quick, findNextUrl,
+    quick, findNextUrl, pageBlock,
     // list extractor
     listsFromElement, autoDetectLists, autoDetectListsReady, describeSelector, extractList, fingerprint, waitForChange,
     findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, scrollToTop, jiggle, pageState, autoScroll, presetFor,

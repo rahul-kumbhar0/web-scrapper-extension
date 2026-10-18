@@ -1,6 +1,6 @@
-# Chrome Web Store listing: PullRows 1.0.1
+# Chrome Web Store listing: PullRows 1.1.0
 
-Upload `dist/pullrows-1.0.1.zip`, which you build with `npm run package`. Images are in `store/`.
+Upload `dist/pullrows-1.1.0.zip`, which you build with `npm run package`. Images are in `store/`.
 
 ## Store listing tab
 
@@ -24,7 +24,7 @@ Open a page with a list: search results, a directory, a shop category, a map, a 
 • Finds "Next" and "Load more" in 35+ languages
 • Built-in presets for map results, job listings, social posts and reels, video lists and product search
 
-TEN TOOLS IN ONE PANEL
+ELEVEN TOOLS IN ONE PANEL
 • List Extractor: lists, grids and tables, with pagination
 • Page Extractor: the same fields from hundreds of URLs, one row per page
 • Email Extractor: crawls contact/about pages and decodes protected addresses
@@ -34,6 +34,7 @@ TEN TOOLS IN ONE PANEL
 • Sitemap Explorer: every URL of a site, grouped and filterable
 • Page Text: clean article text and Markdown
 • Quick Scan: emails, phones, links, tables and prices on the current page
+• Trend Finder: the best Reels, TikToks and YouTube Shorts for any topic or #hashtag, ranked, with views, likes, shares, hashtags, sound, length, the spoken script (Pro) and the patterns the winners share
 • AI Extract: describe what you want in plain English (uses your own Anthropic API key)
 
 AN EDITABLE DATA TABLE

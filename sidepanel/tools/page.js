@@ -7,6 +7,7 @@ import { pick } from '../picker.js';
 import { urlSource, card, numberField, select, actions, primary, secondary } from '../widgets.js';
 import { getActiveTab, callInTab, runInNewTab, sleep } from '../../lib/tab.js';
 import { fetchDoc, runPool } from '../../lib/net.js';
+import { smartRun } from '../../lib/smart.js';
 import { capList } from '../plan.js';
 
 const BUILTINS = [
@@ -35,9 +36,10 @@ export default {
     let fields = preset.fields ? structuredClone(preset.fields) : [];
     const urls = urlSource({ initial: preset.urls || [] });
     const mode = select('Mode', [
-      { value: 'fast', label: 'Fast — fetch HTML in background (no JavaScript)' },
-      { value: 'browser', label: 'Browser — open each page in a tab (JS sites, Google Maps)' },
-    ], preset.mode || 'fast');
+      { value: 'auto', label: 'Auto — in the background; a hidden tab only for pages that need it' },
+      { value: 'fast', label: 'Background only — never open tabs (fastest)' },
+      { value: 'browser', label: 'Browser — open every page in a tab (JS-heavy sites, Google Maps)' },
+    ], preset.mode || 'auto');
     const conc = numberField('Parallel', preset.concurrency || ctx.settings.concurrency, { min: 1, max: 10 });
     const wait = numberField('Wait after load (ms)', preset.waitMs ?? 1500, { min: 0, max: 30000, step: 250 });
     const fieldsBox = h('div', { class: 'fields' });
@@ -101,18 +103,18 @@ export default {
       if (!list.length) { toast('Add some URLs.', 'error'); return; }
       if (!fields.length) { toast('Add some fields first.', 'error'); return; }
       const cfg = getConfig();
-      if (cfg.mode === 'fast' && fields.some((f) => f.builtin?.startsWith('maps_'))) {
+      if (cfg.mode !== 'browser' && fields.some((f) => f.builtin?.startsWith('maps_'))) {
         toast('Google Maps pages need Browser mode — switching.', '');
         cfg.mode = 'browser';
       }
       await runJob(`Extracting ${plural(list.length, 'page')}…`, async (signal, progress) => {
-        const engine = globalThis.__webScraper;
         const rows = new Array(list.length);
+        let inTabs = 0;
+        const io = { fetchDoc, signal, renderInTab: (url, method, args) => runInNewTab(url, method, args, { waitMs: cfg.waitMs }) };
         await runPool(list, cfg.mode === 'browser' ? Math.min(cfg.concurrency, 4) : cfg.concurrency, async (url, i) => {
           try {
-            let res;
-            if (cfg.mode === 'browser') res = await runInNewTab(url, 'extractPage', [cfg.fields], { waitMs: cfg.waitMs });
-            else res = engine.extractPage(cfg.fields, (await fetchDoc(url, { signal })).doc);
+            const { result: res, via } = await smartRun(url, 'extractPage', [cfg.fields], io, { mode: cfg.mode });
+            if (via === 'tab') inTabs++;
             rows[i] = { url, ...Object.fromEntries(res.cols.map((c, k) => [c, res.data[0][k]])), error: '' };
           } catch (e) {
             rows[i] = { url, error: String(e.message || e) };
@@ -123,7 +125,8 @@ export default {
         const failed = out.filter((r) => r.error).length;
         const cols = ['url', ...fields.map((f) => f.name), ...(failed ? ['error'] : [])];
         await setDataset({ title: `Page Extractor — ${plural(out.length, 'page')}`, url: list[0], source: 'Page Extractor', sheets: [makeSheet('Pages', out.map((r) => { if (!failed) delete r.error; return r; }), cols)] });
-        toast(`Done: ${plural(out.length - failed, 'page')}${failed ? `, ${failed} failed (see “error” column)` : ''}.`, failed ? '' : 'ok');
+        const tabNote = cfg.mode === 'auto' && inTabs ? ` ${inTabs} needed a background tab.` : '';
+        toast(`Done: ${plural(out.length - failed, 'page')}${failed ? `, ${failed} failed (see “error” column)` : ''}.${tabNote}`, failed ? '' : 'ok');
         ctx.go('table');
       });
     }

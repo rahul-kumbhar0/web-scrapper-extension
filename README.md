@@ -20,6 +20,7 @@
 | **Sitemap Explorer** | Reads robots.txt, sitemap indexes and `.gz` files. Groups URLs by section, filters them, and can send them to other tools. |
 | **Page Text Extractor** | Clean main-content text and Markdown. |
 | **Quick Scan** | Emails, phones, links, images, tables, socials and prices on the current page. |
+| **Trend Finder** | Best Reels / TikToks / YouTube Shorts for a topic or #hashtag, ranked (momentum, engagement, reach), with caption, hashtags, views, likes, shares, sound, length, transcript (Pro) and the patterns the winners share. Background first; opens a tab only when a platform needs it. |
 | **AI Extract** | Describe what you want; Claude, using the user's own API key, returns a table. |
 
 **Data Table:** sheets, search, editing, rename, sort, dedupe, clean, merge, an AI column and Ask Claude. Export to CSV or the clipboard (free), or to Excel and JSON (Pro). **Recipes** re-run any setup in one click. **History** keeps the last 30 results.
@@ -63,7 +64,7 @@ Claude's cloud can't reach your browser, so a small **relay** (`server/`, zero d
 2. Pin PullRows and click the icon to open the side panel.
 
 ```bash
-NODE_PATH=$(npm root -g) npm test        # relay, oauth, e2e, mcp, realistic, patterns (headless Chromium)
+NODE_PATH=$(npm root -g) npm test        # relay, oauth, e2e, mcp, realistic, patterns, social, clean (headless Chromium)
 NODE_PATH=$(npm root -g) node test/e2e.mjs "list"   # steps matching a pattern
 npm run package                          # → dist/pullrows-<version>.zip (allow-listed files only)
 NODE_PATH=$(npm root -g) node scripts/store-assets.mjs   # → store/*.png screenshots + promo tiles

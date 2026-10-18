@@ -152,6 +152,12 @@ try {
     assert.equal(r.rows.length, 14);
     has(r.names, 'title', 'link', 'location');
   });
+  await check('CAPTCHA, login wall and normal pages are told apart', async () => {
+    const blockOf = async (name) => { await open(name); return page.evaluate(() => globalThis.__webScraper.pageBlock()); };
+    assert.equal((await blockOf('captcha'))?.kind, 'captcha');
+    assert.equal((await blockOf('login-wall'))?.kind, 'login');
+    for (const p of ['bootstrap-cards', 'hn', 'feed-cookie', 'jobs']) assert.equal(await blockOf(p), null, `${p} is not blocked`);
+  });
   await check('Cookie banner over the page does not hide the list', async () => {
     const r = await detect('feed-cookie');
     assert.equal(r.rows.length, 10);
