@@ -202,6 +202,20 @@ try {
     assert.deepEqual(r.errors, {});
     assert.ok(r.emails >= 1 && r.phones >= 4000);
   });
+  await check('Live UAT findings: no phones from code/sequences, spaced price context, clean table units/footnotes', async () => {
+    await open('uat-live');
+    const r = await page.evaluate(() => {
+      const W = globalThis.__webScraper;
+      const q = W.quick(['phones', 'prices'], {});
+      const c = W.autoDetectLists().find((x) => /tr/.test(x.itemSelector));
+      const ex = W.extractList(c);
+      return { phones: q.results.phones.data.map((x) => x[0]), context: q.results.prices.data[0][2], cols: ex.cols, row: ex.data[0] };
+    });
+    assert.deepEqual(r.phones, ['01 23 45 67 89', '020 2612 3456']);
+    assert.equal(r.context, '₹599 ₹1,999 70% off');
+    assert.deepEqual(r.cols, ['City', 'Area (km²)', 'Density']);
+    assert.deepEqual(r.row, ['Jakarta', '664', '15,292']);
+  });
   await check('Cookie banner over the page does not hide the list', async () => {
     const r = await detect('feed-cookie');
     assert.equal(r.rows.length, 10);

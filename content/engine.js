@@ -21,7 +21,9 @@
   const textOf = (el) => clean(el?.innerText ?? el?.textContent, 5000);
   // Text shortened with "…" on screen often has the full version in a title / aria-label attribute.
   const fullText = (el, max = 2000) => {
-    const t = clean(el.innerText ?? el.textContent, max);
+    let t = clean(el.innerText ?? el.textContent, max);
+    // Wikipedia-style footnote markers ("15,292 [14]", "9,519 [d]") are not part of the value.
+    if (el.querySelector?.('sup.reference, sup a[href^="#cite"]')) t = t.replace(/\s*\[(?:\d{1,3}|[a-z]{1,2}|note \d+|citation needed)\]/gi, '').trim();
     if (!/(\.\.\.|…)$/.test(t)) return t;
     const head = t.replace(/\s*(\.\.\.|…)$/, '');
     for (const cand of [el, el.closest('a,[title]'), el.querySelector?.('[title]')]) {
@@ -39,6 +41,14 @@
     if (doc.defaultView && doc.body?.innerText != null) return doc.body.innerText;
     return [...textNodes(doc)].map((n) => n.textContent).join(' ');
   };
+
+  function* textNodesIn(root) {
+    const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => (n.parentElement?.closest('script,style,noscript,template') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    });
+    let n;
+    while ((n = walker.nextNode())) yield n;
+  }
 
   function* textNodes(doc) {
     const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, {
@@ -177,6 +187,7 @@
       if (p) { found.set(p.replace(/[^\d+]/g, ''), { phone: p, source: 'tel link' }); tails.add(p.replace(/\D/g, '').replace(/^0+/, '').slice(-10)); }
     }
     for (const node of textNodes(doc)) {
+      if (node.parentElement?.closest('code, pre, kbd, samp, var')) continue; // code samples, not contacts
       const text = node.textContent;
       for (const m of text.matchAll(PHONE_RE)) {
         const raw = m[0].trim();
@@ -184,8 +195,11 @@
         const before = text[m.index - 1] || '';
         const after = text[m.index + m[0].length] || '';
         const intl = raw.startsWith('+') || raw.includes('(');
+        const phoneWordBefore = PHONE_WORD.test(text.slice(Math.max(0, m.index - 30), m.index));
         // An unbroken digit block without "+" is often an ID or order number: only with a phone word before it.
-        if (/^\d+$/.test(raw) && !PHONE_WORD.test(text.slice(Math.max(0, m.index - 30), m.index))) continue;
+        if (/^\d+$/.test(raw) && !phoneWordBefore) continue;
+        // Runs of short groups ("13 21 34 55 89") are sequences, scores or codes unless introduced as a phone.
+        if (!intl && !phoneWordBefore && !raw.split(/[\s.-]+/).some((g) => g.length >= 4)) continue;
         if (digits.length < (intl ? 7 : 10) || digits.length > 15) continue;
         if (/[\d$£€¥₹.,/:]/.test(before) || /[\d%/:]/.test(after)) continue; // prices, versions, ratios, times
         if (/^\d{4}[-./]\d{1,2}[-./]\d{1,2}$|^\d{1,2}[-./]\d{1,2}[-./]\d{2,4}$/.test(raw)) continue; // dates
@@ -334,7 +348,11 @@
         while (container?.parentElement && container !== doc.body && clean(container.innerText ?? container.textContent).length <= price.length + 3) {
           container = container.parentElement;
         }
-        const context = clean(container?.innerText ?? container?.textContent, 160);
+        // Text pieces joined with spaces: shops lay prices out in flex boxes, where innerText runs them
+        // together ("₹599₹1,99970% off").
+        const context = clean(container ? [...container.querySelectorAll('*'), container].length < 400
+          ? [...textNodesIn(container)].map((t) => t.textContent.trim()).filter(Boolean).join(' ')
+          : container.innerText ?? container.textContent : '', 160);
         const key = price + '|' + context;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -474,7 +492,10 @@
   // Header text without <style>/<script>, footnote markers ("[14]") or hidden sort keys.
   const cellText = (c) => {
     const x = c.cloneNode(true);
-    for (const e of x.querySelectorAll('style, script, sup, .sortkey, .reference, [style*="display:none"]')) e.remove();
+    for (const e of x.querySelectorAll('style, script, sup.reference, .sortkey, .reference, [style*="display:none"]')) e.remove();
+    for (const e of x.querySelectorAll('sup')) if (/^\s*\[[^\]]*\]\s*$/.test(e.textContent)) e.remove();
+    const SUP = { 1: '¹', 2: '²', 3: '³' };
+    for (const e of x.querySelectorAll('sup')) if (SUP[e.textContent.trim()]) e.textContent = SUP[e.textContent.trim()]; // km²
     return clean(x.textContent, 80).replace(/\[[^\]]{1,6}\]/g, '').trim();
   };
   // Visual column of every cell, honouring colspan AND rowspan (Wikipedia tables use both).

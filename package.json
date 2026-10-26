@@ -1,6 +1,6 @@
 {
   "name": "pullrows",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "private": true,
   "description": "PullRows \u2014 no-code web scraper Chrome extension (MV3, no build step) + Claude MCP relay.",
   "type": "module",
