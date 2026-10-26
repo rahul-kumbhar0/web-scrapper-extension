@@ -240,13 +240,43 @@ export const TOOLS = [
     description: 'Run one of the user\'s saved recipes by id and return the results.',
     inputSchema: { type: 'object', properties: { recipe_id: { type: 'string' }, ...returned }, required: ['recipe_id'] },
   },
+  {
+    name: 'monitors_list',
+    description: 'List the user\'s monitors (recipes re-run on a schedule in the background) with their latest results: new rows, gone rows, changed values, price drops.',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'monitor_create',
+    description: 'Watch a page for changes on a schedule — new listings/jobs/leads, price drops, changed values. Give recipe_id (from recipes_list) or the url of a list page (optionally with item_selector / fields / pagination like list_extract; it is saved as a recipe). The user gets a Chrome notification when something changes. Free plan: 1 monitor, daily; Pro: unlimited, hourly.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        recipe_id: { type: 'string' },
+        url: { type: 'string', description: 'A list page to watch (instead of recipe_id).' },
+        name: { type: 'string' },
+        item_selector: { type: 'string' },
+        fields: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, selector: { type: 'string' }, attr: { type: 'string' } }, required: ['name'] } },
+        pagination: { type: 'object', properties: { mode: { type: 'string', enum: ['none', 'next', 'loadmore', 'scroll', 'auto'] }, max_pages: { type: 'integer' } } },
+        every_minutes: { type: 'integer', enum: [60, 360, 1440, 10080], default: 1440 },
+        alert_on: { type: 'string', enum: ['any', 'new', 'drops'], default: 'any', description: 'any change, only new rows, or only price drops' },
+      },
+    },
+  },
 ];
+
+// Page tools also return a screenshot of the page, so the user sees what was scraped in the chat.
+for (const t of TOOLS) {
+  if (['browser_open', 'list_detect', 'list_extract', 'page_action', 'quick_scan', 'images_find'].includes(t.name)) {
+    t.inputSchema.properties.screenshot = { type: 'boolean', default: true, description: 'Also return a screenshot of the page (shown to the user in the chat). Set false to save tokens.' };
+  }
+}
 
 export const INSTRUCTIONS = `Tools for the user's PullRows Chrome extension. Every tool runs inside the user's own Chrome (their logged-in sessions), and results are also saved to the PullRows Data Table so the user can export them (CSV, Excel, Google Sheets).
 Typical flows:
 - Lists (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed).
 - Details for many pages: page_extract with selectors/built-ins (use sitemap_urls or list_extract link columns to get URLs).
 - Leads: find_emails / find_social_links on a list of websites.
+- Watching for changes ("tell me when the price drops", "new jobs every morning"): monitor_create; monitors_list shows the latest changes.
 - Social research ("best reels about X", "what's trending for #tag"): trends_find, then explain why the winners work from their hooks, transcripts, sounds and the patterns. post_details for specific post links.
 Use browser_screenshot or page_read to understand an unfamiliar page. Keep scrapes polite (reasonable page counts and delays).
 Some sites are blocked by the user's safety settings (email, banking, password managers, local network); clicking/typing (page_action click/fill) and images_download only work if the user enabled 'Allow actions' in PullRows Settings — if a tool says it's disabled, tell the user how to enable it rather than retrying.`;

@@ -2,8 +2,9 @@
 import { h, fill, toast, confirmDialog, formDialog } from '../ui.js';
 import { getRecipes, deleteRecipe, saveRecipe, importRecipes } from '../../lib/storage.js';
 import { download } from '../../lib/export.js';
+import { monitorDialog, MONITORABLE } from './monitors.js';
 
-const TOOL_NAMES = { list: 'List Extractor', page: 'Page Extractor', email: 'Email Extractor', social: 'Social Link Extractor', images: 'Image Downloader', shopify: 'Shopify Extractor', sitemap: 'Sitemap Explorer', text: 'Page Text Extractor', quick: 'Quick Scan', ai: 'AI Extract' };
+const TOOL_NAMES = { list: 'List Extractor', page: 'Page Extractor', email: 'Email Extractor', social: 'Social Link Extractor', images: 'Image Downloader', shopify: 'Shopify Extractor', sitemap: 'Sitemap Explorer', text: 'Page Text Extractor', quick: 'Quick Scan', ai: 'AI Extract', trends: 'Trend Finder' };
 
 export default {
   id: 'recipes',
@@ -33,6 +34,7 @@ export default {
         h('div', { class: 'actions' },
           h('button', { type: 'button', class: 'btn tiny primary', onclick: () => ctx.runRecipe(r) }, '▶ Run'),
           h('button', { type: 'button', class: 'link-btn', onclick: () => ctx.go(r.tool, { preset: r.config }) }, 'Open'),
+          MONITORABLE.has(r.tool) ? h('button', { type: 'button', class: 'link-btn', title: 'Re-run on a schedule and get alerts on changes', onclick: async () => { if (await monitorDialog(r)) ctx.go('monitors'); } }, '🔔 Monitor') : null,
           h('button', { type: 'button', class: 'link-btn', onclick: async () => {
             const res = await formDialog({ title: 'Rename recipe', fields: [{ name: 'name', label: 'Name', value: r.name }, { name: 'url', label: 'Start page', value: r.url || '' }] });
             if (res) { await saveRecipe({ ...r, name: res.name, url: res.url }); render(); }

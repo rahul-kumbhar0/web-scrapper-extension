@@ -155,7 +155,10 @@
       <p>The relay is a pass-through. Tool calls and results are held in memory only for as long as it takes to deliver them, and are <strong>not stored or logged</strong>. We keep limited operational metadata — such as timestamps, the name of the tool called, response sizes, error codes and connecting IP addresses — to run, secure and rate-limit the service. This metadata does not include page content and is deleted within 30 days.</p>
       <p>Once results reach Claude, Anthropic processes them under the agreement that applies to your Claude account. Your private link contains a secret that identifies your browser; anyone with it could send tool calls to your browser, so keep it private. You can revoke it at any time with <strong>Generate new link</strong>. Sensitive sites — webmail and account pages, banking and payment sites, password managers, browser pages and local network addresses — are blocked for connector tools, and you can add more in Settings.</p>
 
-      <h3>c. Licence validation</h3>
+      <h3>c. Google Sheets</h3>
+      <p>If you connect a Google Sheet, rows you send (or, with Pro, the changes a monitor finds) are posted directly from your browser to the Google Apps Script web app <strong>you</strong> deployed in your own Google account. The web app URL is stored only in your browser. The data goes to Google under your Google account's terms; it never passes through our servers.</p>
+
+      <h3>d. Licence validation</h3>
       <p>If you buy Pro or Lifetime and enter a licence key, the extension sends the <strong>licence key</strong> and a randomly generated <strong>instance ID</strong> for that browser to Dodo Payments to activate the licence on that browser and to re-validate it about once a day. No scraped data, browsing history or page content is sent.</p>
 
 
@@ -180,7 +183,9 @@
           <tr><td><code>sidePanel</code></td><td>To show PullRows in Chrome's side panel.</td></tr>
           <tr><td><code>storage</code>, <code>unlimitedStorage</code></td><td>To keep your Data Table, history, recipes and settings on your device.</td></tr>
           <tr><td><code>downloads</code></td><td>To save exports and images to your Downloads folder.</td></tr>
-          <tr><td><code>offscreen</code></td><td>To keep the Claude connector's background connection running while it's switched on.</td></tr>
+          <tr><td><code>offscreen</code></td><td>To keep the Claude connector's background connection running while it's switched on, and to run your monitors in the background.</td></tr>
+          <tr><td><code>alarms</code></td><td>To re-run your monitors on the schedule you chose (hourly, daily or weekly).</td></tr>
+          <tr><td><code>notifications</code></td><td>To tell you when a monitor finds a change, such as a price drop or new listings.</td></tr>
         </tbody>
       </table>
 

@@ -1,6 +1,6 @@
-# PullRows 1.3.4: Chrome Web Store form, field by field
+# PullRows 1.4.0: Chrome Web Store form, field by field
 
-Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.3.4.zip`.
+Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.4.0.zip`.
 Every image named below is in this kit's `images/` folder.
 
 ---
@@ -8,7 +8,7 @@ Every image named below is in this kit's `images/` folder.
 ## 1. Package
 | Field | Value |
 |---|---|
-| Upload | `pullrows-1.3.4.zip` |
+| Upload | `pullrows-1.4.0.zip` |
 
 ## 2. Store listing
 | Field | Paste this |
@@ -86,7 +86,9 @@ Extract structured data from web pages the user chooses (manually, or through th
 | unlimitedStorage | A scraped dataset or the history of results can exceed the default local storage quota. It is stored only on the user's device. |
 | sidePanel | The whole user interface is a Chrome side panel next to the page being scraped. |
 | downloads | Saves images the user selects in the Image Downloader, and exported CSV, Excel or JSON files, into the Downloads folder. |
-| offscreen | Parses pages fetched in the background with DOMParser for scraping jobs the user starts from their own Claude assistant (Claude connector, off by default). The same document keeps the connector's connection to our relay open while the user has the connector turned on. |
+| offscreen | Parses pages fetched in the background with DOMParser for scraping jobs the user starts from their own Claude assistant (Claude connector, off by default) or schedules as a Monitor. The same document keeps the connector's connection to our relay open while the user has the connector turned on. |
+| alarms | Runs the user's own Monitors (a saved recipe re-run hourly, daily or weekly, set up by the user) on schedule. |
+| notifications | Tells the user when one of their Monitors finds a change (for example a price drop or new listings). Nothing else is ever notified. |
 
 **Are you using remote code?** → **No, I am not using remote code.**
 *(If a reason box appears: "All JavaScript is bundled in the package. The optional relay server sends only data (a tool name plus JSON arguments) that call bundled functions.")*

@@ -23,6 +23,7 @@ import recipesView from './views/recipes.js';
 import historyView from './views/history.js';
 import settingsView from './views/settings.js';
 import upgradeView from './views/upgrade.js';
+import monitorsView from './views/monitors.js';
 
 export const TOOLS = [listTool, pageTool, emailTool, socialTool, imagesTool, shopifyTool, sitemapTool, textTool, quickTool, trendsTool, aiTool];
 const GROUPS = [
@@ -30,7 +31,7 @@ const GROUPS = [
   { label: 'Across many pages', ids: ['page', 'email', 'social', 'sitemap', 'shopify'] },
   { label: 'Social & AI', ids: ['trends', 'ai'] },
 ];
-const VIEWS = { table: tableView, recipes: recipesView, history: historyView, settings: settingsView, upgrade: upgradeView };
+const VIEWS = { table: tableView, recipes: recipesView, history: historyView, settings: settingsView, upgrade: upgradeView, monitors: monitorsView };
 const ALL = Object.fromEntries([...TOOLS, ...Object.values(VIEWS)].map((t) => [t.id, t]));
 
 let settings;
@@ -162,7 +163,7 @@ function renderHome() {
         h('span', { class: 'muted block' }, plan.license.trial ? 'Keep no-limit scraping after your trial ends.' : 'No limits, Excel & JSON export, unlimited Claude calls.')),
       h('button', { type: 'button', class: 'btn tiny primary', onclick: () => go('upgrade') }, plan.license.trial ? 'Keep Pro' : 'Upgrade')),
     h('div', { class: 'home-links' },
-      ['recipes', 'history', 'settings'].map((id) => h('button', { type: 'button', class: 'btn secondary', onclick: () => go(id) }, icon(TOOL_ICONS[id], { size: 15 }), VIEWS[id].title))));
+      ['recipes', 'monitors', 'history', 'settings'].map((id) => h('button', { type: 'button', class: 'btn secondary', onclick: () => go(id) }, icon(TOOL_ICONS[id], { size: 15 }), VIEWS[id].title))));
 }
 
 function renderBadge() {

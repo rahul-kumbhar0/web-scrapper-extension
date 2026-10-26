@@ -2,6 +2,8 @@
 // politeness, plan, and about.
 import { h, fill, toast, confirmDialog, formDialog } from '../ui.js';
 import { MODELS, saveSettings, newToken, clearHistory } from '../../lib/storage.js';
+import { APPS_SCRIPT, isSheetUrl } from '../../lib/sheets.js';
+import { ask } from './monitors.js';
 import { DEFAULT_BLOCKED } from '../../lib/guard.js';
 import { DEFAULT_RELAY, LINKS, SUPPORT_EMAIL } from '../../lib/config.js';
 import { card } from '../widgets.js';
@@ -202,8 +204,38 @@ export default {
     const delay = h('input', { id: 'delay', type: 'number', min: 0, max: 60000, step: 250, value: s.delayMs });
     const conc = h('input', { id: 'concurrency', type: 'number', min: 1, max: 12, value: s.concurrency });
 
+    // ---------- Google Sheets ----------
+    const sheetUrl = h('input', { id: 'sheet-url', type: 'url', value: s.sheetUrl || '', placeholder: 'https://script.google.com/macros/s/…/exec', spellcheck: false, autocomplete: 'off' });
+    const sheetMsg = h('p', { class: 'hint', id: 'sheet-msg' });
+    const sheets = card('Google Sheets',
+      h('p', { class: 'hint' }, 'Send rows straight into your own Google Sheet (and, with Pro, after every monitor run). One-time setup, about a minute:'),
+      h('ol', { class: 'hint steps' },
+        h('li', {}, 'Open a Google Sheet → Extensions → Apps Script.'),
+        h('li', {}, 'Replace the code with the PullRows script (button below) and save.'),
+        h('li', {}, 'Deploy → New deployment → Web app · Execute as: Me · Who has access: Anyone → Deploy, allow access.'),
+        h('li', {}, 'Paste the Web app URL (ends in /exec) here and click Test.')),
+      h('div', { class: 'row wrap' },
+        h('button', { type: 'button', class: 'btn tiny', onclick: async () => { await navigator.clipboard.writeText(APPS_SCRIPT); toast('Script copied — paste it into Apps Script.', 'ok'); } }, 'Copy setup script'),
+        h('button', { type: 'button', class: 'btn tiny', onclick: () => open('https://sheets.new') }, 'New Google Sheet')),
+      h('label', { class: 'field' }, 'Web app URL', sheetUrl),
+      h('div', { class: 'row wrap' }, h('button', { id: 'sheet-test', type: 'button', class: 'btn tiny', onclick: async () => {
+        const u = sheetUrl.value.trim();
+        if (!isSheetUrl(u)) { sheetMsg.textContent = 'That is not an Apps Script web app URL. It looks like https://script.google.com/macros/s/…/exec'; return; }
+        sheetMsg.textContent = 'Sending a test row…';
+        try {
+          await ask('monitor:sheet-test', { url: u });
+          await saveSettings({ sheetUrl: u });
+          await ctx.reloadSettings();
+          sheetMsg.textContent = '✓ Works — a “PullRows test” tab was added to your sheet. URL saved.';
+        } catch (e) { sheetMsg.textContent = `✗ ${e.message}`; }
+      } }, 'Test & save')),
+      sheetMsg,
+      h('p', { class: 'hint' }, 'The URL is stored only in this browser. Anyone with it can add rows to that sheet, so don’t share it.'));
+
     async function save() {
-      await saveSettings({ apiKey: key.value.trim(), model: model.value, delayMs: Math.max(0, Number(delay.value) || 0), concurrency: Math.min(12, Math.max(1, Number(conc.value) || 3)) });
+      const su = sheetUrl.value.trim();
+      if (su && !isSheetUrl(su)) { toast('The Google Sheets URL must be an Apps Script web app URL ending in /exec.', 'error'); return; }
+      await saveSettings({ sheetUrl: su, apiKey: key.value.trim(), model: model.value, delayMs: Math.max(0, Number(delay.value) || 0), concurrency: Math.min(12, Math.max(1, Number(conc.value) || 3)) });
       await ctx.reloadSettings();
       toast('Settings saved.', 'ok');
     }
@@ -221,6 +253,7 @@ export default {
             h('div', { class: 'row' }, key, h('button', { type: 'button', class: 'btn secondary', onclick: (e) => { key.type = key.type === 'password' ? 'text' : 'password'; e.target.textContent = key.type === 'password' ? 'Show' : 'Hide'; } }, 'Show'))),
           h('p', { class: 'hint' }, 'For AI Extract, AI columns and Ask Claude (not needed for the Claude connector). Stored only in this browser and sent only to Anthropic.'),
           h('label', { class: 'field' }, 'Model', model)),
+        sheets,
         card('Crawling',
           h('div', { class: 'row' }, h('label', { class: 'field grow' }, 'Delay between pages (ms)', delay), h('label', { class: 'field grow' }, 'Parallel requests', conc)),
           h('p', { class: 'hint' }, 'Be polite: keep a delay and a low parallel count on small sites.')),

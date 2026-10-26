@@ -243,6 +243,15 @@
       <p>Save any tool's setup as a <strong>recipe</strong> — optionally with its start page — and re-run it in one click. Export recipes as JSON to share them or move them to another browser, and import recipes others share with you. The free plan keeps 3 recipes; Pro is unlimited. Claude can list and run your recipes through the connector.</p>
       <p><strong>History</strong> keeps your last 30 results on your device. Open one to load it back into the Data Table, or clear history at any time.</p>
 
+      <h2 id="monitors">Monitors (change &amp; price-drop alerts)</h2>
+      <p>Save a recipe (for example List Extractor on a product, job or listing page, with a start page), then click <strong>🔔 Monitor</strong> in Recipes. PullRows re-runs it every hour, day or week in a background tab while Chrome is open, compares it with the previous run and shows a Chrome notification for new rows, rows that are gone, changed values or only price drops — your choice. Each run is saved in History with a <em>Changes</em> sheet (change, item, column, before, after, percent). You can also ask Claude: “watch this page and tell me when anything gets cheaper”.</p>
+
+      <h2 id="google-sheets">Google Sheets</h2>
+      <p>In <strong>Settings → Google Sheets</strong>, click <em>Copy setup script</em>, paste it into your sheet's <em>Extensions → Apps Script</em>, deploy it as a Web app (Execute as: Me, access: Anyone) and paste the /exec URL back. Then <strong>Google Sheet</strong> in the Data Table appends the visible rows to a tab named after the dataset. With Pro, monitors can push their changes automatically. Cells that start with <code>=</code> are stored as text, so scraped content can't run formulas.</p>
+
+      <h2 id="enrich">AI enrichment</h2>
+      <p><strong>✦ Enrich</strong> in the Data Table (Pro, with your Anthropic key) adds several columns at once: lead score (0–100 against your ideal customer) with the reason, industry, company size and B2B/B2C; or summary and category; sentiment and topic; first/last name and role; or a translation. Unknown values are left empty instead of guessed.</p>
+
       <h2 id="claude-connector">Claude connector</h2>
       <p>The connector lets Claude use PullRows' tools through MCP, the Model Context Protocol. Claude asks; your browser does the work, with your logged-in sessions; results come back to Claude and also land in your Data Table.</p>
       <pre><code>Claude ──MCP (HTTPS)──▶ PullRows relay ◀──── PullRows in your Chrome
@@ -313,6 +322,9 @@
           <tr><td>Recipes</td><td>3</td><td>Unlimited</td></tr>
           <tr><td>AI features</td><td>With your Anthropic key</td><td>With your Anthropic key</td></tr>
           <tr><td>Claude connector</td><td>25 tool calls a day</td><td>Unlimited</td></tr>
+          <tr><td>Monitors</td><td>1, daily</td><td>Unlimited, hourly</td></tr>
+          <tr><td>Google Sheets</td><td>Send rows</td><td>Send rows + auto-sync monitor changes</td></tr>
+          <tr><td>AI lead enrichment</td><td>—</td><td>Yes (your Anthropic key)</td></tr>
           <tr><td>Browsers per licence</td><td>—</td><td>Up to 3</td></tr>
         </tbody>
       </table>

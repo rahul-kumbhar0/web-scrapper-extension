@@ -319,6 +319,10 @@ tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 45%, 
 .item-list li:hover { border-color: var(--border-strong); }
 .item-list .title { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item-list .meta { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-list li.highlight { border-color: var(--accent, #6E56CF); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #6E56CF) 18%, transparent); }
+.item-list .meta.wrap { white-space: normal; }
+.item-list .meta.danger { color: var(--danger); }
+.item-list li.empty p { margin: 0 0 6px; }
 .item-list .actions { display: flex; gap: 12px; align-items: center; margin-top: 2px; }
 
 /* ---------- plans ---------- */

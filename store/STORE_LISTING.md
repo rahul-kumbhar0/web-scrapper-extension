@@ -1,6 +1,6 @@
-# Chrome Web Store listing: PullRows 1.3.4
+# Chrome Web Store listing: PullRows 1.4.0
 
-Upload `dist/pullrows-1.3.4.zip`, which you build with `npm run package`. Images are in `store/`.
+Upload `dist/pullrows-1.4.0.zip`, which you build with `npm run package`. Images are in `store/`.
 
 ## Store listing tab
 
@@ -78,7 +78,9 @@ Use PullRows responsibly: respect each website's terms and privacy laws when col
 | `unlimitedStorage` | A scraped dataset or the history of results can exceed the default local storage quota. It is stored only on the user's device. |
 | `sidePanel` | The whole user interface lives in Chrome's side panel. |
 | `downloads` | Saves images the user selects in the Image Downloader (and exported files) into a Downloads subfolder. |
-| `offscreen` | Parses pages fetched in the background with DOMParser for scraping jobs the user starts from their own Claude assistant (Claude connector, off by default). The same document keeps the connector's connection to our relay open while the user has the connector turned on. |
+| `offscreen` | Parses pages fetched in the background with DOMParser for scraping jobs the user starts from their own Claude assistant (Claude connector, off by default) or schedules as a Monitor. The same document keeps the connector's connection to our relay open while the user has the connector turned on. |
+| `alarms` | Runs the user's own Monitors (a saved recipe re-run hourly, daily or weekly, set up by the user) on schedule. |
+| `notifications` | Tells the user when one of their Monitors finds a change (for example a price drop or new listings). Nothing else is ever notified. |
 
 **Remote code:** No. All JavaScript is in the package. The relay server only sends data (a tool name and JSON arguments), which map to bundled functions.
 

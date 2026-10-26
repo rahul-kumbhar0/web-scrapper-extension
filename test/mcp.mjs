@@ -99,6 +99,14 @@ try {
     assert.ok(tabs.json.some((t) => t.tab_id === tabId));
   });
 
+  await step('Page tools return a screenshot for the chat (and can skip it)', async () => {
+    const res = await rpc('tools/call', { name: 'browser_open', arguments: { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 300 } });
+    const img = res.content.find((c) => c.type === 'image');
+    assert.ok(img && img.mimeType === 'image/jpeg' && img.data.length > 1000, 'image in the reply');
+    const off = await rpc('tools/call', { name: 'browser_open', arguments: { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 300, screenshot: false } });
+    assert.ok(!off.content.some((c) => c.type === 'image'));
+  });
+
   await step('list_detect finds the product grid + Next button', async () => {
     const r = await tool('list_detect', { tab_id: tabId });
     const c = r.json.candidates[0];
@@ -177,6 +185,22 @@ try {
     assert.equal(list.json[0].recipe_id, 'r1');
     const run = await tool('recipe_run', { recipe_id: 'r1', max_rows_returned: 2 });
     assert.equal(run.json.total_rows, 24);
+  });
+
+  await step('monitor_create from a URL (from chat / mobile) + monitors_list', async () => {
+    const pagesBefore = ctx.pages().length;
+    const c = await tool('monitor_create', { url: `${BASE}/catalog.html`, name: 'Catalog watch', every_minutes: 60, alert_on: 'drops' });
+    assert.equal(c.json.every_minutes, 60, 'Pro: hourly');
+    assert.equal(c.json.alert_on, 'drops');
+    let m;
+    for (let i = 0; i < 40; i++) { m = (await tool('monitors_list')).json[0]; if (m?.last_run) break; await sp.waitForTimeout(500); }
+    console.log(`    ${m.name}: ${m.last_result}`);
+    assert.match(m.last_result, /^First run: \d+ rows/);
+    const recipes = await tool('recipes_list');
+    assert.ok(recipes.json.some((r) => r.recipe_id === m.recipe_id && r.name === 'Catalog watch'));
+    await sp.waitForTimeout(500);
+    assert.equal(ctx.pages().length, pagesBefore, 'background tabs closed');
+    await sp.evaluate(async () => chrome.storage.local.set({ monitors: [] }));
   });
 
   await step('errors are reported to Claude, not thrown', async () => {

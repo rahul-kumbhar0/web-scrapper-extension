@@ -112,5 +112,26 @@ async function loop() {
   }
 }
 
-status('connecting');
-loop();
+// Scheduled monitors: the service worker asks this document to run a saved recipe in the
+// background (fetch + DOMParser are available here) and gets the rows back.
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type !== 'monitor-run' || sender.id !== chrome.runtime.id) return false;
+  const opts = { internal: true };
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20 * 60000);
+  execute('recipe_run', { recipe_id: msg.recipeId, max_rows_returned: 1 }, sw, ctrl.signal, opts)
+    .then((res) => {
+      if (res?.isError) throw new Error(res.content?.[0]?.text?.replace(/^Error:\s*/, '') || 'Run failed');
+      const sheets = opts.captured?.sheets || [];
+      sendResponse({ rows: sheets[0]?.rows || [], sheets: sheets.map((s) => s.name) });
+    })
+    .catch((e) => sendResponse({ error: String(e?.message || e) }))
+    .finally(() => clearTimeout(timer));
+  return true;
+});
+
+// Without a relay address this document only runs monitors (the Claude connector is off).
+if (SERVER && TOKEN) {
+  status('connecting');
+  loop();
+}

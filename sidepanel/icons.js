@@ -23,13 +23,14 @@ const P = {
   trend: ['m3 17 6-6 4 4 8-8', 'M14 7h7v7'],
   lock: ['M5 11h14v10H5z', 'M8 11V7a4 4 0 0 1 8 0v4'],
   shield: ['M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z'],
+  bell: ['M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9', 'M10.3 21a1.94 1.94 0 0 0 3.4 0'],
   external: ['M14 4h6v6', 'M20 4 10 14', 'M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
 };
 
 export const TOOL_ICONS = {
   list: 'list', page: 'pages', email: 'mail', social: 'share', images: 'image', shopify: 'bag',
   sitemap: 'sitemap', text: 'text', quick: 'bolt', ai: 'sparkle', trends: 'trend',
-  table: 'table', recipes: 'book', history: 'clock', settings: 'gear', upgrade: 'crown',
+  table: 'table', recipes: 'book', history: 'clock', settings: 'gear', upgrade: 'crown', monitors: 'bell',
 };
 
 const NS = 'http://www.w3.org/2000/svg';

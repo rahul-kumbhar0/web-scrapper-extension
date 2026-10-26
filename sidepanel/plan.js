@@ -44,7 +44,7 @@ export async function upsell(reason) {
   const trial = await canTrial();
   const res = await formDialog({
     title: 'Unlock PullRows Pro',
-    text: `${reason}\n\nPro removes every limit — unlimited pages, URLs and sites per run, Excel & JSON export, unlimited recipes and Claude connector calls.${trial ? `\n\nTry it free for ${TRIAL_DAYS} days — no card, no signup.` : ''}`,
+    text: `${reason}\n\nPro removes every limit — unlimited pages, URLs and sites per run, Excel & JSON export, unlimited recipes, hourly monitors with price-drop alerts, Google Sheets auto-sync, AI lead enrichment and unlimited Claude connector calls.${trial ? `\n\nTry it free for ${TRIAL_DAYS} days — no card, no signup.` : ''}`,
     submit: trial ? `Start ${TRIAL_DAYS}-day free trial` : 'See plans',
   });
   if (!res) return false;

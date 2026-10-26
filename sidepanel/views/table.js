@@ -6,7 +6,8 @@ import { toCSV, toTSV, toJSON, toXLSX, download, fileStem } from '../../lib/expo
 import { plan, requirePro, capList } from '../plan.js';
 import { ensureAiConsent } from '../consent.js';
 import { recordWin } from '../feedback.js';
-import { aiColumn, aiAsk } from '../../lib/ai.js';
+import { aiColumn, aiAsk, aiEnrich, ENRICH_PRESETS } from '../../lib/ai.js';
+import { ask as askWorker } from './monitors.js';
 import { downloadImages } from '../tools/images.js';
 
 const PAGE_SIZE = 200;
@@ -258,6 +259,57 @@ export default {
       });
     }
 
+    async function enrich(preset) {
+      if (!requirePro('enrich')) return;
+      if (!ctx.settings.apiKey) { toast('Add your Anthropic API key in Settings first.', 'error'); ctx.go('settings'); return; }
+      if (!(await ensureAiConsent(ctx))) return;
+      const p = ENRICH_PRESETS[preset];
+      const s = sheet();
+      const r = await formDialog({
+        title: `✦ ${p.label}`,
+        text: `${p.hint} Adds: ${Object.keys(p.fields).join(', ')}.`,
+        fields: [
+          ...(p.ask ? [{ name: 'extra', label: p.ask.label, placeholder: p.ask.placeholder, value: preset === 'translate' ? 'English' : '' }] : []),
+          { name: 'cols', label: 'Columns Claude can read', type: 'multiselect', options: s.cols.map((c) => ({ value: c, label: c })), value: s.cols.slice(0, 8) },
+          { name: 'onlyVisible', label: `Only rows matching the search (${rowsView().length})`, type: 'checkbox', value: !!filter.value },
+        ],
+        submit: 'Enrich rows',
+      });
+      if (!r) return;
+      const idx = r.onlyVisible ? rowsView() : s.rows.map((_, i) => i);
+      await runJob(`Claude is enriching ${plural(idx.length, 'row')}…`, async (signal, progress) => {
+        const res = await aiEnrich({
+          apiKey: ctx.settings.apiKey, model: ctx.settings.model, preset, extra: preset === 'translate' ? `Target language: ${r.extra || 'English'}` : r.extra || '',
+          rows: idx.map((i) => s.rows[i]), columns: r.cols.length ? r.cols : s.cols, signal,
+          onProgress: (d, t) => progress(`${d} / ${t} rows`, d, t),
+        });
+        const names = res.columns.map((n) => { let x = n; while (s.cols.includes(x)) x += '_'; return [n, x]; });
+        for (const [, x] of names) s.cols.push(x);
+        idx.forEach((ri, k) => { for (const [n, x] of names) s.rows[ri][x] = res.values[k]?.[n] ?? ''; });
+        commit();
+        toast(`Enriched ${plural(idx.length, 'row')} · ${res.tokens.toLocaleString()} tokens.${preset === 'lead' ? ' Sort by lead_score to see your best leads first.' : ''}`, 'ok');
+      });
+    }
+
+    async function toSheet() {
+      const d = state.dataset;
+      const s = sheet();
+      if (!s) return;
+      if (!ctx.settings.sheetUrl) { toast('Connect your Google Sheet first (Settings → Google Sheets, about a minute).', 'error'); ctx.go('settings'); return; }
+      const rows = rowsView().map((i) => Object.fromEntries(s.cols.map((c) => [c, s.rows[i][c] ?? ''])));
+      if (!rows.length) { toast('No rows to send.', 'error'); return; }
+      const tab = `${fileStem(d.title)}-${s.name}`.slice(0, 90);
+      await runJob('Sending to Google Sheets…', async (signal, progress) => {
+        for (let i = 0; i < rows.length; i += 2000) {
+          if (signal.aborted) break;
+          progress(`${Math.min(i + 2000, rows.length)} / ${rows.length} rows`, i, rows.length);
+          await askWorker('monitor:sheet-push', { url: ctx.settings.sheetUrl, tab, rows: rows.slice(i, i + 2000) });
+        }
+        toast(`Sent ${plural(rows.length, 'row')} to the “${tab}” tab of your Google Sheet.`, 'ok');
+        recordWin('export');
+      });
+    }
+
     async function ask() {
       if (!ctx.settings.apiKey) { toast('Add your Anthropic API key in Settings first.', 'error'); ctx.go('settings'); return; }
       if (!(await ensureAiConsent(ctx))) return;
@@ -322,6 +374,7 @@ export default {
       h('button', { type: 'button', class: 'btn tiny', onclick: () => hasData() && clean() }, 'Clean'),
       h('button', { type: 'button', class: 'btn tiny', onclick: () => hasData() && merge() }, 'Merge cols'),
       h('button', { type: 'button', class: 'btn tiny ai', onclick: () => hasData() && addAiColumn() }, '✦ AI column'),
+      h('button', { type: 'button', class: 'btn tiny ai', title: 'Lead score, industry, company size, sentiment, translation… (Pro)', onclick: (e) => hasData() && menu(e.currentTarget, Object.entries(ENRICH_PRESETS).map(([id, p]) => ({ label: p.label, run: () => enrich(id) }))) }, '✦ Enrich ▾', plan.pro ? null : h('span', { class: 'badge pro' }, 'Pro')),
       h('button', { type: 'button', class: 'btn tiny ai', onclick: () => hasData() && ask() }, '✦ Ask Claude'),
       h('button', { type: 'button', class: 'btn tiny', onclick: (e) => {
         const s = sheet();
@@ -337,6 +390,7 @@ export default {
       h('span', { class: 'muted small' }, 'Export:'),
       h('button', { type: 'button', class: 'btn secondary', onclick: () => exportAs('csv') }, 'CSV'),
       h('button', { type: 'button', class: 'btn secondary', onclick: () => exportAs('copy') }, 'Copy'),
+      h('button', { type: 'button', class: 'btn secondary', title: 'Append these rows to your Google Sheet (set up in Settings)', onclick: () => hasData() && toSheet() }, 'Google Sheet'),
       h('button', { type: 'button', class: 'btn secondary', title: 'All sheets as an Excel workbook (Pro)', onclick: () => exportAs('xlsx') }, 'Excel', plan.pro ? null : h('span', { class: 'badge pro' }, 'Pro')),
       h('button', { type: 'button', class: 'btn secondary', title: 'All sheets as JSON (Pro)', onclick: () => exportAs('json') }, 'JSON', plan.pro ? null : h('span', { class: 'badge pro' }, 'Pro')));
 
