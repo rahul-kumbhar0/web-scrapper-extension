@@ -397,3 +397,9 @@ tbody tr:nth-child(even) { background: color-mix(in srgb, var(--surface-2) 45%, 
 .connect-steps li::before { content: counter(cs); grid-row: span 3; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; }
 .connect-steps li > * { grid-column: 2; }
 .connect-steps code { font-size: 10.5px; }
+
+/* Popular one-tap jobs on the home screen */
+.popular { display: flex; flex-wrap: wrap; gap: 6px; }
+.pop { display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface); color: var(--text, inherit); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; transition: border-color .15s, background .15s; }
+.pop:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+.pop .ico { color: var(--accent); }

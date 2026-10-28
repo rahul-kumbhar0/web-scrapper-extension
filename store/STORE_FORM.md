@@ -14,7 +14,7 @@ Every image named below is in this kit's `images/` folder.
 | Field | Paste this |
 |---|---|
 | Title | *(read from the manifest)* PullRows – Web Scraper & Data Extractor |
-| Summary | *(read from the manifest)* Turn any website into rows: lists, pages, emails, socials, images, Shopify, sitemaps. Export CSV/Excel. Works with Claude. |
+| Summary | *(read from the manifest)* Scrape any site into rows: lists, Maps leads, emails, prices, reels. Price-drop alerts, Sheets & Excel export. Works with Claude. |
 | Category | **Tools** |
 | Language | **English** |
 | Store icon | `images/icon-128.png` |
@@ -57,15 +57,24 @@ ELEVEN TOOLS IN ONE PANEL
 AN EDITABLE DATA TABLE
 Rename, sort, edit, merge columns, dedupe and clean. You can add an AI column ("classify the industry") or ask questions about the data. Export to CSV or copy to any spreadsheet; Excel and JSON export are part of Pro. Save any setup as a recipe and re-run it in one click.
 
+WATCH PAGES: PRICE-DROP AND NEW-LISTING ALERTS
+Turn any saved recipe into a monitor. PullRows re-runs it every hour, day or week in the background and sends a Chrome notification when something changes: new rows, rows that are gone, changed values or price drops (with the % change). Every run is kept in History with a "Changes" sheet. Free: 1 daily monitor. Pro: unlimited, hourly.
+
+GOOGLE SHEETS AND AI ENRICHMENT
+Send any table to your own Google Sheet in one click (one-minute setup, no Google sign-in inside the extension); Pro syncs monitor changes automatically. With Pro, Enrich adds industry, company size, B2B/B2C and a 0–100 lead score with the reason, or sentiment, summaries, name splitting and translation (uses your own Anthropic API key).
+
+POPULAR JOBS IN ONE TAP
+Google Maps leads, Amazon products and prices, LinkedIn jobs, trending Reels and TikToks, emails from a list of websites, and price-drop alerts: start any of them from the home screen.
+
 WORKS WITH CLAUDE
-Turn on the Claude connector and add your private link to Claude as a custom connector. Then ask: "find every café in Pune rated above 4.5 and export it." Claude runs PullRows in your own browser, with your logins, and the results land in your Data Table.
+Turn on the Claude connector and add your private link to Claude as a custom connector. Then ask: "find every café in Pune rated above 4.5 and export it." Claude runs PullRows in your own browser, with your logins, shows you screenshots of the pages it scraped right in the chat, and the results land in your Data Table. It works from the Claude app on your phone too, while your computer's Chrome is open. You can also ask Claude to watch a page and alert you when prices drop.
 The connector is off by default and read-only unless you allow actions. Email, banking, password-manager and local-network sites are always blocked.
 
 PRIVATE BY DESIGN
 Your scraped data stays in your browser. No analytics, no tracking, no account.
 
 FREE FOREVER, PRO WHEN YOU NEED MORE
-The free plan includes every tool and unlimited CSV export, with sensible per-run limits. You can try Pro free for 3 days, with no card needed. Pro ($10/month, or $20 once for lifetime) removes all limits and adds Excel and JSON export, unlimited recipes and unlimited Claude connector calls.
+The free plan includes every tool and unlimited CSV export, with sensible per-run limits. You can try Pro free for 3 days, with no card needed. Pro ($10/month, or $20 once for lifetime) removes all limits and adds Excel and JSON export, unlimited hourly monitors, Google Sheets auto-sync, AI lead enrichment, video scripts in Trend Finder, unlimited recipes and unlimited Claude connector calls.
 
 Use PullRows responsibly: respect each website's terms and privacy laws when collecting data.
 ---

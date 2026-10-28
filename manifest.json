@@ -3,7 +3,7 @@
   "name": "PullRows – Web Scraper & Data Extractor",
   "short_name": "PullRows",
   "version": "1.4.1",
-  "description": "Turn any website into rows: lists, pages, emails, socials, images, Shopify, sitemaps. Export CSV/Excel. Works with Claude.",
+  "description": "Scrape any site into rows: lists, Maps leads, emails, prices, reels. Price-drop alerts, Sheets & Excel export. Works with Claude.",
   "homepage_url": "https://pullrows.vercel.app",
   "minimum_chrome_version": "116",
   "permissions": [

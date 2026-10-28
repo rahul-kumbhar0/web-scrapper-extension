@@ -101,6 +101,29 @@ export function go(id, opts = {}) {
 
 let pageInfo = { host: '', title: '', url: '' };
 
+// The jobs people use scrapers for most, one tap each. Site searches open in the current tab and
+// then auto-detect the list (the site presets name the columns).
+const POPULAR = [
+  { label: 'Google Maps leads', icon: 'scan', ask: 'What and where?', example: 'dentists in Austin', url: (q) => `https://www.google.com/maps/search/${encodeURIComponent(q)}` },
+  { label: 'Amazon products & prices', icon: 'bag', ask: 'Search Amazon for', example: 'wireless earbuds', url: (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}` },
+  { label: 'LinkedIn jobs', icon: 'list', ask: 'Job title and place', example: 'product designer remote', url: (q) => `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(q)}` },
+  { label: 'Trending Reels & TikToks', icon: 'trend', go: 'trends' },
+  { label: 'Emails from websites', icon: 'mail', go: 'email' },
+  { label: 'Price-drop alerts', icon: 'bell', go: 'monitors' },
+];
+
+async function startPopular(p) {
+  if (p.go) { go(p.go); return; }
+  const { formDialog } = await import('./ui.js');
+  const res = await formDialog({ title: p.label, fields: [{ name: 'q', label: p.ask, placeholder: `e.g. ${p.example}` }], submit: 'Open & extract' });
+  if (!res?.q?.trim()) return;
+  const tab = await getActiveTab();
+  toast('Opening the page…', '', true);
+  await navigate(tab.id, p.url(res.q.trim()));
+  await new Promise((r) => setTimeout(r, 1500));
+  go('list', { autoDetect: true });
+}
+
 // One-time, reward-free review request after the user has had a few successful runs.
 const reviewSlot = h('div', { id: 'review-slot' });
 async function renderReview() {
@@ -145,6 +168,8 @@ function renderHome() {
         h('span', { class: 'muted small block ellipsis' }, d ? `${d.title || d.source}` : 'Results from every tool land here')),
       d ? h('span', { class: 'count-pill' }, plural(rows, 'row')) : null,
       h('span', { class: 'chev' }, icon('chevron', { size: 16 }))),
+    h('div', { class: 'section-label' }, 'Popular'),
+    h('div', { class: 'popular' }, POPULAR.map((p) => h('button', { type: 'button', class: 'pop', onclick: () => startPopular(p) }, icon(p.icon, { size: 14 }), p.label))),
     GROUPS.map((g) => [
       h('div', { class: 'section-label' }, g.label),
       h('div', { class: 'tool-grid' }, g.ids.map((id) => toolCard(ALL[id]))),

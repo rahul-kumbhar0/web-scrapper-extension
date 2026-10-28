@@ -203,6 +203,22 @@ try {
     assert.equal(offscreen.length, 0);
   });
 
+  await step('home: Popular one-tap jobs open the right tool or ask for a search', async () => {
+    await sp.reload();
+    const pops = await sp.locator('.pop').allTextContents();
+    assert.deepEqual(pops, ['Google Maps leads', 'Amazon products & prices', 'LinkedIn jobs', 'Trending Reels & TikToks', 'Emails from websites', 'Price-drop alerts']);
+    await sp.locator('.pop', { hasText: 'Price-drop alerts' }).click();
+    await sp.waitForFunction(() => document.body.dataset.view === 'monitors');
+    await sp.locator('#back').click();
+    await sp.locator('.pop', { hasText: 'Trending Reels' }).click();
+    await sp.waitForFunction(() => document.body.dataset.view === 'trends');
+    await sp.locator('#back').click();
+    await sp.locator('.pop', { hasText: 'Google Maps leads' }).click();
+    await sp.waitForSelector('dialog[open]');
+    assert.match(await sp.textContent('dialog[open]'), /What and where\?/);
+    await sp.locator('dialog[open]').getByRole('button', { name: 'Cancel' }).click();
+  });
+
   await step('Data Table: Enrich and Google Sheet buttons are there (Pro-gated enrich)', async () => {
     await sp.evaluate(async () => chrome.storage.local.set({ dataset: { title: 'T', url: '', source: 'x', sheets: [{ name: 'S', cols: ['company'], rows: [{ company: 'Stripe' }] }], active: 0 } }));
     await sp.reload();
