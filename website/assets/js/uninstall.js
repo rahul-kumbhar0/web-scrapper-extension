@@ -4,7 +4,7 @@
   var form = document.getElementById('feedback');
   if (!form) return;
   var C = window.PULLROWS_CONFIG || {};
-  var to = C.SUPPORT_EMAIL || 'support@pullrows.com';
+  var to = C.SUPPORT_EMAIL || 'support@canwe.tech';
   var status = document.getElementById('feedback-status');
   form.addEventListener('submit', function (e) {
     e.preventDefault();

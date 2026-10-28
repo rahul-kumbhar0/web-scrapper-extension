@@ -13,5 +13,5 @@ window.PULLROWS_CONFIG = {
   CHECKOUT_PRO_MONTHLY: "",
   CHECKOUT_LIFETIME: "",
 
-  SUPPORT_EMAIL: "support@pullrows.com"
+  SUPPORT_EMAIL: "support@canwe.tech"
 };

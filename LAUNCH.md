@@ -30,7 +30,7 @@ Dodo is a merchant of record for founders in India: it handles global tax, pays 
 ## 4. Website
 - [ ] Fill the placeholders in `website/assets/config.js`: Chrome Web Store URL (after step 5), checkout links, support email.
 - [ ] Redeploy: push to the Vercel project.
-- [ ] Set up `support@pullrows.com`, for example with Cloudflare Email Routing or Zoho Mail free.
+- [ ] Set up `support@canwe.tech`, for example with Cloudflare Email Routing or Zoho Mail free.
 
 ## 5. Chrome Web Store (you, $5 one-time)
 - [ ] Register at https://chrome.google.com/webstore/devconsole and turn on 2-step verification.
