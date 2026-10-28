@@ -101,7 +101,7 @@ const SCREENS = [
   { file: 'screenshot-2-detect.png', site: 'site-hl', panel: 'list', kicker: 'Auto-detect · presets · pagination', title: 'One click finds<br><span class="grad">every item.</span>' },
   { file: 'screenshot-3-table.png', site: 'site', panel: 'table', kicker: 'Edit, clean, dedupe', title: 'Export clean data<br><span class="grad">to CSV or Excel.</span>' },
   { file: 'screenshot-4-claude.png', site: 'site', panel: 'connector', kicker: 'Works with Claude', title: 'Let Claude scrape<br><span class="grad">in your browser.</span>' },
-  { file: 'screenshot-5-pro.png', site: 'site', panel: 'upgrade', kicker: 'Free forever · Pro from $9/mo', title: 'Start free.<br><span class="grad">Go unlimited.</span>' },
+  { file: 'screenshot-5-pro.png', site: 'site', panel: 'upgrade', kicker: 'Free forever · Pro $10/mo · $20 lifetime', title: 'Start free.<br><span class="grad">Go unlimited.</span>' },
 ];
 
 const render = await chromium.launch();

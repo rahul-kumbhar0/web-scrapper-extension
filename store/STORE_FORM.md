@@ -1,6 +1,6 @@
-# PullRows 1.4.0: Chrome Web Store form, field by field
+# PullRows 1.4.1: Chrome Web Store form, field by field
 
-Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.4.0.zip`.
+Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.4.1.zip`.
 Every image named below is in this kit's `images/` folder.
 
 ---
@@ -8,7 +8,7 @@ Every image named below is in this kit's `images/` folder.
 ## 1. Package
 | Field | Value |
 |---|---|
-| Upload | `pullrows-1.4.0.zip` |
+| Upload | `pullrows-1.4.1.zip` |
 
 ## 2. Store listing
 | Field | Paste this |
@@ -65,7 +65,7 @@ PRIVATE BY DESIGN
 Your scraped data stays in your browser. No analytics, no tracking, no account.
 
 FREE FOREVER, PRO WHEN YOU NEED MORE
-The free plan includes every tool and unlimited CSV export, with sensible per-run limits. You can try Pro free for 3 days, with no card needed. Pro ($9/month or $59/year) removes all limits and adds Excel and JSON export, unlimited recipes and unlimited Claude connector calls.
+The free plan includes every tool and unlimited CSV export, with sensible per-run limits. You can try Pro free for 3 days, with no card needed. Pro ($10/month, or $20 once for lifetime) removes all limits and adds Excel and JSON export, unlimited recipes and unlimited Claude connector calls.
 
 Use PullRows responsibly: respect each website's terms and privacy laws when collecting data.
 ---

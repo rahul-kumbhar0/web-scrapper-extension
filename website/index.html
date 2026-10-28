@@ -46,9 +46,8 @@
     "url": "https://pullrows.vercel.app/",
     "offers": [
       { "@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD" },
-      { "@type": "Offer", "name": "Pro (monthly)", "price": "9", "priceCurrency": "USD" },
-      { "@type": "Offer", "name": "Pro (yearly)", "price": "59", "priceCurrency": "USD" },
-      { "@type": "Offer", "name": "Lifetime", "price": "79", "priceCurrency": "USD" }
+      { "@type": "Offer", "name": "Pro (monthly)", "price": "10", "priceCurrency": "USD" },
+      { "@type": "Offer", "name": "Lifetime", "price": "20", "priceCurrency": "USD" }
     ]
   }
   </script>
@@ -635,7 +634,7 @@
             </tr>
             <tr>
               <th scope="row">Monthly billing<small>No forced annual commitment</small></th>
-              <td data-label="PullRows" class="us"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>$9/month, or yearly, or once</span></td>
+              <td data-label="PullRows" class="us"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>$10/month, or $20 once</span></td>
               <td data-label="Typical scraper extensions"><span class="meh"><svg class="i" aria-hidden="true"><use href="#i-meh"/></svg>Often annual-only</span></td>
               <td data-label="Cloud scraping tools"><span class="yes"><svg class="i" aria-hidden="true"><use href="#i-yes"/></svg>Usually</span></td>
             </tr>
@@ -670,21 +669,7 @@
       <div class="section-head section-head--center" data-reveal>
         <span class="eyebrow">Pricing</span>
         <h2 id="pricing-title">Start free. Upgrade when you outgrow it.</h2>
-        <p>Every tool and unlimited CSV export are free. Pro removes the per-run limits — billed monthly, yearly or once.</p>
-      </div>
-
-      <div class="price-controls">
-        <div class="seg" role="group" aria-label="Billing period" data-key="period" data-pos="1">
-          <span class="seg__thumb" aria-hidden="true"></span>
-          <button type="button" data-value="monthly" aria-pressed="false">Monthly</button>
-          <button type="button" data-value="yearly" aria-pressed="true">Yearly <span class="save-badge">Save 45%</span></button>
-        </div>
-        <div class="seg seg--sm" role="group" aria-label="Currency" data-key="cur" data-pos="0">
-          <span class="seg__thumb" aria-hidden="true"></span>
-          <button type="button" data-value="USD" aria-pressed="true">USD</button>
-          <button type="button" data-value="INR" aria-pressed="false">INR</button>
-        </div>
-        <span class="sr-only" id="cur-note" aria-live="polite">Prices in US dollars.</span>
+        <p>Every tool and unlimited CSV export are free. Pro removes the per-run limits — $10 a month, or $20 once for life. Prices in US dollars.</p>
       </div>
 
       <div class="plans">
@@ -708,12 +693,12 @@
         </article>
 
         <article class="plan plan--pro" data-reveal aria-labelledby="plan-pro">
-          <span class="plan__badge">Best value</span>
+          <span class="plan__badge">Most popular</span>
           <h3 class="plan__name" id="plan-pro">Pro</h3>
           <p class="plan__desc">No limits, more formats, unlimited Claude. For people who scrape every week.</p>
-          <div class="plan__price"><span class="amount" id="price-pro">$59</span><span class="per" id="per-pro">/ year</span></div>
-          <p class="plan__sub" id="sub-pro">That’s $4.92 a month, billed yearly.</p>
-          <a class="btn btn--primary btn--block plan__cta" id="cta-pro" data-href="CHECKOUT_PRO_YEARLY" href="https://checkout.dodopayments.com/buy/REPLACE_ME_PRO_YEARLY">Get Pro</a>
+          <div class="plan__price"><span class="amount" id="price-pro">$10</span><span class="per" id="per-pro">/ month</span></div>
+          <p class="plan__sub" id="sub-pro">Billed monthly. Cancel any time.</p>
+          <a class="btn btn--primary btn--block plan__cta" id="cta-pro" data-href="CHECKOUT_PRO_MONTHLY" href="https://checkout.dodopayments.com/buy/REPLACE_ME_PRO_MONTHLY">Get Pro</a>
           <ul>
             <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Everything in Free</b>, without per-run limits</span></li>
             <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Unlimited pages, URLs and sites per run</span></li>
@@ -730,9 +715,9 @@
 
         <article class="plan" data-reveal aria-labelledby="plan-life">
           <h3 class="plan__name" id="plan-life">Lifetime</h3>
-          <p class="plan__desc">Every Pro feature, paid once. A launch deal for early supporters.</p>
-          <div class="plan__price"><span class="amount" id="price-life">$79</span><span class="strike" id="was-life">$99</span><span class="per">once</span></div>
-          <p class="plan__sub"><span class="counter-note">Launch price · first 500 licences</span></p>
+          <p class="plan__desc">Every Pro feature, paid once. No subscription.</p>
+          <div class="plan__price"><span class="amount" id="price-life">$20</span><span class="per">once</span></div>
+          <p class="plan__sub"><span class="counter-note">Pay once · costs the same as 2 months of Pro</span></p>
           <a class="btn btn--block plan__cta" id="cta-life" data-href="CHECKOUT_LIFETIME" href="https://checkout.dodopayments.com/buy/REPLACE_ME_LIFETIME">Get lifetime access</a>
           <ul>
             <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Everything in Pro</b></span></li>

@@ -12,12 +12,11 @@
 - **Voice:** plain, confident, concrete numbers; no "best/#1"; say "works with Claude" (never use Claude/Anthropic logos or imply endorsement).
 
 ## Pricing (launch)
-| Plan | USD | INR |
-|---|---|---|
-| Free | $0 forever | ₹0 |
-| Pro monthly | $9/mo | ₹399/mo |
-| Pro yearly | $59/yr | ₹2,499/yr |
-| Lifetime (launch, first 500) | $79 launch price (regular $99) | ₹3,999 launch (regular ₹4,999) |
+| Plan | Price (USD only) |
+|---|---|
+| Free | $0 forever |
+| Pro | $10/month |
+| Lifetime | $20 one-time |
 
 Free: every tool, unlimited CSV & clipboard export, list pagination up to 10 pages per run, Page Extractor 25 URLs/run, Email & Social finder 25 sites/run, images 100/run, Shopify 100 products, sitemap 1,000 URLs, 3 recipes, AI features with your own Anthropic key, Claude connector 25 tool calls/day.
 Pro: no limits on pages/URLs/sites, Excel & JSON export, unlimited recipes, unlimited Claude connector calls, priority support, up to 3 browsers per licence.

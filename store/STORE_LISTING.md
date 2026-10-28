@@ -1,6 +1,6 @@
-# Chrome Web Store listing: PullRows 1.4.0
+# Chrome Web Store listing: PullRows 1.4.1
 
-Upload `dist/pullrows-1.4.0.zip`, which you build with `npm run package`. Images are in `store/`.
+Upload `dist/pullrows-1.4.1.zip`, which you build with `npm run package`. Images are in `store/`.
 
 ## Store listing tab
 
@@ -47,7 +47,7 @@ PRIVATE BY DESIGN
 Your scraped data stays in your browser. PullRows has no analytics and no tracking, and needs no account.
 
 FREE FOREVER, PRO WHEN YOU NEED MORE
-The free plan includes every tool and unlimited CSV export, with sensible per-run limits. Try Pro free for 3 days, no card needed. Pro (from $9/month, or $59/year) removes all limits and adds Excel and JSON export, unlimited recipes and unlimited Claude connector calls.
+The free plan includes every tool and unlimited CSV export, with sensible per-run limits. Try Pro free for 3 days, no card needed. Pro ($10/month, or $20 once for lifetime) removes all limits and adds Excel and JSON export, unlimited recipes and unlimited Claude connector calls.
 
 Use PullRows responsibly: respect each website's terms and privacy laws when collecting data.
 ```

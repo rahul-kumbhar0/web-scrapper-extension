@@ -11,11 +11,10 @@ Steps marked **you** need your accounts, identity or payment details. Everything
 Dodo is a merchant of record for founders in India: it handles global tax, pays out to an Indian bank account, and issues licence keys.
 - [ ] Sign up at dodopayments.com and complete KYC.
 - [ ] Create three products. Turn on **License keys** for each, with **activation limit 3**:
-  - PullRows Pro Monthly: $9/month (₹399 with Indian pricing)
-  - PullRows Pro Yearly: $59/year (₹2,499)
-  - PullRows Lifetime: $79 one-time launch price (₹3,999) for the first 500, then $99 (₹4,999).
+  - PullRows Pro Monthly: $10/month (USD only)
+  - PullRows Lifetime: $20 one-time (USD only)
 - [ ] Copy each product's checkout link into:
-  - `lib/config.js` → `CHECKOUT.monthly / yearly / lifetime`
+  - `lib/config.js` → `CHECKOUT.monthly / lifetime`
   - `website/assets/config.js` → `CHECKOUT_PRO_MONTHLY / _YEARLY / _LIFETIME`
 - [ ] Set the success page to show the licence key, and link to `https://pullrows.com/docs#activate`.
 - [ ] Create a test-mode key for the Chrome Web Store reviewer.
@@ -35,7 +34,7 @@ Dodo is a merchant of record for founders in India: it handles global tax, pays 
 
 ## 5. Chrome Web Store (you, $5 one-time)
 - [ ] Register at https://chrome.google.com/webstore/devconsole and turn on 2-step verification.
-- [ ] Run `npm run package` and upload `dist/pullrows-1.4.0.zip`.
+- [ ] Run `npm run package` and upload `dist/pullrows-1.4.1.zip`.
 - [ ] Fill in the listing, privacy tab and permission justifications from `store/STORE_LISTING.md`, and upload the images in `store/`.
 - [ ] Privacy policy URL: `https://pullrows.com/privacy`, or the vercel.app URL until the domain is live.
 - [ ] Add the reviewer test instructions, including the test-mode licence key.
