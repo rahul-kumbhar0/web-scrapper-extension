@@ -1191,3 +1191,5 @@ code, kbd, pre { font-family: var(--font-mono); font-size: .9em; }
   background: linear-gradient(180deg, rgba(255, 255, 255, .11), rgba(255, 255, 255, 0) 85%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+
+.plan__cta.is-soon { opacity: .6; cursor: default; pointer-events: none; font-size: 14px; }

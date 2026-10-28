@@ -7,8 +7,16 @@
 
   /* ---- Links from config ---- */
   doc.querySelectorAll('[data-href]').forEach(function (a) {
-    var v = C[a.getAttribute('data-href')];
-    if (v) a.href = v;
+    var key = a.getAttribute('data-href');
+    var v = C[key];
+    if (v) { a.href = v; return; }
+    // A checkout that isn't set up yet: say so instead of linking to a broken page.
+    if (key.indexOf('CHECKOUT_') === 0) {
+      a.removeAttribute('href');
+      a.setAttribute('aria-disabled', 'true');
+      a.classList.add('is-soon');
+      a.textContent = 'Coming soon — try Pro free in the extension';
+    }
   });
   if (C.SUPPORT_EMAIL) {
     doc.querySelectorAll('[data-mail]').forEach(function (a) {

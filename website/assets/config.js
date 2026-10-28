@@ -8,9 +8,10 @@ window.PULLROWS_CONFIG = {
   EDGE_URL: "https://microsoftedge.microsoft.com/addons/detail/pullrows",
 
   // Dodo Payments checkout links (one per product).
-  // Pro: $10/month · Lifetime: $20 one-time (US dollars only).
-  CHECKOUT_PRO_MONTHLY: "https://checkout.dodopayments.com/buy/REPLACE_ME_PRO_MONTHLY",
-  CHECKOUT_LIFETIME: "https://checkout.dodopayments.com/buy/REPLACE_ME_LIFETIME",
+  // Checkout links (Pro: $10/month · Lifetime: $20 one-time, US dollars only).
+  // Leave empty until payments are set up: the buttons then show "Coming soon".
+  CHECKOUT_PRO_MONTHLY: "",
+  CHECKOUT_LIFETIME: "",
 
   SUPPORT_EMAIL: "support@pullrows.com"
 };
