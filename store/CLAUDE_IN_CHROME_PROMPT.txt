@@ -1,0 +1,124 @@
+You are helping me fill in the Chrome Web Store Developer Dashboard for my extension "PullRows". I'm signed in, I've already created the item, uploaded the package (pullrows-1.4.1.zip) and uploaded all the images myself. Please fill in every remaining field exactly as written below, going through the tabs on the left in order: Store listing → Privacy → Distribution → Test instructions (if that section exists). Click "Save draft" after each tab.
+
+Rules:
+- Paste text exactly as given. Don't rewrite, shorten or translate it.
+- Don't change the package or the images I uploaded.
+- If a field isn't listed here, leave it as it is and tell me about it at the end.
+- If something fails or the page shows an error, stop and tell me what it says.
+- Do NOT click "Submit for review". When everything is saved, give me a short list of what you filled and anything you skipped, and I'll submit myself.
+
+=== STORE LISTING TAB ===
+Description (paste all of this into the Description box):
+<<<
+PullRows turns any website into a clean table, right from Chrome's side panel. No code, no account.
+
+CLICK ONE ITEM, GET THE WHOLE LIST
+Open a page with a list: search results, a directory, a shop category, a map, a job board. Press "Auto-detect list" or click one item. Every similar item becomes a row, with readable column names.
+• Next buttons, "Load more" buttons and infinite scroll, including scrolling panels
+• Scrolls one screen at a time, so lazy-loaded and virtualised items are captured
+• Merges half-loaded rows and skips duplicates
+• Tables, div grids, two-row lists (forums, Hacker News) and single-page apps; column names from table headers
+• Finds "Next" and "Load more" in 35+ languages
+• Built-in presets for map results, job listings, social posts and reels, X and Reddit feeds, video lists and product search
+
+ELEVEN TOOLS IN ONE PANEL
+• List Extractor: lists, grids and tables, with pagination
+• Page Extractor: the same fields from hundreds of URLs, one row per page
+• Email Extractor: crawls contact and about pages, and decodes protected addresses
+• Social Link Extractor: LinkedIn, X, Instagram, Facebook, YouTube, TikTok and GitHub profiles
+• Image Downloader: full-size, lazy-loaded and background images, filtered by size
+• Shopify Extractor: a store's whole catalogue, with variants, prices and stock
+• Sitemap Explorer: every URL of a site, grouped and filterable
+• Page Text: clean article text and Markdown
+• Quick Scan: emails, phones, links, tables and prices on the current page
+• Trend Finder: the best Reels, TikToks, YouTube Shorts, X posts and Reddit threads for any topic, #hashtag or subreddit, ranked, with views, likes, shares, hashtags, sound, length, the spoken script (Pro) and the patterns the winners share
+• AI Extract: describe what you want in plain English (uses your own Anthropic API key)
+
+AN EDITABLE DATA TABLE
+Rename, sort, edit, merge columns, dedupe and clean. You can add an AI column ("classify the industry") or ask questions about the data. Export to CSV or copy to any spreadsheet; Excel and JSON export are part of Pro. Save any setup as a recipe and re-run it in one click.
+
+WATCH PAGES: PRICE-DROP AND NEW-LISTING ALERTS
+Turn any saved recipe into a monitor. PullRows re-runs it every hour, day or week in the background and sends a Chrome notification when something changes: new rows, rows that are gone, changed values or price drops (with the % change). Every run is kept in History with a "Changes" sheet. Free: 1 daily monitor. Pro: unlimited, hourly.
+
+GOOGLE SHEETS AND AI ENRICHMENT
+Send any table to your own Google Sheet in one click (one-minute setup, no Google sign-in inside the extension); Pro syncs monitor changes automatically. With Pro, Enrich adds industry, company size, B2B/B2C and a 0–100 lead score with the reason, or sentiment, summaries, name splitting and translation (uses your own Anthropic API key).
+
+POPULAR JOBS IN ONE TAP
+Google Maps leads, Amazon products and prices, LinkedIn jobs, trending Reels and TikToks, emails from a list of websites, and price-drop alerts: start any of them from the home screen.
+
+WORKS WITH CLAUDE
+Turn on the Claude connector and add your private link to Claude as a custom connector. Then ask: "find every café in Pune rated above 4.5 and export it." Claude runs PullRows in your own browser, with your logins, shows you screenshots of the pages it scraped right in the chat, and the results land in your Data Table. It works from the Claude app on your phone too, while your computer's Chrome is open. You can also ask Claude to watch a page and alert you when prices drop.
+The connector is off by default and read-only unless you allow actions. Email, banking, password-manager and local-network sites are always blocked.
+
+PRIVATE BY DESIGN
+Your scraped data stays in your browser. No analytics, no tracking, no account.
+
+FREE FOREVER, PRO WHEN YOU NEED MORE
+The free plan includes every tool and unlimited CSV export, with sensible per-run limits. You can try Pro free for 3 days, with no card needed. Pro ($10/month, or $20 once for lifetime) removes all limits and adds Excel and JSON export, unlimited hourly monitors, Google Sheets auto-sync, AI lead enrichment, video scripts in Trend Finder, unlimited recipes and unlimited Claude connector calls.
+
+Use PullRows responsibly: respect each website's terms and privacy laws when collecting data.
+>>>
+
+Category: Tools
+Language: English
+Official URL: https://pullrows.vercel.app (if it asks you to verify the site, skip this field and tell me)
+Homepage URL: https://pullrows.vercel.app
+Support URL: https://pullrows.vercel.app/docs
+Mature content: No
+(Title and summary come from the package; don't change them.)
+
+=== PRIVACY TAB ===
+Single purpose description:
+<<<
+Extract structured data from web pages the user chooses (manually, or through the user's own AI assistant) into a table the user can edit and export.
+>>>
+
+Permission justifications (one box per permission; match the name):
+- Permission: Paste this
+- Host permission (<all_urls>): The user scrapes pages on any website they choose. The bundled extraction engine is injected into the page the user is on, and the multi-URL tools (Page Extractor, Email and Social finders, Sitemap Explorer) fetch the list of pages the user entered.
+- scripting: Injects the extension's own bundled extraction script (content/engine.js) into the tab the user is scraping. No remote code is ever injected.
+- storage: Saves the user's settings, current Data Table, recent results (history) and saved recipes locally on the device.
+- unlimitedStorage: A scraped dataset or the history of results can exceed the default local storage quota. It is stored only on the user's device.
+- sidePanel: The whole user interface is a Chrome side panel next to the page being scraped.
+- downloads: Saves images the user selects in the Image Downloader, and exported CSV, Excel or JSON files, into the Downloads folder.
+- offscreen: Parses pages fetched in the background with DOMParser for scraping jobs the user starts from their own Claude assistant (Claude connector, off by default) or schedules as a Monitor. The same document keeps the connector's connection to our relay open while the user has the connector turned on.
+- alarms: Runs the user's own Monitors (a saved recipe re-run hourly, daily or weekly, set up by the user) on schedule.
+- notifications: Tells the user when one of their Monitors finds a change (for example a price drop or new listings). Nothing else is ever notified.
+
+Are you using remote code? → No, I am not using remote code.
+If a reason box appears anyway, paste: "All JavaScript is bundled in the package. The optional relay server sends only data (a tool name plus JSON arguments) that call bundled functions."
+
+Data usage — tick ONLY these:
+- Personally identifiable information
+- Authentication information
+- Web history
+- Personal communications
+- Website content
+Leave unticked: Health information, Financial and payment information, Location, User activity.
+
+Tick all three certifications:
+- I do not sell or transfer user data to third parties, outside of the approved use cases
+- I do not use or transfer user data for purposes that are unrelated to my item's single purpose
+- I do not use or transfer user data to determine creditworthiness or for lending purposes
+
+Privacy policy URL: https://pullrows.vercel.app/privacy
+
+=== DISTRIBUTION TAB ===
+Payments: Contains in-app purchases
+Visibility: Public
+Regions/Countries: All regions
+
+=== TEST INSTRUCTIONS (if the dashboard has this section) ===
+<<<
+No account is needed.
+1. Open https://books.toscrape.com/ and click the PullRows toolbar icon to open the side panel.
+2. Press "Auto-detect list", then "Extract list". 20 books appear in the Data Table. Click "CSV" to export.
+3. Pagination: in List Extractor choose "Click 'Next' page" (it is auto-detected) and extract again.
+   The free plan stops at 10 pages (200 rows).
+4. Email Extractor: paste https://www.python.org and press "Find emails".
+5. Pro features: click the "Free" badge (top right), then "Try Pro free for 3 days". All limits are removed,
+   and Excel/JSON export become available. No payment or key is needed.
+6. The Claude connector (Settings) is optional and off by default. It requires the user's own Claude account.
+>>>
+
+When done, list what you filled and anything you couldn't, and remind me to click "Submit for review" myself.
