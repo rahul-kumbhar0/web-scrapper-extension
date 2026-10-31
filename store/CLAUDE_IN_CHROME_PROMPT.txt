@@ -74,7 +74,6 @@ Extract structured data from web pages the user chooses (manually, or through th
 >>>
 
 Permission justifications (one box per permission; match the name):
-- Permission: Paste this
 - Host permission (<all_urls>): The user scrapes pages on any website they choose. The bundled extraction engine is injected into the page the user is on, and the multi-URL tools (Page Extractor, Email and Social finders, Sitemap Explorer) fetch the list of pages the user entered.
 - scripting: Injects the extension's own bundled extraction script (content/engine.js) into the tab the user is scraping. No remote code is ever injected.
 - storage: Saves the user's settings, current Data Table, recent results (history) and saved recipes locally on the device.
