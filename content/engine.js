@@ -1500,6 +1500,9 @@
     let best = qsa(body, 'article, main, [role="main"]')[0] || body;
     let bestScore = 0;
     for (const [el, s] of scores) if (s > bestScore) { best = el; bestScore = s; }
+    // Reddit post pages: the post itself, not the subreddit rules in the sidebar.
+    const post = body.querySelector('shreddit-post');
+    if (post && (post.textContent || '').trim().length > 20) best = post;
 
     const lines = [];
     const walk = (el) => {

@@ -33,7 +33,7 @@ assert.equal(rankPosts(posts, 'views', now)[2].rank, 3);
 assert.equal(searchUrl('instagram', '#AI tools'), 'https://www.instagram.com/explore/search/keyword/?q=AItools');
 assert.match(searchUrl('tiktok', 'ai tools'), /search\/video\?q=ai%20tools$/);
 assert.equal(searchUrl('reddit', 'r/ChatGPT', { maxAgeDays: 30 }), 'https://www.reddit.com/r/ChatGPT/top.json?t=month&limit=100');
-assert.match(searchUrl('reddit', 'ai tools'), /^https:\/\/www\.reddit\.com\/search\.json\?q=ai%20tools&sort=top&t=week/);
+assert.match(searchUrl('reddit', 'ai tools'), /^https:\/\/old\.reddit\.com\/search\.json\?q=ai%20tools&sort=top&t=week/); // www refuses search.json
 assert.equal(searchUrl('x', '#AI'), 'https://x.com/search?q=%23AI&src=typed_query&f=top');
 assert.equal(redditJsonUrl('https://www.reddit.com/r/aitools/'), 'https://www.reddit.com/r/aitools.json?limit=100');
 assert.equal(redditJsonUrl('https://www.reddit.com/search/?q=claude'), 'https://www.reddit.com/search.json?q=claude&limit=100');
@@ -62,3 +62,26 @@ setFetchGuard((u) => { const why = blockedReason(u); if (why) throw new Error(`B
 await assert.rejects(fetchWithTimeout('http://localhost./x'), /Blocked by PullRows/);
 setFetchGuard(null);
 console.log('All clean/trends unit checks passed');
+
+// Reddit blocks some JSON feeds on www.reddit.com (HTTP 403); the same feed is read from old.reddit.com.
+{
+  const { findTrends } = await import('../lib/trends.js');
+  globalThis.__webScraper = {
+    redditFromJson: (j) => j.data.children.map(({ data: d }) => ({ platform: 'reddit', url: `https://www.reddit.com${d.permalink}`, caption: d.title, likes: d.ups, comments: d.num_comments, posted: new Date(d.created_utc * 1000).toISOString(), community: `r/${d.subreddit}` })),
+    pageBlock: () => null, socialPosts: () => [], _social: { mergePost: (a, b) => ({ ...a, ...b }) },
+  };
+  const asked = [];
+  const listing = { data: { after: null, children: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => ({ data: { permalink: `/r/ai/comments/p${i}/x/`, title: `Post ${i}`, ups: i * 100, num_comments: i, created_utc: Date.now() / 1000 - 3600 * i, subreddit: 'ai' } })) } };
+  const io = {
+    sleep: async () => {}, progress: () => {},
+    fetchJson: async (url) => { asked.push(url); if (url.startsWith('https://www.reddit.com/')) throw new Error('HTTP 403'); return listing; },
+    fetchDoc: async () => { throw new Error('no page'); },
+    collectPosts: async () => { throw new Error('should not open a tab'); },
+  };
+  const r = await findTrends({ platform: 'reddit', pageUrl: 'https://www.reddit.com/search/?q=ai%20tools', scan: 10, top: 3 }, io);
+  assert.equal(r.ranked.length, 10);
+  assert.deepEqual(asked.map((u) => new URL(u).host), ['www.reddit.com', 'old.reddit.com']);
+  assert.ok(r.top[0].url.startsWith('https://www.reddit.com/r/ai/comments/'), 'post links stay on www.reddit.com');
+  delete globalThis.__webScraper;
+}
+console.log('Reddit 403 → old.reddit.com fallback ok');
