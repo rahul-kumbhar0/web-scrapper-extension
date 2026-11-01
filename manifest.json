@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "PullRows – Web Scraper & Data Extractor",
   "short_name": "PullRows",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "Scrape any site into rows: lists, Maps leads, emails, prices, reels. Price-drop alerts, Sheets & Excel export. Works with Claude.",
   "homepage_url": "https://pullrows.vercel.app",
   "minimum_chrome_version": "116",

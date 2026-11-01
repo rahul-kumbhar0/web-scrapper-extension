@@ -102,6 +102,22 @@ try {
     assert.ok(r.patterns.some((x) => x.insight === 'Communities the winners were posted in'));
   });
 
+  await step('Claude: old.reddit.com search page (the fallback when www refuses) → posts', async () => {
+    const r = await tool('trends_find', { page_url: `${BASE}/social/old/search.html`, scan: 3, top: 3, rank_by: 'views' });
+    assert.equal(r.scanned, 3);
+    const top = r.top[0];
+    assert.equal(top.platform, 'reddit');
+    assert.equal(top.likes, 5400);
+    assert.equal(top.comments, 312);
+    assert.equal(top.community, 'r/artificial');
+    assert.equal(top.url, 'https://www.reddit.com/r/artificial/comments/old001/the_5_ai_tools_i_actually_pay_for/');
+    assert.match(top.caption, /^The 5 AI tools I actually pay for/);
+    assert.equal(top.hashtags, '#AI');
+    // type and thumbnail are kept in the Data Table ("All posts"), not in the chat reply.
+    const all = (await tool('data_table_read', { sheet: 'All posts' })).rows;
+    assert.ok(all.some((p) => p.type === 'image' && String(p.thumbnail).includes('thumbs.redditmedia')), JSON.stringify(all.map((p) => [p.type, p.thumbnail])));
+  });
+
   await step('Claude: X search timeline → posts with views, likes, reposts; ads skipped', async () => {
     const r = await tool('trends_find', { page_url: `${BASE}/social/x/search/`, top: 5, rank_by: 'views' });
     console.log(`    scanned ${r.scanned} · #1 ${r.top[0].views} views · ${r.top[0].likes} likes · ${r.top[0].url}`);

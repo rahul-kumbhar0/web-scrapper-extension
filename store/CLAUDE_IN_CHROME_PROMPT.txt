@@ -1,4 +1,4 @@
-You are helping me fill in the Chrome Web Store Developer Dashboard for my extension "PullRows". I'm signed in, I've already created the item, uploaded the package (pullrows-1.4.2.zip) and uploaded all the images myself. Please fill in every remaining field exactly as written below, going through the tabs on the left in order: Store listing → Privacy → Distribution → Test instructions (if that section exists). Click "Save draft" after each tab.
+You are helping me fill in the Chrome Web Store Developer Dashboard for my extension "PullRows". I'm signed in, I've already created the item, uploaded the package (pullrows-1.5.0.zip) and uploaded all the images myself. Please fill in every remaining field exactly as written below, going through the tabs on the left in order: Store listing → Privacy → Distribution → Test instructions (if that section exists). Click "Save draft" after each tab.
 
 Rules:
 - Paste text exactly as given. Don't rewrite, shorten or translate it.

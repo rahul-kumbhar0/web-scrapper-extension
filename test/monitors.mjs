@@ -206,7 +206,7 @@ try {
   await step('home: Popular one-tap jobs open the right tool or ask for a search', async () => {
     await sp.reload();
     const pops = await sp.locator('.pop').allTextContents();
-    assert.deepEqual(pops, ['Google Maps leads', 'Amazon products & prices', 'LinkedIn jobs', 'Trending Reels & TikToks', 'Emails from websites', 'Price-drop alerts']);
+    assert.deepEqual(pops, ['Search any site', 'Google Maps leads', 'Amazon products & prices', 'LinkedIn jobs', 'Trending Reels & TikToks', 'Emails from websites', 'Price-drop alerts']);
     await sp.locator('.pop', { hasText: 'Price-drop alerts' }).click();
     await sp.waitForFunction(() => document.body.dataset.view === 'monitors');
     await sp.locator('#back').click();

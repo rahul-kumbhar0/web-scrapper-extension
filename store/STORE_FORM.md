@@ -1,6 +1,6 @@
-# PullRows 1.4.2: Chrome Web Store form, field by field
+# PullRows 1.5.0: Chrome Web Store form, field by field
 
-Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.4.2.zip`.
+Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.5.0.zip`.
 Every image named below is in this kit's `images/` folder.
 
 ---
@@ -8,7 +8,7 @@ Every image named below is in this kit's `images/` folder.
 ## 1. Package
 | Field | Value |
 |---|---|
-| Upload | `pullrows-1.4.2.zip` |
+| Upload | `pullrows-1.5.0.zip` |
 
 ## 2. Store listing
 | Field | Paste this |
@@ -62,6 +62,9 @@ Turn any saved recipe into a monitor. PullRows re-runs it every hour, day or wee
 
 GOOGLE SHEETS AND AI ENRICHMENT
 Send any table to your own Google Sheet in one click (one-minute setup, no Google sign-in inside the extension); Pro syncs monitor changes automatically. With Pro, Enrich adds industry, company size, B2B/B2C and a 0–100 lead score with the reason, or sentiment, summaries, name splitting and translation (uses your own Anthropic API key).
+
+SEARCH ANY SITE
+Give a website and what to look for. PullRows finds the site's own search page (35+ sites built in, any other site through its search box), opens it and pulls the results into rows, following Next or Load more. Ask Claude: "find standing desks on amazon.in" or "search reddit for AI tools" and it does it in one step.
 
 POPULAR JOBS IN ONE TAP
 Google Maps leads, Amazon products and prices, LinkedIn jobs, trending Reels and TikToks, emails from a list of websites, and price-drop alerts: start any of them from the home screen.

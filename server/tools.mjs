@@ -122,6 +122,25 @@ export const TOOLS = [
     },
   },
   {
+    name: 'site_search',
+    description: 'Search ANY website for a query and extract the results as rows, in one call: give a site (domain, URL or name like "amazon.in", "reddit", "etsy.com", "linkedin") and a query. PullRows finds the site\'s own search page (built-in presets for 35+ sites, else the site\'s sitelinks/OpenSearch/search form), opens it, auto-detects the results list (site presets name the columns) and follows Next / Load more / scroll for max_pages. Reddit searches are read from its JSON feed (title, url, subreddit, upvotes, comments). Use this instead of guessing search URLs.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        site: { type: 'string', description: 'Domain, URL or well-known name: "amazon.in", "https://www.etsy.com", "reddit", "flipkart", "indeed.com", "github".' },
+        query: { type: 'string' },
+        max_pages: { type: 'integer', default: 1, description: 'Results pages to follow (Next / Load more / scroll).' },
+        max_rows: { type: 'integer', default: 50, description: 'Reddit only: posts to collect.' },
+        item_selector: { type: 'string', description: 'Optional: CSS selector for each result if auto-detect picks the wrong list.' },
+        candidate: { type: 'integer', default: 0 },
+        fields: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, selector: { type: 'string' }, attr: { type: 'string' } }, required: ['name'] } },
+        wait_ms: { type: 'integer', default: 2000 },
+        ...returned,
+      },
+      required: ['site', 'query'],
+    },
+  },
+  {
     name: 'trends_find',
     description: 'Find the best-performing Reels / TikToks / YouTube Shorts & videos / X posts / Reddit posts for a topic or #hashtag (or from a search/profile page, or a list of post links) and rank them. Each post comes with caption, hook, hashtags, views, likes, comments, shares, saves, engagement rate, views per day, sound/music, duration, upload time, creator followers and (Pro, where the platform publishes captions) the spoken transcript. Also returns patterns the winners share (hashtags, sounds, length, hooks, timing). Posts are read in the background where possible; Instagram/TikTok search pages are opened in a tab (the user must be logged in there). After calling, analyse why the top posts work and suggest ideas.',
     inputSchema: {
@@ -149,6 +168,7 @@ export const TOOLS = [
         url: { type: 'string' },
         urls: { type: 'array', items: { type: 'string' } },
         transcript: { type: 'boolean', default: true },
+        comments: { type: 'boolean', default: true, description: 'Reddit: also return the top 10 comments (top_comments).' },
         ...returned,
       },
     },
@@ -266,14 +286,15 @@ export const TOOLS = [
 
 // Page tools also return a screenshot of the page, so the user sees what was scraped in the chat.
 for (const t of TOOLS) {
-  if (['browser_open', 'list_detect', 'list_extract', 'page_action', 'quick_scan', 'images_find'].includes(t.name)) {
+  if (['browser_open', 'list_detect', 'list_extract', 'page_action', 'quick_scan', 'images_find', 'site_search'].includes(t.name)) {
     t.inputSchema.properties.screenshot = { type: 'boolean', default: true, description: 'Also return a screenshot of the page (shown to the user in the chat). Set false to save tokens.' };
   }
 }
 
 export const INSTRUCTIONS = `Tools for the user's PullRows Chrome extension. Every tool runs inside the user's own Chrome (their logged-in sessions), and results are also saved to the PullRows Data Table so the user can export them (CSV, Excel, Google Sheets).
 Typical flows:
-- Lists (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed).
+- Searching a site ("find X on amazon / reddit / etsy / linkedin / any site"): site_search(site, query) does it in one call.
+- Lists on a page you already have (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed).
 - Details for many pages: page_extract with selectors/built-ins (use sitemap_urls or list_extract link columns to get URLs).
 - Leads: find_emails / find_social_links on a list of websites.
 - Watching for changes ("tell me when the price drops", "new jobs every morning"): monitor_create; monitors_list shows the latest changes.

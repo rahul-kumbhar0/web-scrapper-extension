@@ -7,6 +7,8 @@ import { icon, TOOL_ICONS } from './icons.js';
 import { plan, loadPlan, bindNavigation, upsell, canTrial, beginTrial, trialDaysLeft } from './plan.js';
 import { shouldAskReview, answerReview, reviewUrl } from './feedback.js';
 import { SUPPORT_EMAIL } from '../lib/config.js';
+import { searchUrlFor } from '../lib/sitesearch.js';
+import { fetchDoc } from '../lib/net.js';
 
 import listTool from './tools/list.js';
 import pageTool from './tools/page.js';
@@ -104,6 +106,7 @@ let pageInfo = { host: '', title: '', url: '' };
 // The jobs people use scrapers for most, one tap each. Site searches open in the current tab and
 // then auto-detect the list (the site presets name the columns).
 const POPULAR = [
+  { label: 'Search any site', icon: 'scan', any: true },
   { label: 'Google Maps leads', icon: 'scan', ask: 'What and where?', example: 'dentists in Austin', url: (q) => `https://www.google.com/maps/search/${encodeURIComponent(q)}` },
   { label: 'Amazon products & prices', icon: 'bag', ask: 'Search Amazon for', example: 'wireless earbuds', url: (q) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}` },
   { label: 'LinkedIn jobs', icon: 'list', ask: 'Job title and place', example: 'product designer remote', url: (q) => `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(q)}` },
@@ -115,6 +118,27 @@ const POPULAR = [
 async function startPopular(p) {
   if (p.go) { go(p.go); return; }
   const { formDialog } = await import('./ui.js');
+  if (p.any) {
+    const tab = await getActiveTab().catch(() => null);
+    let host = '';
+    try { host = /^https?:/.test(tab?.url || '') ? new URL(tab.url).hostname.replace(/^www\./, '') : ''; } catch { /* chrome:// */ }
+    const res = await formDialog({
+      title: 'Search any site',
+      text: 'PullRows finds the site’s own search page (35+ sites built in, or its search box), opens it and pulls the results into rows.',
+      fields: [{ name: 'site', label: 'Website', value: host, placeholder: 'e.g. amazon.in · etsy.com · reddit · any domain' }, { name: 'q', label: 'Search for', placeholder: 'e.g. standing desk' }],
+      submit: 'Search & extract',
+    });
+    if (!res?.site?.trim() || !res?.q?.trim()) return;
+    toast('Finding the search page…', '', true);
+    try {
+      const target = await searchUrlFor(res.site.trim(), res.q.trim(), { fetchDoc });
+      if (target.note) toast(target.note, '', true);
+      await navigate(tab.id, target.url);
+    } catch (e) { toast(e.message, 'error'); return; }
+    await new Promise((r) => setTimeout(r, 1800));
+    go('list', { autoDetect: true });
+    return;
+  }
   const res = await formDialog({ title: p.label, fields: [{ name: 'q', label: p.ask, placeholder: `e.g. ${p.example}` }], submit: 'Open & extract' });
   if (!res?.q?.trim()) return;
   const tab = await getActiveTab();

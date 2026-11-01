@@ -134,6 +134,24 @@ try {
     assert.equal(r.json.rows[1].price, '€1,299.00');
   });
 
+  await step('site_search: any site → its search page (form / sitelinks / OpenSearch) → rows', async () => {
+    const pagesBefore = ctx.pages().length;
+    const form = await tool('site_search', { site: `${BASE}/sitesearch/form.html`, query: 'lamp', max_rows_returned: 2 });
+    assert.equal(form.json.found_via, 'form');
+    assert.equal(form.json.search_url, `${BASE}/catalog.html?sort=price&keywords=lamp`);
+    assert.equal(form.json.total_rows, 10, 'the catalog list was auto-detected');
+    assert.ok(form.content.some((c) => c.type === 'image'), 'screenshot for the chat');
+    const ld = await tool('site_search', { site: `${BASE}/sitesearch/jsonld.html`, query: 'desk chair', screenshot: false });
+    assert.equal(ld.json.found_via, 'sitelinks');
+    assert.equal(ld.json.search_url, `${BASE}/catalog.html?q=desk%20chair`);
+    const os = await tool('site_search', { site: `${BASE}/sitesearch/opensearch.html`, query: 'mug', screenshot: false });
+    assert.equal(os.json.found_via, 'opensearch');
+    assert.equal(os.json.search_url, `${BASE}/catalog.html?search=mug&page=`);
+    const bad = await rpc('tools/call', { name: 'site_search', arguments: { site: 'not a site', query: 'x' } });
+    assert.ok(bad.isError && /doesn't look like a website/.test(bad.content[0].text));
+    console.log(`    form → ${form.json.total_rows} rows · sitelinks ✓ · opensearch ✓ · tabs opened: ${ctx.pages().length - pagesBefore}`);
+  });
+
   await step('page_extract: selectors + built-ins over 3 URLs', async () => {
     const r = await tool('page_extract', { urls: [1, 2, 3].map((i) => `${BASE}/p/item-${i}.html`), fields: [{ name: 'sku', selector: '.sku' }, { name: 'title', builtin: 'title' }, { name: 'price', builtin: 'price' }] });
     assert.equal(r.json.total_rows, 3);

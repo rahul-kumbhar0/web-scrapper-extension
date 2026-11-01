@@ -381,6 +381,25 @@
     }).filter((p) => p.id);
   }
 
+  // Old Reddit (old.reddit.com) renders each post as div.thing with data-* attributes. Its search and
+  // listing pages still work when www.reddit.com refuses background requests.
+  function oldRedditFromDom(doc) {
+    return [...doc.querySelectorAll('div.thing[data-fullname^="t3_"]')].map((el) => {
+      const a = (k) => el.getAttribute(k) || '';
+      const title = el.querySelector('a.title, p.title a');
+      const caption = clean(`${title?.textContent || ''}${el.querySelector('.expando .md')?.textContent ? `\n${el.querySelector('.expando .md').textContent}` : ''}`, 5000);
+      const permalink = a('data-permalink') || title?.getAttribute('href') || '';
+      if (!/\/comments\//.test(permalink)) return null;
+      return finish({
+        platform: 'reddit', id: a('data-fullname').replace(/^t3_/, ''), url: REDDIT + new URL(permalink, 'https://www.reddit.com').pathname,
+        type: el.classList.contains('self') ? 'text' : /\.(jpe?g|png|gif)|i\.redd\.it/i.test(a('data-url')) ? 'image' : /v\.redd\.it|youtu/i.test(a('data-url')) ? 'video' : 'link',
+        author: a('data-author'), community: a('data-subreddit-prefixed') || (a('data-subreddit') ? `r/${a('data-subreddit')}` : ''),
+        caption, hashtags: tagsIn(caption), likes: num(a('data-score')), comments: num(a('data-comments-count')),
+        posted: toIso(Number(a('data-timestamp')) / 1000 || ''), thumbnail: abs(el.querySelector('a.thumbnail img')?.getAttribute('src') || '', doc),
+      });
+    }).filter(Boolean);
+  }
+
   // ---------- X (Twitter) ----------
   // X builds its pages with JavaScript, so posts are read from the rendered timeline. Counts come from
   // the action buttons' labels ("1,234 Likes. Like"), which start with the number in every language.
@@ -432,7 +451,7 @@
     const add = (p) => { if (p?.id) byId.set(p.id, mergePost(byId.get(p.id), p)); };
     add(youtubeWatch(blobs, doc));
     for (const b of blobs) walk(b.data, (o) => add(postFrom(o, doc)));
-    for (const p of [...redditFromDom(doc), ...xFromDom(doc)]) add(p);
+    for (const p of [...redditFromDom(doc), ...oldRedditFromDom(doc), ...xFromDom(doc)]) add(p);
     // Tiles in the visible page that the JSON didn't cover (content loaded while scrolling).
     for (const a of doc.querySelectorAll('a[href*="/reel/"], a[href*="/reels/"], a[href*="/p/"], a[href*="/video/"], a[href*="/shorts/"], a[href*="/watch?v="]')) {
       const url = abs(a.getAttribute('href'), doc).split('#')[0];
@@ -461,7 +480,7 @@
       best = (same.length ? same : all).reduce((acc, p) => (same.length ? mergePost(acc, p) : !acc || filled(p) > filled(acc) ? p : acc), null);
     }
     // Reddit / X post pages: the post itself, not replies or related posts.
-    const domPosts = [...redditFromDom(doc), ...xFromDom(doc)];
+    const domPosts = [...redditFromDom(doc), ...oldRedditFromDom(doc), ...xFromDom(doc)];
     const own = domPosts.find((p) => want && p.id === want) || (!best && domPosts[0]);
     if (own) best = mergePost(own, best && best.id === own.id ? best : null);
     best = mergePost(best, instagramMeta(doc));

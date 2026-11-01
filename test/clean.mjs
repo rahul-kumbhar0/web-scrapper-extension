@@ -85,3 +85,29 @@ console.log('All clean/trends unit checks passed');
   delete globalThis.__webScraper;
 }
 console.log('Reddit 403 → old.reddit.com fallback ok');
+
+// Search any site: presets, site parsing, Reddit comments.
+{
+  const { presetSearchUrl, siteUrl } = await import('../lib/sitesearch.js');
+  assert.equal(siteUrl('amazon.in'), 'https://amazon.in/');
+  assert.equal(siteUrl('Reddit'), 'https://old.reddit.com/');
+  assert.equal(siteUrl('not a site'), '');
+  assert.equal(presetSearchUrl('amazon.in', 'standing desk').url, 'https://www.amazon.in/s?k=standing%20desk');
+  assert.equal(presetSearchUrl('https://www.reddit.com/r/x', 'ai tools').url, 'https://old.reddit.com/search?q=ai%20tools&sort=top&t=week');
+  assert.equal(presetSearchUrl('linkedin', 'product designer').url, 'https://www.linkedin.com/jobs/search/?keywords=product%20designer');
+  assert.equal(presetSearchUrl('google.com/maps', 'cafes in pune').url, 'https://www.google.com/maps/search/cafes%20in%20pune');
+  assert.equal(presetSearchUrl('google.com', 'cafes').url, 'https://www.google.com/search?q=cafes');
+  assert.equal(presetSearchUrl('de.wikipedia.org', 'Berlin').url, 'https://de.wikipedia.org/w/index.php?search=Berlin&fulltext=1');
+  assert.equal(presetSearchUrl('example.com', 'x'), null);
+
+  const { redditComments } = await import('../lib/trends.js');
+  const asked = [];
+  const io = { fetchJson: async (u) => { asked.push(u); if (/www\./.test(u)) throw new Error('HTTP 403'); return [{}, { data: { children: [
+    { kind: 't1', data: { author: 'a', score: 40, body: 'Great  list,\nthanks' } }, { kind: 'more', data: {} }, { kind: 't1', data: { author: 'b', score: 2, body: 'meh' } }] } }]; } };
+  const c = await redditComments('https://www.reddit.com/r/ai/comments/abc/x/', io, { max: 5 });
+  assert.deepEqual(c, [{ author: 'a', upvotes: 40, text: 'Great list, thanks' }, { author: 'b', upvotes: 2, text: 'meh' }]);
+  assert.deepEqual(asked.map((u) => new URL(u).host), ['www.reddit.com', 'old.reddit.com']);
+  assert.match(asked[1], /\/comments\/abc\/x\.json\?sort=top&limit=5&depth=1$/);
+  assert.deepEqual(await redditComments('https://example.com/x', io), []);
+}
+console.log('site search presets + reddit comments ok');
