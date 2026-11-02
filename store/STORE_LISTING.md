@@ -1,6 +1,6 @@
-# Chrome Web Store listing: PullRows 1.5.0
+# Chrome Web Store listing: PullRows 1.5.1
 
-Upload `dist/pullrows-1.5.0.zip`, which you build with `npm run package`. Images are in `store/`.
+Upload `dist/pullrows-1.5.1.zip`, which you build with `npm run package`. Images are in `store/`.
 
 ## Store listing tab
 

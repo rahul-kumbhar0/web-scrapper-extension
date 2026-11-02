@@ -1,6 +1,6 @@
-# PullRows 1.5.0: Chrome Web Store form, field by field
+# PullRows 1.5.1: Chrome Web Store form, field by field
 
-Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.5.0.zip`.
+Dashboard: https://chrome.google.com/webstore/devconsole → **New item** → upload `pullrows-1.5.1.zip`.
 Every image named below is in this kit's `images/` folder.
 
 ---
@@ -8,7 +8,7 @@ Every image named below is in this kit's `images/` folder.
 ## 1. Package
 | Field | Value |
 |---|---|
-| Upload | `pullrows-1.5.0.zip` |
+| Upload | `pullrows-1.5.1.zip` |
 
 ## 2. Store listing
 | Field | Paste this |
@@ -70,7 +70,7 @@ POPULAR JOBS IN ONE TAP
 Google Maps leads, Amazon products and prices, LinkedIn jobs, trending Reels and TikToks, emails from a list of websites, and price-drop alerts: start any of them from the home screen.
 
 WORKS WITH CLAUDE
-Turn on the Claude connector and add your private link to Claude as a custom connector. Then ask: "find every café in Pune rated above 4.5 and export it." Claude runs PullRows in your own browser, with your logins, shows you screenshots of the pages it scraped right in the chat, and the results land in your Data Table. It works from the Claude app on your phone too, while your computer's Chrome is open. You can also ask Claude to watch a page and alert you when prices drop.
+Turn on the Claude connector and add your private link to Claude as a custom connector. Then ask: "find every café in Pune rated above 4.5 and export it." Claude runs PullRows in your own browser, with your logins, reads pages in the background without taking over your tabs, tells you in the chat what it read and where, and the results land in your Data Table. It works from the Claude app on your phone too, while your computer's Chrome is open. You can also ask Claude to watch a page and alert you when prices drop.
 The connector is off by default and read-only unless you allow actions. Email, banking, password-manager and local-network sites are always blocked.
 
 PRIVATE BY DESIGN

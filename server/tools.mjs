@@ -6,6 +6,12 @@ const tabOrUrl = {
   url: { type: 'string', description: 'Open this URL first (in the tab) before running.' },
 };
 const returned = { max_rows_returned: { type: 'integer', default: 100, description: 'How many rows to include in the reply (all rows are saved to the PullRows Data Table).' } };
+// Where a page tool runs. Default: in the background, with no tab at all when the page's HTML has the
+// data, else in a background tab the user is not switched to (closed afterwards unless keep_tab).
+const where = {
+  mode: { type: 'string', enum: ['auto', 'background', 'browser'], default: 'auto', description: 'auto: read the page in the background (no tab) when possible, else use a background tab the user is not switched to. background: never open a tab (fails if the page needs one). browser: open a visible tab and show the work (also gives a screenshot).' },
+  keep_tab: { type: 'boolean', default: false, description: 'Keep the tab this call opened (for a follow-up page_action / list_extract with its tab_id).' },
+};
 
 export const TOOLS = [
   {
@@ -15,13 +21,14 @@ export const TOOLS = [
   },
   {
     name: 'browser_open',
-    description: 'Open a URL in a new tab in the user\'s Chrome (default) or navigate an existing tab_id (with new_tab: false; without a tab_id the active tab is navigated), and wait for it to load. Use before tools that work on "the current page".',
+    description: 'Open a URL in a new background tab in the user\'s Chrome (default; the user is not switched to it) or navigate an existing tab_id (with new_tab: false; without a tab_id the active tab is navigated), and wait for it to load. Usually unnecessary: list_extract, site_search, quick_scan, list_detect, images_find and page_read take a url directly and read it in the background without any tab.',
     inputSchema: {
       type: 'object',
       properties: {
         url: { type: 'string' },
         tab_id: { type: 'integer', description: 'Navigate this existing tab instead of opening a new one.' },
         new_tab: { type: 'boolean', default: true },
+        activate: { type: 'boolean', default: false, description: 'Switch the user to the new tab. Default false: it opens in the background and the user keeps what they were looking at.' },
         wait_ms: { type: 'integer', default: 1500, description: 'Extra wait after load for JavaScript-rendered content.' },
       },
       required: ['url'],
@@ -53,6 +60,7 @@ export const TOOLS = [
       type: 'object',
       properties: {
         ...tabOrUrl,
+        ...where,
         max_chars: { type: 'integer', default: 30000 },
         full_text: { type: 'boolean', default: false, description: 'Return all visible text instead of the main content.' },
       },
@@ -65,6 +73,7 @@ export const TOOLS = [
       type: 'object',
       properties: {
         ...tabOrUrl,
+        ...where,
         types: { type: 'array', items: { type: 'string', enum: ['emails', 'phones', 'links', 'images', 'tables', 'text', 'social', 'prices', 'pagination'] }, default: ['emails', 'phones', 'social', 'links'] },
         ...returned,
       },
@@ -82,6 +91,7 @@ export const TOOLS = [
       type: 'object',
       properties: {
         ...tabOrUrl,
+        ...where,
         candidate: { type: 'integer', default: 0, description: 'Which list_detect candidate to use when item_selector is not given.' },
         item_selector: { type: 'string', description: 'CSS selector matching each item.' },
         fields: {
@@ -135,6 +145,7 @@ export const TOOLS = [
         candidate: { type: 'integer', default: 0 },
         fields: { type: 'array', items: { type: 'object', properties: { name: { type: 'string' }, selector: { type: 'string' }, attr: { type: 'string' } }, required: ['name'] } },
         wait_ms: { type: 'integer', default: 2000 },
+        ...where,
         ...returned,
       },
       required: ['site', 'query'],
@@ -292,6 +303,7 @@ for (const t of TOOLS) {
 }
 
 export const INSTRUCTIONS = `Tools for the user's PullRows Chrome extension. Every tool runs inside the user's own Chrome (their logged-in sessions), and results are also saved to the PullRows Data Table so the user can export them (CSV, Excel, Google Sheets).
+Tools run in the background: a page whose HTML has the data is read with no tab at all; a JavaScript-built page is opened in a background tab the user is not switched to and closed afterwards. Every result carries how_it_ran (what was read where, which pages were followed): tell the user in one line what happened. Pass mode 'browser' only when the user asks to watch it (that also returns a screenshot). Prefer giving tools a url over browser_open.
 Typical flows:
 - Searching a site ("find X on amazon / reddit / etsy / linkedin / any site"): site_search(site, query) does it in one call.
 - Lists on a page you already have (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed).

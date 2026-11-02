@@ -253,6 +253,7 @@
       <p><strong>✦ Enrich</strong> in the Data Table (Pro, with your Anthropic key) adds several columns at once: lead score (0–100 against your ideal customer) with the reason, industry, company size and B2B/B2C; or summary and category; sentiment and topic; first/last name and role; or a translation. Unknown values are left empty instead of guessed.</p>
 
       <h2 id="claude-connector">Claude connector</h2>
+      <p><strong>Background by default.</strong> Claude’s tools read a page’s HTML with no tab at all when the data is in it (and follow “Next” links); a script-built page is opened in a background tab you are never switched to and closed afterwards. Each result includes <code>how_it_ran</code>, so Claude can tell you what it read and where. Ask Claude to use <em>mode “browser”</em> when you want to watch the page and get a screenshot in the chat.</p>
       <p>The connector lets Claude use PullRows' tools through MCP, the Model Context Protocol. Claude asks; your browser does the work, with your logged-in sessions; results come back to Claude and also land in your Data Table.</p>
       <pre><code>Claude ──MCP (HTTPS)──▶ PullRows relay ◀──── PullRows in your Chrome
                          passes calls through,        does the scraping,

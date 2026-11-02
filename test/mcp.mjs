@@ -92,19 +92,26 @@ try {
 
   let tabId;
   await step('browser_open (new tab) + browser_tabs', async () => {
+    const activeBefore = (await sp.evaluate(() => chrome.tabs.query({ active: true, lastFocusedWindow: true })))[0]?.id;
     const r = await tool('browser_open', { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 500 });
     tabId = r.json.tab_id;
     assert.equal(r.json.title, 'Catalog');
+    const activeAfter = (await sp.evaluate(() => chrome.tabs.query({ active: true, lastFocusedWindow: true })))[0]?.id;
+    assert.equal(activeAfter, activeBefore, 'the user was not switched to the new tab');
+    assert.match(r.json.how_it_ran.join(' '), /background tab/);
     const tabs = await tool('browser_tabs');
     assert.ok(tabs.json.some((t) => t.tab_id === tabId));
   });
 
   await step('Page tools return a screenshot for the chat (and can skip it)', async () => {
-    const res = await rpc('tools/call', { name: 'browser_open', arguments: { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 300 } });
+    const quiet = await rpc('tools/call', { name: 'browser_open', arguments: { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 300 } });
+    assert.ok(!quiet.content.some((c) => c.type === 'image'), 'a background tab is never activated just for a picture');
+    const res = await rpc('tools/call', { name: 'browser_open', arguments: { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 300, activate: true } });
     const img = res.content.find((c) => c.type === 'image');
-    assert.ok(img && img.mimeType === 'image/jpeg' && img.data.length > 1000, 'image in the reply');
-    const off = await rpc('tools/call', { name: 'browser_open', arguments: { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 300, screenshot: false } });
+    assert.ok(img && img.mimeType === 'image/jpeg' && img.data.length > 1000, 'image in the reply for a visible tab');
+    const off = await rpc('tools/call', { name: 'browser_open', arguments: { url: `${BASE}/catalog.html`, new_tab: true, wait_ms: 300, activate: true, screenshot: false } });
     assert.ok(!off.content.some((c) => c.type === 'image'));
+    await tool('browser_open', { url: `${BASE}/catalog.html`, tab_id: tabId, wait_ms: 200 });
   });
 
   await step('list_detect finds the product grid + Next button', async () => {
@@ -134,13 +141,55 @@ try {
     assert.equal(r.json.rows[1].price, '€1,299.00');
   });
 
+  await step('background: list_extract(url) with link pagination opens NO tab and reports how it ran', async () => {
+    const pagesBefore = ctx.pages().length;
+    const r = await tool('list_extract', { url: `${BASE}/patterns/pager-plain.html`, pagination: { mode: 'next', max_pages: 5, delay_ms: 0 }, max_rows_returned: 2 });
+    console.log(`    ${r.json.how_it_ran.join(' | ')}`);
+    assert.equal(r.json.ran, 'background (no tab)');
+    assert.equal(r.json.pages_visited, 3);
+    assert.equal(r.json.total_rows, 8, '3 + 3 + 2 books across the three pages');
+    assert.ok(r.json.how_it_ran.some((s) => /no tab opened/.test(s)) && r.json.how_it_ran.filter((s) => /Followed Next/.test(s)).length === 2);
+    assert.equal(ctx.pages().length, pagesBefore, 'no tab was opened');
+    assert.ok(!r.content.some((c) => c.type === 'image'));
+    const q = await tool('quick_scan', { url: `${BASE}/contact.html`, types: ['emails'] });
+    assert.equal(q.json.ran, 'background (no tab)');
+    assert.ok(q.json.results.emails.total >= 1);
+    const d = await tool('list_detect', { url: `${BASE}/patterns/pager-plain.html` });
+    assert.equal(d.json.candidates[0].items, 3);
+    assert.match(d.json.how_it_ran.join(' '), /no tab opened/);
+    assert.equal(ctx.pages().length, pagesBefore, 'still no tab');
+  });
+
+  await step('background: a script-built page falls back to a background tab, closed afterwards, user not switched', async () => {
+    const countTabs = () => sp.evaluate((u) => chrome.tabs.query({ url: `${u}/catalog.html*` }).then((t) => t.length), BASE);
+    const tabsBefore = await countTabs();
+    const activeBefore = (await sp.evaluate(() => chrome.tabs.query({ active: true, lastFocusedWindow: true })))[0]?.id;
+    const r = await tool('list_extract', { url: `${BASE}/catalog.html`, pagination: { mode: 'next', max_pages: 3, delay_ms: 0 }, max_rows_returned: 1 });
+    console.log(`    ${r.json.how_it_ran.join(' | ')}`);
+    assert.equal(r.json.ran, 'background tab');
+    assert.equal(r.json.total_rows, 25, 'JS Next button still paged through');
+    assert.match(r.json.how_it_ran.join(' '), /built by JavaScript|script button, not a link/);
+    assert.match(r.json.how_it_ran.join(' '), /background tab/);
+    const activeAfter = (await sp.evaluate(() => chrome.tabs.query({ active: true, lastFocusedWindow: true })))[0]?.id;
+    assert.equal(activeAfter, activeBefore, 'the user was not switched away');
+    await sp.waitForFunction(([u, n]) => chrome.tabs.query({ url: `${u}/catalog.html*` }).then((t) => t.length === n), [BASE, tabsBefore], { timeout: 5000 });
+    const strict = await rpc('tools/call', { name: 'list_extract', arguments: { url: `${BASE}/catalog.html`, pagination: { mode: 'next', max_pages: 2 }, mode: 'background' } });
+    assert.ok(strict.isError && /built by JavaScript|needs a browser tab|script button/.test(strict.content[0].text), strict.content?.[0]?.text);
+    const shown = await tool('list_extract', { url: `${BASE}/catalog.html`, mode: 'browser', keep_tab: true, max_rows_returned: 1 });
+    assert.equal(shown.json.ran, 'visible tab');
+    assert.ok(shown.content.some((c) => c.type === 'image'), 'browser mode shows the page');
+    await sp.evaluate((u) => chrome.tabs.query({ url: u }).then((ts) => Promise.all(ts.filter((t) => t.id !== undefined).map((t) => chrome.tabs.remove(t.id)))), `${BASE}/catalog.html`);
+  });
+
   await step('site_search: any site → its search page (form / sitelinks / OpenSearch) → rows', async () => {
     const pagesBefore = ctx.pages().length;
+    const tabsBefore = await sp.evaluate((u) => chrome.tabs.query({ url: `${u}/catalog.html*` }).then((t) => t.length), BASE);
     const form = await tool('site_search', { site: `${BASE}/sitesearch/form.html`, query: 'lamp', max_rows_returned: 2 });
     assert.equal(form.json.found_via, 'form');
     assert.equal(form.json.search_url, `${BASE}/catalog.html?sort=price&keywords=lamp`);
     assert.equal(form.json.total_rows, 10, 'the catalog list was auto-detected');
-    assert.ok(form.content.some((c) => c.type === 'image'), 'screenshot for the chat');
+    assert.equal(form.json.ran, 'background tab', 'the catalog is script-built, so a hidden tab was used');
+    assert.match(form.json.how_it_ran.join(' '), /built by JavaScript/);
     const ld = await tool('site_search', { site: `${BASE}/sitesearch/jsonld.html`, query: 'desk chair', screenshot: false });
     assert.equal(ld.json.found_via, 'sitelinks');
     assert.equal(ld.json.search_url, `${BASE}/catalog.html?q=desk%20chair`);
@@ -149,6 +198,7 @@ try {
     assert.equal(os.json.search_url, `${BASE}/catalog.html?search=mug&page=`);
     const bad = await rpc('tools/call', { name: 'site_search', arguments: { site: 'not a site', query: 'x' } });
     assert.ok(bad.isError && /doesn't look like a website/.test(bad.content[0].text));
+    await sp.waitForFunction(([u, n]) => chrome.tabs.query({ url: `${u}/catalog.html*` }).then((t) => t.length === n), [BASE, tabsBefore], { timeout: 5000 });
     console.log(`    form → ${form.json.total_rows} rows · sitelinks ✓ · opensearch ✓ · tabs opened: ${ctx.pages().length - pagesBefore}`);
   });
 

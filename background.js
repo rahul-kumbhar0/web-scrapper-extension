@@ -186,10 +186,16 @@ const OPS = {
     await sleep(300);
     return true;
   },
-  async screenshot({ tabId }) {
+  async screenshot({ tabId, quiet = false }) {
     const tab = await allowedTab(tabId);
-    if (!tab.active) { await chrome.tabs.update(tab.id, { active: true }); await sleep(400); }
-    await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
+    // Chrome can only capture the tab the user is looking at. In quiet mode (the picture that goes
+    // with a tool result) we never switch tabs or windows to get it.
+    if (!tab.active) {
+      if (quiet) return null;
+      await chrome.tabs.update(tab.id, { active: true });
+      await sleep(400);
+    }
+    if (!quiet) await chrome.windows.update(tab.windowId, { focused: true }).catch(() => {});
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 70 });
     assertAllowed((await chrome.tabs.get(tab.id)).url || '', await guardOpts()); // still the same page?
     return { dataUrl, title: tab.title, url: tab.url };

@@ -834,7 +834,8 @@
     let sim = 0;
     for (let i = 1; i < sets.length; i++) sim += jaccard(sets[0], sets[i]);
     sim = sets.length > 1 ? sim / (sets.length - 1) : 0;
-    const visible = sample.filter((el) => el.getClientRects?.().length !== 0).length / sample.length;
+    // A fetched document (DOMParser, no window) has no layout: count everything as visible.
+    const visible = !group[0].ownerDocument.defaultView ? 1 : sample.filter((el) => el.getClientRects?.().length !== 0).length / sample.length;
     const place = isChrome(group[0]) ? 0.3 : group[0].closest('main, [role="main"], article, #content, #main') ? 1.2 : 1;
     return group.length * richness * sim * sim * (0.2 + 0.8 * visible) * place;
   }
@@ -1238,14 +1239,14 @@
   // pagination actions (run in the live page)
   // ======================================================================
 
-  const isVisible = (el) => !!(el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden');
+  const isVisible = (el) => !!el && (!el.ownerDocument.defaultView ? !el.hidden && !/display\s*:\s*none|visibility\s*:\s*hidden/i.test(el.getAttribute('style') || '') : !!(el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'));
   const isDisabled = (el) => el.disabled || el.getAttribute('aria-disabled') === 'true' || /\bdisabled\b/i.test(el.className);
 
   function findNextButton(doc = document) {
     const cands = [
       ...qsa(doc, 'a[rel~="next"]'),
       ...qsa(doc, 'a, button, [role="button"]').filter((el) => {
-        return isNextText(el.innerText || el.getAttribute('aria-label') || el.title) || /^next\b|^go to next/i.test(el.getAttribute('aria-label') || '') ||
+        return isNextText(el.innerText || el.textContent || el.getAttribute('aria-label') || el.title) || /^next\b|^go to next/i.test(el.getAttribute('aria-label') || '') ||
           (/\bnext\b/i.test(el.className) && /pag/i.test(el.closest('[class]')?.parentElement?.className || el.className));
       }),
     ].filter((el) => isVisible(el) && !isDisabled(el));

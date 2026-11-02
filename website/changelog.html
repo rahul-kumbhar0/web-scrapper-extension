@@ -89,6 +89,22 @@
   </section>
 
   <div class="container legal">
+    <section class="release" aria-labelledby="v151">
+      <div class="release__meta">
+        <h2 class="release__v" id="v151">v1.5.1</h2>
+        <p class="release__d">November 2, 2026</p>
+        <span class="release__tag">Improved</span>
+      </div>
+      <div class="prose">
+        <h3>Claude scrapes in the background — you keep your tab</h3>
+        <ul>
+          <li><strong>No more tab switching.</strong> When Claude uses PullRows, pages whose HTML already has the data are read with <em>no tab at all</em> (shops, directories, job boards, Wikipedia, old Reddit…), following “Next” links across pages. Only a script-built page gets a tab — opened in the background, never switched to, and closed when the job is done.</li>
+          <li><strong>What it did, in the chat.</strong> Every result now carries <code>how_it_ran</code>: where the page was read, which list was detected, which pages were followed and how many rows came back. Claude tells you in one line.</li>
+          <li><strong>Watch it when you want.</strong> Ask for <em>mode “browser”</em> and the page opens in a visible tab with a screenshot in the chat, as before. Screenshots never pull you to another tab any more.</li>
+        </ul>
+      </div>
+    </section>
+
     <section class="release" aria-labelledby="v150">
       <div class="release__meta">
         <h2 class="release__v" id="v150">v1.5.0</h2>
