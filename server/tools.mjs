@@ -41,7 +41,7 @@ export const TOOLS = [
   },
   {
     name: 'page_action',
-    description: 'Interact with a page: click an element, scroll to the bottom (loads lazy/infinite content), or type into an input.',
+    description: 'Interact with a page: click an element, scroll to the bottom (loads lazy/infinite content), or type into an input. Clicking and typing only work on sites the user approved under PullRows → Settings → Claude connector; password, card, OTP and account-number fields are never filled, and buttons that pay, transfer or delete are never clicked.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -55,7 +55,7 @@ export const TOOLS = [
   },
   {
     name: 'page_read',
-    description: 'Read a page as clean Markdown (main content only, like reader mode) plus title and metadata. Uses the open tab (rendered) or fetches the URL.',
+    description: 'Read a page as clean Markdown (main content only, like reader mode) plus title and metadata, and show it: the page\'s own images come back with the text, so the page can be seen without opening a tab or taking a screenshot. Uses the open tab (rendered) or fetches the URL; a page built by JavaScript is read from the data it ships or its AMP copy.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -63,6 +63,7 @@ export const TOOLS = [
         ...where,
         max_chars: { type: 'integer', default: 30000 },
         full_text: { type: 'boolean', default: false, description: 'Return all visible text instead of the main content.' },
+        max_images: { type: 'integer', default: 2, description: 'How many of the page\'s own images to return with the text, so the page can be seen and not only read (0–6). 0 for text only. They are fetched directly — no tab is opened and no screenshot is taken.' },
       },
     },
   },
@@ -81,7 +82,7 @@ export const TOOLS = [
   },
   {
     name: 'list_detect',
-    description: 'Find the repeating lists on a page (products, search results, listings, table rows…). Returns candidates with item selector, item count, auto-generated fields and sample rows, plus detected Next / Load-more buttons. Built-in presets are used automatically for Google Maps results, LinkedIn jobs, Instagram posts, YouTube videos and Amazon search. Use before list_extract.',
+    description: 'Find the repeating lists on a page (products, search results, listings, table rows…). Returns candidates with item selector, item count, auto-generated fields and sample rows, plus detected Next / Load-more buttons. Built-in presets are used automatically for Google Maps results, LinkedIn jobs, Instagram posts, YouTube videos and Amazon search. A page that builds itself with JavaScript but ships its data as JSON also returns candidates whose item_selector is "json:<path>" — those read with no tab, no scrolling and no pagination. Use before list_extract.',
     inputSchema: { type: 'object', properties: { ...tabOrUrl } },
   },
   {
@@ -93,7 +94,7 @@ export const TOOLS = [
         ...tabOrUrl,
         ...where,
         candidate: { type: 'integer', default: 0, description: 'Which list_detect candidate to use when item_selector is not given.' },
-        item_selector: { type: 'string', description: 'CSS selector matching each item.' },
+        item_selector: { type: 'string', description: 'CSS selector matching each item. May also be "json:<path>" as returned by list_detect — the rows then come from the data the page itself ships, with no tab, no scrolling and no pagination.' },
         fields: {
           type: 'array',
           description: 'Optional custom columns. Each: {name, selector (CSS, relative to the item; ":scope" for the item itself), attr: "text"|"href"|"src"|<attribute>}. Default: auto-generated fields.',
@@ -172,7 +173,7 @@ export const TOOLS = [
   },
   {
     name: 'post_details',
-    description: 'Full data for one or more social posts (Instagram post/Reel, TikTok, YouTube video/Short, X post, Reddit post): caption, hashtags, mentions, views, likes, comments, shares, saves, sound/music, original audio or not, duration, upload time, author, followers, thumbnail, and the transcript where captions exist (Pro). Read in the background; a hidden tab is used only when the page needs it.',
+    description: 'Full data for one or more social posts (Instagram post/Reel, TikTok, YouTube video/Short, X post, Reddit post): caption, hashtags, mentions, views, likes, comments, shares, saves, sound/music, original audio or not, duration, upload time, author, followers, thumbnail, video_url, and the transcript where captions exist (Pro). Read in the background; a hidden tab is used only when the page needs it. To actually see a clip rather than read about it, use video_frames.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -182,6 +183,47 @@ export const TOOLS = [
         comments: { type: 'boolean', default: true, description: 'Reddit: also return the top 10 comments (top_comments).' },
         ...returned,
       },
+    },
+  },
+  {
+    name: 'account_scan',
+    description: 'Scan a whole social account: every reel / short / video it has posted, each one\'s real figures, and its spoken words (transcript) where the platform publishes captions. Works on YouTube, TikTok, Instagram and X. A whole back catalogue takes far longer than one tool call, so this STARTS A BACKGROUND JOB and returns a job_id straight away — poll job_status for progress and for the rows collected so far. Rows also appear live in the user\'s PullRows Data Table. Chrome must stay open and the connector on. A YouTube channel is read through YouTube\'s own feed with no tab; Instagram and TikTok profiles are scrolled in a tab and need the user logged in there. Use this to study what one account does well before writing new posts; use trends_find instead to look across a topic rather than down one account.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        account: { type: 'string', description: 'A profile link ("https://www.tiktok.com/@nasa", "instagram.com/nasa/") or a handle ("@nasa" — then platform is required).' },
+        platform: { type: 'string', enum: ['youtube', 'tiktok', 'instagram', 'x'], description: 'Needed only when "account" is a bare handle rather than a link.' },
+        limit: { type: 'integer', default: 300, description: 'How many posts at most, newest first (1–2000). The free plan caps this lower.' },
+        transcripts: { type: 'boolean', default: true, description: 'Fetch each post\'s caption file for the spoken words (Pro). Instagram publishes none, so those rows carry video_url instead.' },
+        detail: { type: 'boolean', default: true, description: 'Open each post for exact view / like / comment counts. false is much faster but the numbers come from the listing only.' },
+        rank_by: { type: 'string', enum: ['trending', 'balanced', 'views', 'engaging'], default: 'balanced' },
+      },
+      required: ['account'],
+    },
+  },
+  {
+    name: 'job_status',
+    description: 'Progress and results of a background job started by account_scan. Call it every minute or two while a scan runs; it returns the rows collected so far, so the account can be analysed before the scan finishes. action "list" shows every job, action "cancel" stops one.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        job_id: { type: 'string', description: 'The id account_scan returned. Omit it with action "list".' },
+        action: { type: 'string', enum: ['status', 'list', 'cancel'], default: 'status' },
+        max_rows_returned: { type: 'integer', default: 50, description: 'How many rows to include (0–500). All of them are in the Data Table.' },
+      },
+    },
+  },
+  {
+    name: 'video_frames',
+    description: 'Watch one reel, short, TikTok or video: frames taken across the clip come back as images, together with its transcript, caption, sound and figures. Claude cannot read video or audio, so this is how a clip is actually seen — read the frames in order with the transcript to judge the hook, the pacing, the cuts and the on-screen text. YouTube serves no downloadable file, so its videos come back as the stills YouTube publishes for them. Where the platform publishes no captions (most Instagram reels) there is no transcript, and video_url is returned so the spoken words can be fetched with a transcription tool.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'Link to one post (a reel, short, TikTok or video).' },
+        count: { type: 'integer', default: 6, description: 'How many frames to take across the clip (1–12).' },
+        mode: { type: 'string', enum: ['auto', 'browser'], default: 'auto' },
+      },
+      required: ['url'],
     },
   },
   {
@@ -306,10 +348,12 @@ export const INSTRUCTIONS = `Tools for the user's PullRows Chrome extension. Eve
 Tools run in the background: a page whose HTML has the data is read with no tab at all; a JavaScript-built page is opened in a background tab the user is not switched to and closed afterwards. Every result carries how_it_ran (what was read where, which pages were followed): tell the user in one line what happened. Pass mode 'browser' only when the user asks to watch it (that also returns a screenshot). Prefer giving tools a url over browser_open.
 Typical flows:
 - Searching a site ("find X on amazon / reddit / etsy / linkedin / any site"): site_search(site, query) does it in one call.
-- Lists on a page you already have (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed).
+- Lists on a page you already have (products, search results, directories, Google Maps): browser_open → list_detect → list_extract (with pagination if needed). When list_detect offers a "json:<path>" candidate, prefer it: those rows come from the data the page ships, with no tab and no pagination.
 - Details for many pages: page_extract with selectors/built-ins (use sitemap_urls or list_extract link columns to get URLs).
 - Leads: find_emails / find_social_links on a list of websites.
 - Watching for changes ("tell me when the price drops", "new jobs every morning"): monitor_create; monitors_list shows the latest changes.
 - Social research ("best reels about X", "what's trending for #tag"): trends_find, then explain why the winners work from their hooks, transcripts, sounds and the patterns. post_details for specific post links.
-Use browser_screenshot or page_read to understand an unfamiliar page. Keep scrapes polite (reasonable page counts and delays).
-Some sites are blocked by the user's safety settings (email, banking, password managers, local network); clicking/typing (page_action click/fill) and images_download only work if the user enabled 'Allow actions' in PullRows Settings — if a tool says it's disabled, tell the user how to enable it rather than retrying.`;
+- One account in depth ("study @handle", "what works on my account", "every reel they posted"): account_scan starts a background job — tell the user it is running and roughly how long it may take, then poll job_status every minute or two and analyse the rows as they arrive. Do not call account_scan again while one is running.
+- Seeing a clip rather than reading about it: video_frames returns frames across the video as images plus the transcript. Claude cannot read video or audio, so this is the only way to watch a reel; never claim to have watched one without it.
+Use browser_screenshot or page_read to understand an unfamiliar page. page_read also brings back the page's own images, so a page can be seen without a tab. Keep scrapes polite (reasonable page counts and delays).
+Some sites are blocked by the user's safety settings (email, banking, password managers, local network); clicking/typing (page_action click/fill) and images_download only work if the user enabled 'Allow actions' in PullRows Settings AND approved that site there — if a tool says it's disabled or the site is not approved, tell the user how to enable it rather than retrying.`;
