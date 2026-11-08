@@ -439,6 +439,14 @@ try {
     await sp.getByRole('button', { name: 'Deactivate this browser' }).click();
     await dialog().getByRole('button', { name: 'Deactivate' }).click();
     await sp.waitForFunction(() => document.getElementById('plan-badge').textContent === 'Free');
+    // The offline developer key works in this unpacked copy and survives the daily re-check.
+    await sp.fill('#license-key', 'PULLROWS-DEV-TEST-0000');
+    await sp.click('#activate-license');
+    await waitToast(/Welcome to PullRows Pro/);
+    await sp.waitForFunction(() => document.getElementById('plan-badge').textContent === 'Pro');
+    await sp.evaluate(async () => { const { license } = await chrome.storage.local.get('license'); await chrome.storage.local.set({ license: { ...license, validatedAt: Date.now() - 3 * 864e5 } }); });
+    await sp.getByRole('button', { name: 'Re-check licence' }).click();
+    await waitToast(/Licence is valid/);
     await sp.evaluate(() => chrome.storage.local.set({ license: { plan: 'pro', key: 'PR-GOOD-KEY', instanceId: 'lki_123', validatedAt: Date.now(), status: 'active' } }));
   });
 
