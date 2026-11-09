@@ -13,7 +13,10 @@ export async function prepareExtension(ctx, sw, { pro = true, mcp = {}, settings
     }
     const { settings: s = {} } = await chrome.storage.local.get('settings');
     await chrome.storage.local.set({
-      settings: { ...s, aiConsentAt: Date.now(), ...settings, mcp: { ...(s.mcp || {}), ...mcp } },
+      // The connector link is treated as approved: a tool call from an unpaired link is held
+      // until the user clicks Allow, which no headless test can do. A test that wants to
+      // exercise that gate passes mcp: { pairedAt: 0 }.
+      settings: { ...s, aiConsentAt: Date.now(), ...settings, mcp: { ...(s.mcp || {}), pairedAt: Date.now(), ...mcp } },
       license: pro ? { plan: 'pro', key: 'TEST-LICENSE-KEY', instanceId: 'lki_test', activatedAt: Date.now(), validatedAt: Date.now(), status: 'active' } : { plan: 'free' },
     });
   }, { pro, mcp, settings });

@@ -161,8 +161,10 @@ try {
     const hist = await sp.evaluate(async () => (await chrome.storage.local.get('history')).history || []);
     const h = hist.find((x) => x.source === 'Monitor' && /price drop/.test(x.title));
     assert.ok(h, 'history entry');
-    assert.equal(h.results.Rows.length, 4);
-    assert.ok(h.results.Changes.some((r) => r.change === 'price down' && r.percent === -25));
+    // Since 1.5.2 the rows live beside the index under history:rows:<id>.
+    const hr = await sp.evaluate(async (id) => (await chrome.storage.local.get(`history:rows:${id}`))[`history:rows:${id}`], h.id);
+    assert.equal(hr.Rows.length, 4);
+    assert.ok(hr.Changes.some((r) => r.change === 'price down' && r.percent === -25));
     const badge = await sp.evaluate(() => chrome.action.getBadgeText({}));
     assert.equal(badge, '1');
   });
@@ -190,7 +192,10 @@ try {
     const [after] = await monitors();
     assert.equal(after.lastOk, false);
     assert.match(after.lastSummary, /^Failed:/);
-    assert.equal(after.lastRows.length, 4);
+    // The previous rows survive a failed run; since 1.5.2 they live under monitor:rows:<id>.
+    assert.equal(after.hasRows, true);
+    const mr = await sp.evaluate(async (id) => (await chrome.storage.local.get(`monitor:rows:${id}`))[`monitor:rows:${id}`], m.id);
+    assert.equal(mr.length, 4);
   });
 
   await step('delete: monitor, alarm and runner document are gone', async () => {

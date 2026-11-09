@@ -158,8 +158,13 @@ try {
     const { history, dataset } = await sp.evaluate(() => chrome.storage.local.get(['history', 'dataset']));
     const saved = history.find((h) => h.keep && /My leads/.test(h.title));
     assert.ok(saved, 'snapshot in History');
-    assert.equal(saved.results.Emails.length, 7000, 'kept in full (beyond the 5,000-row history limit)');
-    assert.equal(saved.results.Emails[3].note, 'edited by hand');
+    // Since 1.5.2 the rows live beside the index under history:rows:<id>, so saving a scrape no
+    // longer rewrites every stored row; the index carries only the per-sheet counts.
+    const kept = await sp.evaluate(async (id) => (await chrome.storage.local.get(`history:rows:${id}`))[`history:rows:${id}`], saved.id);
+    assert.equal(kept.Emails.length, 7000, 'kept in full (beyond the 5,000-row history limit)');
+    assert.equal(kept.Emails[3].note, 'edited by hand');
+    assert.equal(saved.sheets.find((x) => x.name === 'Emails').rows, 7000, 'index carries the count');
+    assert.ok(!saved.results, 'rows are not inlined in the index');
     assert.equal(dataset.savedPrevious, true);
     for (let i = 0; i < 3; i++) await tool('post_details', { url: `${BASE}/social/reel/C0${i}aiREEL/` });
     const again = (await sp.evaluate(() => chrome.storage.local.get('history'))).history;

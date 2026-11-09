@@ -53,7 +53,7 @@ try {
   const sw = ctx.serviceWorkers()[0] || (await ctx.waitForEvent('serviceworker'));
   const extId = new URL(sw.url()).host;
   console.log(`Extension ${extId} · relay ${RELAY} · fixtures ${BASE}`);
-  await prepareExtension(ctx, sw, { mcp: { allowLocal: true, allowActions: true, allowDownloads: true } });
+  await prepareExtension(ctx, sw, { mcp: { allowLocal: true, allowActions: true, allowDownloads: true, actionAnySite: true } });
   const sp = await ctx.newPage();
   await sp.goto(`chrome-extension://${extId}/sidepanel/sidepanel.html`);
 
