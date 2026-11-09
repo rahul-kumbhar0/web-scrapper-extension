@@ -30,7 +30,7 @@ const P = {
 export const TOOL_ICONS = {
   list: 'list', page: 'pages', email: 'mail', social: 'share', images: 'image', shopify: 'bag',
   sitemap: 'sitemap', text: 'text', quick: 'bolt', ai: 'sparkle', trends: 'trend',
-  table: 'table', recipes: 'book', history: 'clock', settings: 'gear', upgrade: 'crown', monitors: 'bell',
+  table: 'table', recipes: 'book', history: 'clock', settings: 'gear', upgrade: 'crown', monitors: 'bell', jobs: 'clock',
 };
 
 const NS = 'http://www.w3.org/2000/svg';

@@ -154,7 +154,19 @@
 
   // ---------- one platform object → one normalised post ----------
 
-  const POST_FIELDS = ['platform', 'url', 'type', 'author', 'author_followers', 'community', 'caption', 'hashtags', 'mentions', 'views', 'likes', 'comments', 'shares', 'saves', 'music', 'original_audio', 'duration_s', 'posted', 'thumbnail', 'transcript_url', 'id'];
+  const POST_FIELDS = ['platform', 'url', 'type', 'author', 'author_followers', 'community', 'caption', 'hashtags', 'mentions', 'views', 'likes', 'comments', 'shares', 'saves', 'music', 'original_audio', 'duration_s', 'posted', 'thumbnail', 'transcript_url', 'video_url', 'id'];
+
+  // The playable file behind a reel / short, when the page says where it is. Used to pull key
+  // frames out of the video and to hand the audio to a transcription tool; YouTube does not
+  // publish one, so its videos fall back to their thumbnails.
+  function videoUrlOf(o) {
+    const v = o.video || {};
+    return first(
+      o.video_versions?.[0]?.url, o.video_url, o.video_dash_manifest && null,
+      v.playAddr, v.downloadAddr, v.bitrateInfo?.[0]?.PlayAddr?.UrlList?.[0], v.play_addr?.url_list?.[0],
+      o.video_info?.variants?.filter((x) => /mp4/.test(x.content_type || ''))?.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))?.[0]?.url,
+    ) || '';
+  }
 
   function platformOf(doc, o) {
     const h = hostOf(doc);
@@ -247,6 +259,7 @@
       posted: toIso(first(o.taken_at, o.taken_at_timestamp, o.createTime, o.publishDate, o.uploadDate, o.datePublished, txt(o.publishedTimeText))),
       thumbnail: first(o.image_versions2?.candidates?.[0]?.url, o.display_url, o.thumbnail_src, o.video?.cover, o.video?.originCover, thumbs?.[thumbs.length - 1]?.url) || '',
       transcript_url: tiktokSubtitles(o) || '',
+      video_url: videoUrlOf(o),
     };
     if (!post.caption && post.views == null && post.likes == null && !post.music) return null;
     return finish(post);
@@ -494,5 +507,16 @@
     return best;
   }
 
-  Object.assign(W, { socialPost, socialPosts, redditFromJson, POST_FIELDS, _social: { pageJson, num, toIso, seconds, tagsIn, urlId, mergePost } });
+  /**
+   * Posts inside any JSON payload — an API answer, a "load more" continuation page — using the
+   * same extractor the page itself goes through. `doc` only supplies the host, so a bare
+   * { baseURI } stand-in is fine when there is no real document.
+   */
+  function postsFromJson(data, doc = document) {
+    const byId = new Map();
+    walk(data, (o) => { const p = postFrom(o, doc); if (p?.id) byId.set(p.id, mergePost(byId.get(p.id), p)); });
+    return [...byId.values()].filter((p) => p.url);
+  }
+
+  Object.assign(W, { socialPost, socialPosts, postsFromJson, redditFromJson, POST_FIELDS, _social: { pageJson, num, toIso, seconds, tagsIn, urlId, mergePost, postFrom, walk } });
 })();

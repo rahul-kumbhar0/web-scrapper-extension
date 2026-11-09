@@ -21,10 +21,10 @@
   <div id="job" class="job" hidden>
     <div class="job-row">
       <span class="job-spinner" aria-hidden="true"></span>
-      <span id="job-text" class="grow">Working…</span>
+      <span id="job-text" class="grow" role="status" aria-live="polite">Working…</span>
       <button id="job-stop" class="btn danger tiny" type="button">Stop</button>
     </div>
-    <div class="job-track" role="progressbar" aria-label="Progress"><div id="job-fill" class="job-fill"></div></div>
+    <div class="job-track" role="progressbar" aria-label="Progress" aria-valuemin="0" aria-valuemax="100"><div id="job-fill" class="job-fill"></div></div>
   </div>
 
   <main id="view"></main>

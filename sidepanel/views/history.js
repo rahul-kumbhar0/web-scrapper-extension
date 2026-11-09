@@ -1,7 +1,7 @@
 // HISTORY — the last 30 results, re-openable into the Data Table.
-import { h, fill, confirmDialog, plural } from '../ui.js';
+import { h, fill, confirmDialog, plural, toast } from '../ui.js';
 import { state, makeSheet, changed } from '../state.js';
-import { getHistory, deleteHistory, clearHistory } from '../../lib/storage.js';
+import { getHistory, getHistoryRows, deleteHistory, clearHistory } from '../../lib/storage.js';
 
 export default {
   id: 'history',
@@ -14,14 +14,19 @@ export default {
       const items = await getHistory();
       if (!items.length) { fill(list, h('li', { class: 'empty' }, 'Nothing yet.')); return; }
       fill(list, ...items.map((item) => {
-        const counts = Object.entries(item.results).map(([k, r]) => `${k}: ${r.length}`).join(' · ');
+        // Rows live under their own storage key and are only read when the entry is opened.
+        const counts = (item.sheets || []).map((s) => `${s.name}: ${s.rows}`).join(' · ');
         return h('li', {},
           h('div', { class: 'title', title: item.title }, item.title || item.url),
           h('div', { class: 'meta' }, `${new Date(item.at).toLocaleString()} · ${item.source || ''}`),
           h('div', { class: 'meta' }, counts),
           h('div', { class: 'actions' },
-            h('button', { type: 'button', class: 'link-btn', onclick: () => {
-              const sheets = Object.entries(item.results).map(([name, rows]) => makeSheet(name, rows));
+            h('button', { type: 'button', class: 'link-btn', onclick: async (e) => {
+              e.target.disabled = true;
+              const results = await getHistoryRows(item.id);
+              e.target.disabled = false;
+              const sheets = Object.entries(results).map(([name, rows]) => makeSheet(name, rows));
+              if (!sheets.length) { toast('That result is no longer stored.', 'error'); return; }
               state.dataset = { title: item.title, url: item.url, source: item.source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)) };
               changed();
               ctx.go('table');

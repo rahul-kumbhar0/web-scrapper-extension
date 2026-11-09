@@ -3,7 +3,7 @@
 import { h, fill, toast, confirmDialog, formDialog, plural } from '../ui.js';
 import { state, makeSheet, changed } from '../state.js';
 import { getRecipes } from '../../lib/storage.js';
-import { getMonitors, EVERY, ALERTS } from '../../lib/monitor.js';
+import { getMonitors, getMonitorRows, EVERY, ALERTS } from '../../lib/monitor.js';
 import { plan, upsell } from '../plan.js';
 
 // Tools a monitor can re-run without the user's tab (the same set Claude's recipe_run supports).
@@ -71,8 +71,8 @@ export default {
     const list = h('ul', { class: 'item-list' });
     ask('monitor:seen').catch(() => {});
 
-    const openRun = (m) => {
-      const rows = m.lastRows || [];
+    const openRun = async (m) => {
+      const rows = (await getMonitorRows(m.id)) || [];
       const sheets = [makeSheet('Rows', rows), makeSheet('Runs', (m.runs || []).map((r) => ({ when: new Date(r.at).toLocaleString(), ok: r.ok ? 'yes' : 'no', rows: r.rows, summary: r.summary })), ['when', 'ok', 'rows', 'summary'])];
       state.dataset = { title: `Monitor · ${m.name}`, url: '', source: 'Monitor', sheets, active: 0 };
       changed();
@@ -99,7 +99,7 @@ export default {
             try { await ask('monitor:run', { id: m.id }); toast('Run finished.', 'ok'); } catch (err) { toast(err.message, 'error'); }
             render();
           } }, '▶ Run now'),
-          m.lastRows ? h('button', { type: 'button', class: 'link-btn', onclick: () => openRun(m) }, 'Open rows') : null,
+          (m.hasRows || m.lastRows) ? h('button', { type: 'button', class: 'link-btn', onclick: () => openRun(m) }, 'Open rows') : null,
           h('button', { type: 'button', class: 'link-btn', onclick: () => ctx.go('history') }, 'Changes'),
           h('button', { type: 'button', class: 'link-btn', onclick: async () => {
             const r = recipes.find((x) => x.id === m.recipeId);

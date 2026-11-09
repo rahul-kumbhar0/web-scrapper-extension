@@ -345,12 +345,14 @@
         const price = m[0].trim();
         // Context = nearest ancestor with more text than just the price (e.g. the product card).
         let container = node.parentElement;
-        while (container?.parentElement && container !== doc.body && clean(container.innerText ?? container.textContent).length <= price.length + 3) {
+        // textContent, not innerText: innerText flushes layout on every ancestor, which on a
+        // price-dense page costs more than all the rest of the scan put together.
+        while (container?.parentElement && container !== doc.body && clean(container.textContent).length <= price.length + 3) {
           container = container.parentElement;
         }
         // Text pieces joined with spaces: shops lay prices out in flex boxes, where innerText runs them
         // together ("₹599₹1,99970% off").
-        const context = clean(container ? [...container.querySelectorAll('*'), container].length < 400
+        const context = clean(container ? container.querySelectorAll('*').length < 400
           ? [...textNodesIn(container)].map((t) => t.textContent.trim()).filter(Boolean).join(' ')
           : container.innerText ?? container.textContent : '', 160);
         const key = price + '|' + context;
@@ -1265,6 +1267,13 @@
   function clickElement(selector) {
     const el = qsa(document, selector).find(isVisible);
     if (!el || isDisabled(el)) return false;
+    const label = clean(el.innerText ?? el.textContent ?? el.value ?? el.getAttribute('aria-label') ?? '', 40);
+    if (DANGER_LABEL.test(label)) {
+      throw new Error(`PullRows will not click “${label}” — it pays, transfers or deletes something. Do it yourself.`);
+    }
+    if (isSecretForm(el)) {
+      throw new Error('PullRows will not click inside a sign-in or payment form (it asks for a password or card details).');
+    }
     el.scrollIntoView({ block: 'center' });
     // Some sites listen for mousedown/mouseup rather than click.
     for (const type of ['mousedown', 'mouseup']) el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
@@ -1273,9 +1282,38 @@
   }
 
   // Type into an input/textarea/contenteditable the way a user would (fires input/change).
+  // Fields nothing automated should ever type into, however the automation was started.
+  const SECRET_ATTR = /password|passwd|passcode|\bpin\b|otp|one.?time|2fa|mfa|auth.?code|verification.?code|cvv|cvc|security.?code|card.?num|cardnumber|ccnum|credit.?card|expir|routing|iban|account.?number|acct.?num|ssn|social.?security|aadhaar|\bpan\b|tax.?id/i;
+  const SECRET_AUTOCOMPLETE = /^(cc-|current-password|new-password|one-time-code)/i;
+
+  function isSecretField(el) {
+    if (!el) return false;
+    if (el.type === 'password') return true;
+    const auto = el.getAttribute?.('autocomplete') || '';
+    if (SECRET_AUTOCOMPLETE.test(auto.trim())) return true;
+    const words = ['name', 'id', 'placeholder', 'aria-label', 'autocomplete']
+      .map((a) => el.getAttribute?.(a) || '').join(' ');
+    // cardNumber / card_number / card-number all have to read the same way.
+    const hay = `${words} ${el.labels?.[0]?.textContent || ''}`.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_\-.]+/g, ' ');
+    // "PIN code" is the postal code on most Indian address forms, not a secret.
+    if (/pin[\s_-]?code|pincode|postal|\bzip\b/i.test(hay) && !/password|card|cvv|cvc|otp|secur/i.test(hay)) return false;
+    return SECRET_ATTR.test(hay);
+  }
+
+  // A form that asks for a password or card details is a sign-in / checkout form: clicking its
+  // buttons signs someone in or spends money, so automation stops at the edge of it.
+  const isSecretForm = (el) => {
+    const form = el?.closest?.('form');
+    return !!form && [...form.querySelectorAll('input,select')].some(isSecretField);
+  };
+  const DANGER_LABEL = /^(pay|pay now|buy now|place (the )?order|confirm (order|payment|purchase|transfer)|complete purchase|subscribe|delete (my )?account|close account|transfer|send money|withdraw|deactivate)$/i;
+
   function fillInput(selector, value) {
     const el = qsa(document, selector).find(isVisible) || qsa(document, selector)[0];
     if (!el) return false;
+    if (isSecretField(el)) {
+      throw new Error('PullRows will not type into password, card, OTP or account-number fields. Fill this one yourself.');
+    }
     el.focus();
     if (el.isContentEditable) el.textContent = value;
     else if (el.tagName === 'SELECT') {
@@ -1694,6 +1732,136 @@
     picker = null;
   }
 
+  // ======================================================================
+  // data the page shipped as JSON
+  // ----------------------------------------------------------------------
+  // Most "JavaScript-built" pages are not built from nothing: the server embeds the data the
+  // framework hydrates from — __NEXT_DATA__, an Apollo cache, a plain <script type="application/
+  // json">. Reading that turns a page that used to need a browser tab into a background read.
+  // Nothing is evaluated: only JSON.parse, never eval or new Function.
+  // ======================================================================
+  const STATE_NAMES = '__NEXT_DATA__|__NUXT_DATA__|__NUXT__|__APOLLO_STATE__|__INITIAL_STATE__|__INITIAL_DATA__|__INITIAL_PROPS__|__PRELOADED_STATE__|__REDUX_STATE__|__remixContext|__sveltekit_data|__STATE__|__DATA__';
+  const MAX_SCRIPT = 4000000;
+
+  // JSON.parse the balanced {...} or [...] starting at `start`. Anything that is not plain JSON
+  // (Nuxt wraps its state in a function call) simply yields null.
+  function parseBalanced(src, start) {
+    const open = src[start];
+    const close = open === '{' ? '}' : ']';
+    let depth = 0;
+    let inStr = false;
+    let esc = false;
+    for (let i = start; i < src.length; i++) {
+      const c = src[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (c === '\\') esc = true;
+        else if (c === '"') inStr = false;
+        continue;
+      }
+      if (c === '"') inStr = true;
+      else if (c === open) depth++;
+      else if (c === close && --depth === 0) {
+        try { return JSON.parse(src.slice(start, i + 1)); } catch { return null; }
+      }
+    }
+    return null;
+  }
+
+  /** Every JSON payload the page carries: [{ from, data }]. */
+  function hydration(doc = document) {
+    const out = [];
+    const add = (data, from) => { if (data && typeof data === 'object') out.push({ from, data }); };
+    for (const s of qsa(doc, 'script[type="application/json"]')) {
+      const txt = s.textContent || '';
+      if (txt.length > MAX_SCRIPT) continue;
+      try { add(JSON.parse(txt), s.id || 'embedded JSON'); } catch { /* not JSON after all */ }
+    }
+    const re = new RegExp('(?:(?:window|self|globalThis)\\.)?(' + STATE_NAMES + ')\\s*=\\s*', 'g');
+    for (const s of qsa(doc, 'script:not([src])')) {
+      const src = s.textContent || '';
+      if (!src || src.length > MAX_SCRIPT || (s.getAttribute('type') || '').includes('json')) continue;
+      re.lastIndex = 0;
+      let m;
+      while ((m = re.exec(src))) {
+        let i = m.index + m[0].length;
+        while (i < src.length && /\s/.test(src[i])) i++;
+        if (src[i] === '{' || src[i] === '[') add(parseBalanced(src, i), m[1]);
+      }
+    }
+    return out;
+  }
+
+  const isPrimitive = (v) => v == null || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+  const FIELDISH = /^(id|uid|url|link|href|permalink|slug|name|title|headline|label|text|price|amount|cost|currency|image|img|thumbnail|photo|date|time|published|created|rating|stars|reviews?|count|votes?|address|city|state|country|location|email|phone|company|brand|author|user|username|description|summary|category|status|type|sku|asin|salary|distance|availability)$/i;
+
+  // One JSON object → one flat row: its own primitive fields, plus one level of nested ones.
+  function flatRow(obj, max = 30) {
+    const row = {};
+    const put = (k, v) => {
+      if (Object.keys(row).length >= max || v == null || v === '') return;
+      row[k] = typeof v === 'string' ? clean(v, 2000) : v;
+    };
+    for (const [k, v] of Object.entries(obj)) {
+      if (isPrimitive(v)) put(k, v);
+      else if (Array.isArray(v)) { if (v.length && v.length <= 10 && v.every(isPrimitive)) put(k, v.join(', ')); }
+      else if (v && typeof v === 'object') for (const [k2, v2] of Object.entries(v)) if (isPrimitive(v2)) put(`${k}_${k2}`, v2);
+    }
+    return row;
+  }
+
+  // The columns most rows actually have (a list where only 2 of 50 rows carry a field is not
+  // really a column).
+  function sharedCols(rows, share = 0.6) {
+    const n = new Map();
+    for (const r of rows) for (const [k, v] of Object.entries(r)) if (v !== '' && v != null) n.set(k, (n.get(k) || 0) + 1);
+    return [...n.entries()].filter(([, c]) => c >= rows.length * share).map(([k]) => k).slice(0, 25);
+  }
+
+  const rowScore = (c) => Math.log(c.count + 1) * 2 + c.cols.length
+    + c.cols.filter((k) => FIELDISH.test(k.split('_').pop())).length * 3;
+
+  /** Arrays of similar objects inside the page's JSON, best first. */
+  function jsonLists(doc = document, { minRows = 3, maxCandidates = 8 } = {}) {
+    const found = [];
+    let budget = 200000;
+    for (const { from, data } of hydration(doc)) {
+      const seen = new Set();
+      const visit = (node, path, depth) => {
+        if (budget-- < 0 || !node || typeof node !== 'object' || depth > 14 || seen.has(node)) return;
+        seen.add(node);
+        if (Array.isArray(node)) {
+          const objs = node.filter((x) => x && typeof x === 'object' && !Array.isArray(x));
+          if (objs.length >= minRows && objs.length >= node.length * 0.8) {
+            const rows = objs.slice(0, 5000).map((o) => flatRow(o));
+            const cols = sharedCols(rows);
+            if (cols.length >= 2) {
+              found.push({ source: from, path: path || '(root)', cols, count: rows.length,
+                rows: rows.map((r) => Object.fromEntries(cols.map((c) => [c, r[c] ?? '']))) });
+            }
+          }
+          for (let i = 0; i < Math.min(node.length, 200); i++) visit(node[i], `${path}[${i}]`, depth + 1);
+          return;
+        }
+        for (const [k, v] of Object.entries(node)) visit(v, path ? `${path}.${k}` : k, depth + 1);
+      };
+      visit(data, '', 0);
+    }
+    const seenSig = new Set();
+    return found
+      .sort((a, b) => rowScore(b) - rowScore(a))
+      .filter((c) => {
+        const sig = `${c.count}|${c.cols.join(',')}|${JSON.stringify(c.rows[0]).slice(0, 200)}`;
+        if (seenSig.has(sig)) return false;
+        seenSig.add(sig);
+        return true;
+      })
+      .slice(0, maxCandidates);
+  }
+
+  // Many JS-heavy sites publish a plain, server-rendered AMP copy of the same page.
+  const ampUrl = (doc = document) => abs(doc.querySelector('link[rel="amphtml"]')?.getAttribute('href') || '', doc);
+
   globalThis.__webScraper = {
     version: ENGINE_VERSION,
     // quick scan
@@ -1703,12 +1871,14 @@
     findNextButton, findLoadMoreButton, clickElement, fillInput, scrollStep, scrollToTop, jiggle, pageState, autoScroll, presetFor,
     // page extractor
     extractPage, jsonLd, BUILTIN_FIELDS: Object.keys(BUILTINS),
+    // data the page ships as JSON (no tab needed)
+    hydration, jsonLists, ampUrl,
     // text / contacts / AI
     readable, contacts, contactsAfterScroll, pageText,
     // picker + highlight
     startPicker, stopPicker, highlight, clearHighlight,
     countSelector: (s) => qsa(document, s).length,
     // exposed for background parsing in the side panel
-    _internal: { emails, phones, social, images, links },
+    _internal: { emails, phones, social, images, links, isSecretField, isSecretForm },
   };
 })();

@@ -3,11 +3,11 @@
 // Only the extension's own offscreen bridge may call these operations, and every page Claude
 // touches is checked against the user's safety settings (lib/guard.js).
 import { getActiveTab, callInTab, callInTabChecked, navigate, waitForLoad, runInNewTab, clickAndWait, collectPosts, sleep } from './lib/tab.js';
-import { getSettings, saveSettings, addHistory, newToken, saveRecipe } from './lib/storage.js';
-import { blockedReason, assertAllowed } from './lib/guard.js';
-import { refreshLicense, getLicense, limitsFor, useMcpCall, isPro } from './lib/license.js';
+import { getSettings, saveSettings, addHistory, newToken, saveRecipe, migrateHistoryRows } from './lib/storage.js';
+import { blockedReason, assertAllowed, DEFAULT_BLOCKED, DEFAULT_BLOCKED_V1 } from './lib/guard.js';
+import { refreshLicense, getLicense, limitsFor, useMcpCall, releaseMcpCall, isPro } from './lib/license.js';
 import { LINKS } from './lib/config.js';
-import { getMonitors, saveMonitor, deleteMonitor, diffRows, recordRun, shouldAlert } from './lib/monitor.js';
+import { getMonitors, saveMonitor, deleteMonitor, diffRows, recordRun, shouldAlert, getMonitorRows, migrateMonitorRows } from './lib/monitor.js';
 import { isSheetUrl, sheetRows } from './lib/sheets.js';
 
 const OFFSCREEN = 'offscreen/bridge.html';
@@ -15,30 +15,91 @@ const OFFSCREEN = 'offscreen/bridge.html';
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
   chrome.runtime.setUninstallURL(LINKS.uninstall).catch(() => {});
+  await migrate(reason);
   const s = await getSettings();
-  if (!s.mcp?.token) {
-    // Reinstalled? Reuse the previous link so the connector already added in Claude keeps working.
-    const { connectorToken } = await chrome.storage.sync.get('connectorToken').catch(() => ({}));
-    const token = /^[A-Za-z0-9_-]{32,}$/.test(connectorToken || '') ? connectorToken : newToken();
-    await saveSettings({ mcp: { ...s.mcp, token } });
-    chrome.storage.sync.set({ connectorToken: token }).catch(() => {});
-  } else {
-    chrome.storage.sync.set({ connectorToken: s.mcp.token }).catch(() => {});
-  }
+  const { token, scope } = await claimConnectorToken(s.mcp?.token);
+  if (token !== s.mcp?.token || scope !== s.mcp?.tokenScope) await saveSettings({ mcp: { ...s.mcp, token, tokenScope: scope } });
   if (reason === 'install') chrome.tabs.create({ url: chrome.runtime.getURL('onboarding/welcome.html') }).catch(() => {});
   if (reason === 'update') await chrome.storage.local.set({ whatsNew: chrome.runtime.getManifest().version });
   syncBridge();
 });
-chrome.runtime.onStartup.addListener(() => {
+chrome.runtime.onStartup.addListener(async () => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
   refreshLicense().catch(() => {});
+  const s = await getSettings();
+  if (s.mcp?.token && s.mcp.tokenScope !== 'device') publishToken(s.mcp.token).catch(() => {}); // keep our claim fresh
   syncBridge();
 });
+
+// ---------- one-off data migrations ----------
+async function migrate(reason) {
+  const version = chrome.runtime.getManifest().version;
+  const { schemaVersion } = await chrome.storage.local.get('schemaVersion');
+  if (schemaVersion === version) return;
+  await migrateHistoryRows().catch(console.error);
+  await migrateMonitorRows().catch(console.error);
+  const s = await getSettings();
+  const mcp = { ...s.mcp };
+  // An untouched blocked-sites list is upgraded to the current default (which now covers the banks
+  // and payment providers the word rules can't catch). A list the user edited is left alone.
+  if ([...(mcp.blocked || [])].sort().join(',') === [...DEFAULT_BLOCKED_V1].sort().join(',')) {
+    mcp.blocked = DEFAULT_BLOCKED;
+  }
+  // A connector that was already running keeps running: approval is asked for new links, not for
+  // one the user set up and has been using.
+  if (mcp.enabled && mcp.consentAt && !mcp.pairedAt) mcp.pairedAt = mcp.consentAt;
+  // Likewise "Allow actions" was an all-sites switch, and the user turned it on deliberately:
+  // keep that meaning rather than silently stopping their automations. The new per-site list is
+  // right above it in Settings for anyone who wants to narrow it.
+  if (reason === 'update' && mcp.allowActions && !mcp.actionAnySite && !(mcp.actionOrigins || []).length) {
+    mcp.actionAnySite = true;
+  }
+  await saveSettings({ mcp });
+  await chrome.storage.local.set({ schemaVersion: version });
+}
+
+// ---------- the connector token: one live link per browser ----------
+// The token is the password to this browser, mirrored to chrome.storage.sync so that reinstalling
+// keeps the link already added in Claude working. A SECOND browser signed into the same Google
+// account must not inherit it: both would poll the same relay slot and Claude's calls would land in
+// whichever answered first. The owning browser therefore keeps a dated claim, and a browser that
+// finds someone else's live claim mints its own link instead.
+const ACTIVE_CLAIM_MS = 7 * 24 * 3600 * 1000;
+
+async function installId() {
+  const stored = (await chrome.storage.local.get('installId')).installId;
+  if (stored) return stored;
+  const id = crypto.randomUUID();
+  await chrome.storage.local.set({ installId: id });
+  return id;
+}
+
+async function publishToken(token) {
+  await chrome.storage.sync.set({ connectorToken: token, connectorOwner: { id: await installId(), at: Date.now() } });
+}
+
+async function claimConnectorToken(existing) {
+  const me = await installId();
+  const sync = await chrome.storage.sync.get(['connectorToken', 'connectorOwner']).catch(() => ({}));
+  const owner = sync.connectorOwner;
+  const otherBrowserIsLive = !!owner && owner.id !== me && Date.now() - (owner.at || 0) < ACTIVE_CLAIM_MS;
+  if (existing) {
+    if (!otherBrowserIsLive) { await publishToken(existing).catch(() => {}); return { token: existing, scope: 'synced' }; }
+    return { token: existing, scope: 'device' };
+  }
+  const inherited = /^[A-Za-z0-9_-]{32,}$/.test(sync.connectorToken || '') ? sync.connectorToken : '';
+  if (inherited && otherBrowserIsLive) return { token: newToken(), scope: 'device' }; // this browser gets its own link
+  const token = inherited || newToken();
+  await publishToken(token).catch(() => {});
+  return { token, scope: 'synced' };
+}
+
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local' || !changes.settings) return;
   const a = changes.settings.oldValue?.mcp || {};
   const b = changes.settings.newValue?.mcp || {};
-  if (b.token && a.token !== b.token) chrome.storage.sync.set({ connectorToken: b.token }).catch(() => {}); // "Generate new link"
+  // "Generate new link": publish it only from the browser that owns the shared link.
+  if (b.token && a.token !== b.token && b.tokenScope !== 'device') publishToken(b.token).catch(() => {});
   if (a.enabled !== b.enabled || a.server !== b.server || a.token !== b.token || !!a.consentAt !== !!b.consentAt) {
     // Tell the relay right away that the old connection is gone, so Claude gets a clear error
     // instead of waiting for a timeout.
@@ -78,20 +139,52 @@ async function doSync(restart) {
   }
 }
 
-async function setStatus(patch) {
-  const { mcpStatus } = await chrome.storage.local.get('mcpStatus');
-  await chrome.storage.local.set({ mcpStatus: { ...mcpStatus, ...patch, at: Date.now() } });
+// Read-modify-write on shared keys, one at a time: parallel Claude calls used to drop log entries
+// and status updates by overwriting each other's reads.
+let writeQueue = Promise.resolve();
+const serialise = (fn) => {
+  const run = writeQueue.then(fn);
+  writeQueue = run.catch(() => {});
+  return run;
+};
+
+function setStatus(patch) {
+  return serialise(async () => {
+    const { mcpStatus } = await chrome.storage.local.get('mcpStatus');
+    await chrome.storage.local.set({ mcpStatus: { ...mcpStatus, ...patch, at: Date.now() } });
+  });
 }
 
-async function log(entry) {
-  const { mcpLog = [] } = await chrome.storage.local.get('mcpLog');
-  await chrome.storage.local.set({ mcpLog: [{ ...entry, at: Date.now() }, ...mcpLog].slice(0, 100) });
+function log(entry) {
+  return serialise(async () => {
+    const { mcpLog = [] } = await chrome.storage.local.get('mcpLog');
+    await chrome.storage.local.set({ mcpLog: [{ ...entry, at: Date.now() }, ...mcpLog].slice(0, 100) });
+  });
 }
 
-// Badge on the toolbar icon while Claude is running something.
+// ---------- the toolbar badge ----------
+// One place decides what the badge says, because two sources want it: "Claude is working" and
+// "a monitor found something". Clearing one used to wipe the other.
+let busyCount = 0;
+
+async function renderBadge() {
+  if (busyCount > 0) {
+    await chrome.action.setBadgeBackgroundColor({ color: '#6A5CFF' }).catch(() => {});
+    await chrome.action.setBadgeText({ text: 'AI' }).catch(() => {});
+    return;
+  }
+  const unseen = (await getMonitors()).reduce((n, m) => n + (m.unseen || 0), 0);
+  if (unseen) {
+    await chrome.action.setBadgeBackgroundColor({ color: '#E5484D' }).catch(() => {});
+    await chrome.action.setBadgeText({ text: String(Math.min(unseen, 99)) }).catch(() => {});
+  } else {
+    await chrome.action.setBadgeText({ text: '' }).catch(() => {});
+  }
+}
+
 function setBusy(n) {
-  chrome.action.setBadgeText({ text: n > 0 ? 'AI' : '' }).catch(() => {});
-  if (n > 0) chrome.action.setBadgeBackgroundColor({ color: '#6A5CFF' }).catch(() => {});
+  busyCount = Math.max(0, Number(n) || 0);
+  renderBadge().catch(() => {});
 }
 
 // ---------- operations requested by the bridge ----------
@@ -116,17 +209,50 @@ const OPS = {
   status: (patch) => setStatus(patch),
   log: (entry) => log(entry),
   busy: (n) => setBusy(n),
-  useMcpCall: () => useMcpCall(),
+  async useMcpCall() {
+    setStatus({ lastUsedAt: Date.now() }).catch(() => {});
+    return useMcpCall();
+  },
+  releaseMcpCall: () => releaseMcpCall(),
+  // The first Claude client to use a link has to be approved by the user, so that a link which
+  // leaked (a screenshot, a shared project) cannot quietly drive this browser.
+  async requestPairing() {
+    const s = await getSettings();
+    if (s.mcp.pairedAt) return { paired: true };
+    if (!s.mcp.pairingRequestedAt) {
+      await saveSettings({ mcp: { ...s.mcp, pairingRequestedAt: Date.now() } });
+      chrome.notifications?.create('mcp-pairing', {
+        type: 'basic', iconUrl: 'icons/icon128.png', title: 'PullRows · approve Claude?',
+        message: 'A Claude client used your connector link. Open PullRows → Settings to allow or reject it.',
+        priority: 2,
+      }, () => void chrome.runtime.lastError);
+    }
+    return { paired: false };
+  },
   // Settings the bridge needs — never the API key.
   async settings() {
     const s = await getSettings();
     // Messaging is JSON: send "unlimited" as a big number.
     const limits = Object.fromEntries(Object.entries(limitsFor(await getLicense())).map(([k, v]) => [k, Number.isFinite(v) ? v : 1e9]));
-    return { delayMs: s.delayMs, concurrency: s.concurrency, limits, mcp: { allowActions: !!s.mcp.allowActions, allowDownloads: !!s.mcp.allowDownloads, blocked: s.mcp.blocked, allowLocal: !!s.mcp.allowLocal } };
+    return {
+      delayMs: s.delayMs,
+      concurrency: s.concurrency,
+      limits,
+      mcp: {
+        allowActions: !!s.mcp.allowActions,
+        allowDownloads: !!s.mcp.allowDownloads,
+        blocked: s.mcp.blocked,
+        allowLocal: !!s.mcp.allowLocal,
+        actionOrigins: s.mcp.actionOrigins || [],
+        actionAnySite: !!s.mcp.actionAnySite,
+        pairedAt: s.mcp.pairedAt || 0,
+      },
+    };
   },
   getDataset: async () => (await chrome.storage.local.get('dataset')).dataset || null,
   getRecipes: async () => (await chrome.storage.local.get('recipes')).recipes || [],
   activeTab: async () => tabInfo(await allowedTab()),
+  tabInfo: async ({ tabId }) => tabInfo(await allowedTab(tabId)),
   async listTabs() {
     const opts = await guardOpts();
     return (await chrome.tabs.query({})).filter((t) => /^https?:/.test(t.url || '') && !blockedReason(t.url, opts)).map(tabInfo);
@@ -169,7 +295,7 @@ const OPS = {
     return true;
   },
   // Monitors (also managed by Claude through the connector).
-  monitors: async () => (await getMonitors()).map(({ lastRows, ...m }) => ({ ...m, runs: (m.runs || []).slice(0, 5) })),
+  monitors: async () => (await getMonitors()).map(({ lastRows, ...m }) => ({ ...m, runs: (m.runs || []).slice(0, 5) })), // lastRows: pre-1.5.2 monitors only
   saveRecipe: (r) => saveRecipe({ name: r.name, tool: r.tool, url: r.url, config: r.config, by: 'claude' }),
   async monitorCreate({ recipeId, everyMinutes, alertOn }) {
     return createMonitor({ recipeId, everyMinutes, alertOn });
@@ -285,11 +411,7 @@ async function scheduleMonitors() {
   await updateMonitorBadge();
 }
 
-async function updateMonitorBadge() {
-  const unseen = (await getMonitors()).reduce((n, m) => n + (m.unseen || 0), 0);
-  if (unseen) { chrome.action.setBadgeText({ text: String(Math.min(unseen, 99)) }); chrome.action.setBadgeBackgroundColor({ color: '#E5484D' }); }
-  else chrome.action.getBadgeText({}).then((t) => { if (/^\d+$/.test(t)) chrome.action.setBadgeText({ text: '' }); }).catch(() => {});
-}
+const updateMonitorBadge = () => renderBadge();
 
 const runningMonitors = new Set();
 async function runMonitor(id) {
@@ -307,7 +429,7 @@ async function runMonitor(id) {
       if (res.error) throw new Error(res.error);
       rows = res.rows || [];
     } catch (e) { error = String(e.message || e); }
-    const diff = error ? null : diffRows(mon.lastRows || null, rows);
+    const diff = error ? null : diffRows(await getMonitorRows(id), rows);
     mon = (await getMonitors()).find((m) => m.id === id) || mon; // may have been edited meanwhile
     const next = recordRun(mon, { rows, diff, error });
     await saveMonitor(next);
@@ -342,6 +464,24 @@ export async function pushToSheet(sheetUrl, tab, rows) {
 chrome.alarms.onAlarm.addListener((a) => { if (a.name.startsWith(MONITOR_ALARM)) runMonitor(a.name.slice(MONITOR_ALARM.length)).catch(console.error); });
 chrome.runtime.onStartup.addListener(() => { scheduleMonitors().catch(console.error); });
 chrome.runtime.onInstalled.addListener(() => { scheduleMonitors().catch(console.error); });
+
+// The side panel hands over its pending Data Table edit as it closes: a storage write started in
+// `pagehide` is not guaranteed to finish, but a message the worker has already received is.
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type !== 'dataset:persist') return false;
+  if (sender.id !== chrome.runtime.id || sender.tab || !String(sender.url || '').startsWith(chrome.runtime.getURL(''))) {
+    sendResponse({ err: 'Not allowed' });
+    return false;
+  }
+  (async () => {
+    const { dataset: cur } = await chrome.storage.local.get('dataset');
+    // Never overwrite newer results Claude wrote while the edit was pending.
+    if (cur?.updatedBy === 'claude' && cur.updatedAt > (msg.dataset?.updatedAt || 0)) return false;
+    await chrome.storage.local.set({ dataset: msg.dataset });
+    return true;
+  })().then((ok) => sendResponse({ ok }), (e) => sendResponse({ err: String(e.message || e) }));
+  return true;
+});
 
 // Side panel requests (user actions in the Monitors view).
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

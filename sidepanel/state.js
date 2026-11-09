@@ -49,12 +49,23 @@ export function changed({ persist = true } = {}) {
   for (const fn of state.listeners) fn();
   if (persist) {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(persistNow, 400);
+    saveTimer = setTimeout(persistNow, 150);
   }
 }
 
-// Closing the panel right after an edit must not lose it.
-addEventListener('pagehide', () => { if (saveTimer) persistNow(); });
+// Closing the panel right after an edit must not lose it. A storage write started during
+// `pagehide` is not guaranteed to finish, so the pending table is also handed to the service
+// worker, which is still alive once the message has been delivered.
+function persistOnUnload() {
+  if (!saveTimer) return;
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  const dataset = state.dataset;
+  if (!dataset) return;
+  try { chrome.runtime.sendMessage({ type: 'dataset:persist', dataset }, () => void chrome.runtime.lastError); } catch { /* worker gone */ }
+  chrome.storage.local.set({ dataset }).catch(() => {});
+}
+addEventListener('pagehide', persistOnUnload);
 document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) persistNow(); });
 
 // Replace the table with a tool's output and record it in History.

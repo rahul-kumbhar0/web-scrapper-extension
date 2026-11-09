@@ -86,18 +86,25 @@ function accept(cmd) {
   pump();
 }
 
+// A long-poll that is never answered (sleep/wake, captive portal, a proxy that holds the socket
+// open) would otherwise hang this loop for ever while the UI still says "Connected".
+const POLL_TIMEOUT_MS = 90000;
+const HANDSHAKE_TIMEOUT_MS = 20000;
+const withTimeout = (url, ms) => fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(ms) });
+const isTimeout = (e) => e?.name === 'TimeoutError' || e?.name === 'AbortError';
+
 async function loop() {
   let backoff = 1000;
   for (;;) {
     try {
       if (state !== 'connected') {
         // Quick handshake so the UI shows "Connected" without waiting for a long-poll to return.
-        const hs = await fetch(`${base}/status?v=${encodeURIComponent(VERSION)}`, { cache: 'no-store' });
+        const hs = await withTimeout(`${base}/status?v=${encodeURIComponent(VERSION)}`, HANDSHAKE_TIMEOUT_MS);
         if (hs.status === 404) throw new Error('Relay rejected this connector token');
         if (!hs.ok) throw new Error(`Relay error ${hs.status}`);
         status('connected');
       }
-      const res = await fetch(`${base}/next?v=${encodeURIComponent(VERSION)}`, { cache: 'no-store' });
+      const res = await withTimeout(`${base}/next?v=${encodeURIComponent(VERSION)}`, POLL_TIMEOUT_MS);
       if (res.status === 404) throw new Error('Relay rejected this connector token');
       if (res.status === 429) throw new Error('Relay is rate limiting this browser');
       if (!res.ok && res.status !== 204) throw new Error(`Relay error ${res.status}`);
@@ -105,6 +112,13 @@ async function loop() {
       backoff = 1000;
       if (res.status === 200) accept(await res.json());
     } catch (e) {
+      // A poll that simply ran out of time is normal: re-poll instead of backing off and telling
+      // the user the connector is broken. A handshake that times out means the relay is not
+      // answering at all, so wait a moment first rather than spinning.
+      if (isTimeout(e)) {
+        if (state !== 'connected') await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
       status('error', { error: String(e.message || e), force: true });
       await new Promise((r) => setTimeout(r, backoff));
       backoff = Math.min(backoff * 2, 30000);

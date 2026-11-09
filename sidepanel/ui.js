@@ -49,12 +49,17 @@ export async function runJob(label, fn) {
   fill.classList.add('indeterminate');
   bar.hidden = false;
   document.body.classList.add('is-busy');
+  const track = bar.querySelector('.job-track');
+  track?.removeAttribute('aria-valuenow'); // indeterminate until the first progress report
+  document.body.setAttribute('aria-busy', 'true');
   const progress = (msg, done, total) => {
     text.textContent = msg;
     if (total) {
       fill.classList.remove('indeterminate');
-      fill.style.width = `${Math.round((done / total) * 100)}%`;
-      bar.querySelector('.job-track')?.setAttribute('aria-valuenow', String(Math.round((done / total) * 100)));
+      const pct = Math.round((done / total) * 100);
+      fill.style.width = `${pct}%`;
+      track?.setAttribute('aria-valuenow', String(pct));
+      track?.setAttribute('aria-valuetext', `${done} of ${total}`);
     }
   };
   try {
@@ -67,6 +72,7 @@ export async function runJob(label, fn) {
     current = null;
     bar.hidden = true;
     document.body.classList.remove('is-busy');
+    document.body.removeAttribute('aria-busy');
   }
 }
 

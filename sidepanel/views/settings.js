@@ -34,7 +34,7 @@ const CONSENT_TEXT = `When the Claude connector is on, Claude (through your Clau
 
 Tool calls and their results (page content, tab titles and URLs, screenshots) pass through the PullRows relay server, which does not store them, and are sent to Anthropic as part of your Claude conversation.
 
-Email, banking, password-manager and local-network pages are blocked. Clicking, typing and downloads stay off until you allow them below. You can turn the connector off at any time.`;
+Email, banking, password-manager and local-network pages are blocked, and password, card and OTP fields are never filled. Clicking and typing stay off until you allow them for named sites, and downloads stay off until you allow them. The first Claude client that uses your link has to be approved here. You can turn the connector off at any time.`;
 
 const sw = (label, input, hint) => h('label', { class: 'switch' }, input, h('span', { class: 'grow' }, h('strong', {}, label), hint ? h('span', { class: 'muted small block' }, hint) : null));
 
@@ -53,8 +53,12 @@ export default {
     const actions = h('input', { id: 'mcp-actions', type: 'checkbox', checked: !!mcp.allowActions, role: 'switch' });
     const downloads = h('input', { id: 'mcp-downloads', type: 'checkbox', checked: !!mcp.allowDownloads, role: 'switch' });
     const local = h('input', { id: 'mcp-local', type: 'checkbox', checked: !!mcp.allowLocal, role: 'switch' });
+    const anySite = h('input', { id: 'mcp-any-site', type: 'checkbox', checked: !!mcp.actionAnySite, role: 'switch' });
+    const actionSites = h('textarea', { id: 'mcp-action-sites', rows: 3, spellcheck: false, placeholder: 'amazon.in\nlinkedin.com', value: (mcp.actionOrigins || []).join('\n') });
+    const pairEl = h('div', { class: 'notice', hidden: true });
     const blocked = h('textarea', { id: 'mcp-blocked', rows: 4, spellcheck: false, value: (mcp.blocked || DEFAULT_BLOCKED).join('\n') });
     const statusEl = h('p', { id: 'mcp-status', class: 'hint' });
+    const usedEl = h('p', { class: 'hint muted small' });
     const testEl = h('p', { id: 'mcp-test', class: 'hint', hidden: true });
     const logEl = h('ul', { class: 'mini-log' });
 
@@ -73,6 +77,10 @@ export default {
         allowDownloads: downloads.checked,
         allowLocal: local.checked,
         blocked: blocked.value.split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter(Boolean),
+        actionAnySite: anySite.checked,
+        actionOrigins: actionSites.value.split(/[\s,]+/)
+          .map((x) => x.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, ''))
+          .filter(Boolean),
       });
       if (!/^https:\/\/\S+$/.test(mcp.server) && !isLocal(mcp.server)) {
         toast('The relay server must be an https:// address.', 'error');
@@ -96,7 +104,7 @@ export default {
       renderStatus();
       syncGuide();
     });
-    for (const el of [server, actions, downloads, local, blocked]) el.addEventListener('change', () => saveMcp());
+    for (const el of [server, actions, downloads, local, blocked, anySite, actionSites]) el.addEventListener('change', () => saveMcp());
 
     async function renderStatus() {
       const { mcpStatus, mcpLog = [] } = await chrome.storage.local.get(['mcpStatus', 'mcpLog']);
@@ -104,6 +112,11 @@ export default {
       const [label, cls] = STATE_LABEL[st] || [st, ''];
       statusEl.className = `hint ${cls}`;
       fill(statusEl, h('span', { class: `status-dot ${st === 'connected' ? 'on' : ''}` }), `${label}${st === 'error' && mcpStatus?.error ? ` — ${mcpStatus.error}` : ''}`);
+      const used = mcpStatus?.lastUsedAt;
+      usedEl.hidden = st === 'off';
+      usedEl.textContent = mcp.pairedAt
+        ? `Approved ${new Date(mcp.pairedAt).toLocaleDateString()}${used ? ` · last used by Claude ${new Date(used).toLocaleString()}` : ' · not used yet'}`
+        : 'No Claude client has been approved for this link yet.';
       fill(logEl, mcpLog.slice(0, 10).map((e) => h('li', { class: e.ok ? '' : 'error', title: e.args || '' },
         h('span', { class: 'muted' }, new Date(e.at).toLocaleTimeString()), ` ${e.ok ? '✓' : '✗'} ${e.tool} `, h('span', { class: 'muted' }, `${(e.ms / 1000).toFixed(1)}s`))));
     }
@@ -137,7 +150,40 @@ export default {
       testEl.className = `hint ${ok ? 'ok' : 'error'}`;
       testEl.textContent = msg;
     }
-    const onStorage = (changes, area) => { if (area === 'local' && (changes.mcpStatus || changes.mcpLog)) renderStatus(); };
+    // First use of a link has to be approved here, so a link that leaked (a screenshot, a shared
+    // project) cannot quietly drive this browser.
+    function renderPairing() {
+      const pending = !!mcp.pairingRequestedAt && !mcp.pairedAt;
+      pairEl.hidden = !pending;
+      if (!pending) return;
+      fill(pairEl, icon('plug', { size: 15 }),
+        h('span', { class: 'grow' },
+          h('strong', {}, 'A Claude client is using your link'),
+          h('span', { class: 'muted small block' }, `First seen ${new Date(mcp.pairingRequestedAt).toLocaleString()}. If that wasn’t you, reject it — the link may have leaked.`)),
+        h('div', { class: 'row wrap' },
+          h('button', { type: 'button', class: 'btn tiny primary', onclick: async () => {
+            await saveMcp({ pairedAt: Date.now() });
+            renderPairing(); renderStatus();
+            toast('Approved — Claude can use PullRows in this browser.', 'ok');
+          } }, 'Allow'),
+          h('button', { type: 'button', class: 'btn tiny danger', onclick: async () => {
+            await saveMcp({ token: newToken(), pairedAt: 0, pairingRequestedAt: 0 });
+            renderPairing(); renderStatus();
+            toast('Rejected. A new link was generated — add it in Claude.', 'ok');
+          } }, 'Reject & new link')));
+    }
+    renderPairing();
+
+    const onStorage = (changes, area) => {
+      if (area !== 'local') return;
+      if (changes.settings) {
+        Object.assign(mcp, changes.settings.newValue?.mcp || {});
+        renderPairing();
+      } else if (!changes.mcpStatus && !changes.mcpLog) {
+        return;
+      }
+      renderStatus();
+    };
     chrome.storage.onChanged.addListener(onStorage);
 
     // First run: make sure a secret exists.
@@ -167,6 +213,8 @@ export default {
       h('p', { class: 'hint' }, 'Let Claude run PullRows for you: it opens pages, extracts lists, finds emails… in this Chrome, and results land in your Data Table. Works with claude.ai, Claude Desktop and Claude Code.'),
       sw('Allow Claude to use this browser', enabled),
       statusEl,
+      pairEl,
+      usedEl,
       h('div', { class: 'row' }, h('button', { type: 'button', id: 'mcp-test-btn', class: 'btn tiny secondary', onclick: testConnection }, 'Test connection')),
       testEl,
       h('label', { class: 'field' }, 'Your private connector link',
@@ -176,10 +224,14 @@ export default {
             await navigator.clipboard.writeText(linkValue);
             toast('Connector link copied — paste it in Claude → Settings → Connectors → Add custom connector.', 'ok');
           } }, 'Copy'))),
-      h('div', { class: 'notice' }, icon('lock', { size: 15 }), h('span', {}, 'Treat this link like a password: anyone who has it can use PullRows in this browser while the connector is on. ', h('button', { type: 'button', class: 'link-btn', onclick: () => open(LINKS.connectorDocs) }, 'Setup guide'))),
+      h('div', { class: 'notice' }, icon('lock', { size: 15 }), h('span', {}, 'Treat this link like a password: anyone who has it can use PullRows in this browser while the connector is on, once you have approved them here. ', h('button', { type: 'button', class: 'link-btn', onclick: () => open(LINKS.connectorDocs) }, 'Setup guide'))),
+      mcp.tokenScope === 'device' ? h('p', { class: 'hint' }, 'This browser has its own link: another Chrome signed into the same Google account is already using the shared one. Add this link in Claude as a second connector.') : null,
       guide,
       h('div', { class: 'section-label' }, 'Safety'),
-      sw('Allow actions', actions, 'Claude may click buttons and type into forms. Off: read-only.'),
+      sw('Allow actions', actions, 'Claude may click buttons and type into forms — only on the sites listed below. Off: read-only.'),
+      h('label', { class: 'field' }, 'Sites Claude may act on (one per line)', actionSites),
+      sw('…or any site', anySite, 'Not recommended: Claude could click and type on every site you are signed in to.'),
+      h('p', { class: 'hint' }, 'Password, card, OTP and account-number fields are never filled, and buttons that pay, transfer or delete are never clicked — on any site.'),
       sw('Allow downloads', downloads, 'Claude may save images to Downloads/pullrows.'),
       h('label', { class: 'field' }, 'Blocked sites (Claude can never open or read these)', blocked),
       h('p', { class: 'hint' }, 'Banking/wallet sites and local-network addresses are always blocked.'),
@@ -190,10 +242,11 @@ export default {
           h('div', { class: 'row wrap' },
             h('button', { type: 'button', class: 'btn tiny', onclick: async () => {
               if (!(await confirmDialog('New connector link?', 'The old link stops working immediately; update the connector in Claude with the new one.', 'Generate new link'))) return;
-              await saveMcp({ token: newToken() });
-              toast('New link generated — update it in Claude.', 'ok');
+              await saveMcp({ token: newToken(), pairedAt: 0, pairingRequestedAt: 0 });
+              renderPairing();
+              toast('New link generated — update it in Claude, then approve it here on first use.', 'ok');
             } }, 'Generate new link'),
-            h('button', { type: 'button', class: 'btn tiny', onclick: async () => { mcp.consentAt = 0; mcp.enabled = false; enabled.checked = false; await saveMcp(); renderStatus(); toast('Connector off and permission withdrawn.', 'ok'); } }, 'Withdraw permission')))),
+            h('button', { type: 'button', class: 'btn tiny', onclick: async () => { mcp.consentAt = 0; mcp.enabled = false; enabled.checked = false; await saveMcp({ pairedAt: 0, pairingRequestedAt: 0 }); renderPairing(); renderStatus(); toast('Connector off and permission withdrawn.', 'ok'); } }, 'Withdraw permission')))),
       h('label', { class: 'field' }, 'Relay server', server),
       h('div', { class: 'section-label' }, 'Recent Claude activity'),
       logEl);

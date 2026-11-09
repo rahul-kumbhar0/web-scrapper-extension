@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "PullRows – Web Scraper & Data Extractor",
-  "short_name": "PullRows",
-  "version": "1.5.1",
-  "description": "Scrape any site into rows: lists, Maps leads, emails, prices, reels. Price-drop alerts, Sheets & Excel export. Works with Claude.",
+  "name": "__MSG_extName__",
+  "short_name": "__MSG_extShortName__",
+  "version": "1.5.2",
+  "description": "__MSG_extDescription__",
   "homepage_url": "https://pullrows.vercel.app",
   "minimum_chrome_version": "116",
+  "default_locale": "en",
   "permissions": [
     "scripting",
     "storage",
@@ -27,7 +28,7 @@
     "default_path": "sidepanel/sidepanel.html"
   },
   "action": {
-    "default_title": "Open PullRows",
+    "default_title": "__MSG_actionTitle__",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

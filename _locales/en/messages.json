@@ -1,0 +1,18 @@
+{
+  "extName": {
+    "message": "PullRows – Web Scraper & Data Extractor",
+    "description": "Extension name shown in Chrome and on the Web Store."
+  },
+  "extShortName": {
+    "message": "PullRows",
+    "description": "Short name shown under the toolbar icon."
+  },
+  "extDescription": {
+    "message": "Scrape any site into rows: lists, Maps leads, emails, prices, reels. Price-drop alerts, Sheets & Excel export. Works with Claude.",
+    "description": "Store description, 132 characters max."
+  },
+  "actionTitle": {
+    "message": "Open PullRows",
+    "description": "Tooltip on the toolbar icon."
+  }
+}
