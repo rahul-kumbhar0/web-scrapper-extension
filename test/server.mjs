@@ -2,8 +2,9 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const FIXTURES = path.join(path.dirname(new URL(import.meta.url).pathname), 'fixtures');
+const FIXTURES = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml', '.json': 'application/json', '.txt': 'text/plain', '.gz': 'application/gzip', '.jpg': 'image/jpeg', '.vtt': 'text/vtt' };
 // 1x1 JPEG so <img> loads succeed
 const JPG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');

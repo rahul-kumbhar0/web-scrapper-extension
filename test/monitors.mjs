@@ -11,10 +11,11 @@ import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { prepareExtension } from './setup.mjs';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 let failures = 0;
 async function step(name, fn) {

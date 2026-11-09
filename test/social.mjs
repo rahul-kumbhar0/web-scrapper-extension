@@ -10,10 +10,11 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { startServer } from './server.mjs';
 import { prepareExtension, enableConnector } from './setup.mjs';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ONLY = process.argv[2] ? new RegExp(process.argv[2], 'i') : null;
 
 const RELAY_PORT = 20000 + Math.floor(Math.random() * 20000);

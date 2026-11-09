@@ -6,8 +6,9 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { idForToken } from '../server/mcp-relay.mjs';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC_URL = 'https://relay.example.test';
 const CALLBACK = 'https://claude.ai/api/mcp/auth_callback';
 

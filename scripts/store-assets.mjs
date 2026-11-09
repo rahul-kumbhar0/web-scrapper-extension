@@ -9,10 +9,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { prepareExtension, enableConnector } from '../test/setup.mjs';
+import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'store');
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'pullrows-store-'));
 const LOGO = fs.readFileSync(path.join(ROOT, 'brand/logo.svg'), 'utf8');

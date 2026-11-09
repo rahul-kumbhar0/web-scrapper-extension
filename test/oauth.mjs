@@ -4,8 +4,9 @@ import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = 20000 + Math.floor(Math.random() * 20000);
 const relay = spawn(process.execPath, [path.join(ROOT, 'server', 'mcp-relay.mjs')], { env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', TRUST_PROXY: '1' }, stdio: ['ignore', 'pipe', 'inherit'] });
 await new Promise((r) => relay.stdout.on('data', (d) => String(d).includes('listening') && r()));
