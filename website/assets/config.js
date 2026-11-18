@@ -4,7 +4,7 @@
  * (Static hrefs in the HTML are only no-JavaScript fallbacks.)
  */
 window.PULLROWS_CONFIG = {
-  CHROME_STORE_URL: "https://chromewebstore.google.com/detail/pullrows",
+  CHROME_STORE_URL: "https://chromewebstore.google.com/detail/pullrows/lkdikgfkdacljfeedaacgbmeajknoibg",
   EDGE_URL: "https://microsoftedge.microsoft.com/addons/detail/pullrows",
 
   // Dodo Payments checkout links (one per product).

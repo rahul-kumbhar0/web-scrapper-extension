@@ -39,7 +39,7 @@ Dodo is a merchant of record for founders in India: it handles global tax, pays 
 - [ ] Privacy policy URL: `https://pullrows.com/privacy`, or the vercel.app URL until the domain is live.
 - [ ] Add the reviewer test instructions, including the test-mode licence key.
 - Review usually takes 2–7 days; `<all_urls>` can mean an in-depth review of up to 3 weeks.
-- [ ] Once it's published, put the store URL in `website/assets/config.js` (`CHROME_STORE_URL`) and redeploy the site.
+- [x] Once it's published, put the store URL in `website/assets/config.js` (`CHROME_STORE_URL`) and redeploy the site.
 
 ## 6. Microsoft Edge Add-ons (free)
 - [ ] Register at partner.microsoft.com and upload the same zip and texts.
