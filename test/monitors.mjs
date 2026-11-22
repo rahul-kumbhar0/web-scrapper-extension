@@ -148,12 +148,24 @@ try {
     assert.match(res.err || '', /free plan includes 1 monitor/);
   });
 
+  // Since 1.5.2 'monitor:run' ACKs the start and the result lands later as its own message (an MV3
+  // worker idling out mid-run used to lose it), so tests wait for the run to be recorded.
+  const runNow = async (id) => {
+    const before = ((await monitors()).find((x) => x.id === id)?.runs || []).length;
+    const res = await ask('monitor:run', { id });
+    assert.ok(res.ok, JSON.stringify(res));
+    for (let i = 0; i < 60; i++) {
+      const m = (await monitors()).find((x) => x.id === id);
+      if ((m?.runs || []).length > before) return m;
+      await sp.waitForTimeout(500);
+    }
+    throw new Error('the run was never recorded');
+  };
+
   await step('run now after a price drop + a new product → changes, History, badge', async () => {
     products = [{ ...products[0], price: 15 }, products[1], products[2], { id: 5, name: 'Desk Chair', price: 80 }];
     const [m] = await monitors();
-    const res = await ask('monitor:run', { id: m.id });
-    assert.ok(res.ok);
-    const [after] = await monitors();
+    const after = await runNow(m.id);
     console.log(`    ${after.lastSummary}`);
     assert.match(after.lastSummary, /1 new, 1 gone, 1 changed, 1 price drop · biggest drop: Blue Mug \$20\.00 → \$15\.00 \(-25%\)/);
     assert.equal(after.unseen, 1);
@@ -188,8 +200,7 @@ try {
   await step('a failing run is recorded and keeps the previous rows', async () => {
     const [m] = await monitors();
     await sp.evaluate(async () => { const { recipes } = await chrome.storage.local.get('recipes'); recipes[0].url = 'http://127.0.0.1:1/'; await chrome.storage.local.set({ recipes }); });
-    await ask('monitor:run', { id: m.id });
-    const [after] = await monitors();
+    const after = await runNow(m.id);
     assert.equal(after.lastOk, false);
     assert.match(after.lastSummary, /^Failed:/);
     // The previous rows survive a failed run; since 1.5.2 they live under monitor:rows:<id>.

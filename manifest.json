@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "__MSG_extName__",
   "short_name": "__MSG_extShortName__",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "__MSG_extDescription__",
   "homepage_url": "https://pullrows.vercel.app",
   "minimum_chrome_version": "116",
@@ -15,7 +15,8 @@
     "downloads",
     "offscreen",
     "alarms",
-    "notifications"
+    "notifications",
+    "power"
   ],
   "host_permissions": [
     "<all_urls>"

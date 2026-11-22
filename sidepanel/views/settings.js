@@ -52,6 +52,7 @@ export default {
     const link = h('input', { id: 'mcp-link', readOnly: true, spellcheck: false });
     const actions = h('input', { id: 'mcp-actions', type: 'checkbox', checked: !!mcp.allowActions, role: 'switch' });
     const downloads = h('input', { id: 'mcp-downloads', type: 'checkbox', checked: !!mcp.allowDownloads, role: 'switch' });
+    const awake = h('input', { id: 'mcp-awake', type: 'checkbox', checked: !!mcp.keepAwake, role: 'switch' });
     const local = h('input', { id: 'mcp-local', type: 'checkbox', checked: !!mcp.allowLocal, role: 'switch' });
     const anySite = h('input', { id: 'mcp-any-site', type: 'checkbox', checked: !!mcp.actionAnySite, role: 'switch' });
     const actionSites = h('textarea', { id: 'mcp-action-sites', rows: 3, spellcheck: false, placeholder: 'amazon.in\nlinkedin.com', value: (mcp.actionOrigins || []).join('\n') });
@@ -76,6 +77,7 @@ export default {
         allowActions: actions.checked,
         allowDownloads: downloads.checked,
         allowLocal: local.checked,
+        keepAwake: awake.checked,
         blocked: blocked.value.split(/[\s,]+/).map((x) => x.trim().toLowerCase()).filter(Boolean),
         actionAnySite: anySite.checked,
         actionOrigins: actionSites.value.split(/[\s,]+/)
@@ -104,7 +106,7 @@ export default {
       renderStatus();
       syncGuide();
     });
-    for (const el of [server, actions, downloads, local, blocked, anySite, actionSites]) el.addEventListener('change', () => saveMcp());
+    for (const el of [server, actions, downloads, local, blocked, anySite, actionSites, awake]) el.addEventListener('change', () => saveMcp());
 
     async function renderStatus() {
       const { mcpStatus, mcpLog = [] } = await chrome.storage.local.get(['mcpStatus', 'mcpLog']);
@@ -227,6 +229,9 @@ export default {
       h('div', { class: 'notice' }, icon('lock', { size: 15 }), h('span', {}, 'Treat this link like a password: anyone who has it can use PullRows in this browser while the connector is on, once you have approved them here. ', h('button', { type: 'button', class: 'link-btn', onclick: () => open(LINKS.connectorDocs) }, 'Setup guide'))),
       mcp.tokenScope === 'device' ? h('p', { class: 'hint' }, 'This browser has its own link: another Chrome signed into the same Google account is already using the shared one. Add this link in Claude as a second connector.') : null,
       guide,
+      h('div', { class: 'section-label' }, 'Away from the computer'),
+      sw('Keep this computer awake', awake, 'While the connector is on, the computer won’t go to sleep on its own — so you can keep using PullRows from the Claude phone app.'),
+      h('p', { class: 'hint' }, 'Closing the laptop lid still sleeps it unless you change that in Windows: Settings → System → Power → “Closing the lid” (or Control Panel → Power Options → “When I close the lid”) → Do nothing, while plugged in. If the computer does sleep, requests from Claude wait in a queue and run when it wakes.'),
       h('div', { class: 'section-label' }, 'Safety'),
       sw('Allow actions', actions, 'Claude may click buttons and type into forms — only on the sites listed below. Off: read-only.'),
       h('label', { class: 'field' }, 'Sites Claude may act on (one per line)', actionSites),

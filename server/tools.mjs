@@ -335,6 +335,11 @@ export const TOOLS = [
       },
     },
   },
+  {
+    name: 'queued_results',
+    description: 'Check the offline queue. A tool call made while the user\'s browser is offline (laptop asleep, Chrome closed) is queued on the relay and runs when the browser reconnects. This lists what is still waiting and returns the results of queued calls that finished (each result comes back once; extracted rows are also in the PullRows Data Table). Works even while the browser is offline.',
+    inputSchema: { type: 'object', properties: {} },
+  },
 ];
 
 // Page tools also return a screenshot of the page, so the user sees what was scraped in the chat.
@@ -356,4 +361,5 @@ Typical flows:
 - One account in depth ("study @handle", "what works on my account", "every reel they posted"): account_scan starts a background job — tell the user it is running and roughly how long it may take, then poll job_status every minute or two and analyse the rows as they arrive. Do not call account_scan again while one is running.
 - Seeing a clip rather than reading about it: video_frames returns frames across the video as images plus the transcript. Claude cannot read video or audio, so this is the only way to watch a reel; never claim to have watched one without it.
 Use browser_screenshot or page_read to understand an unfamiliar page. page_read also brings back the page's own images, so a page can be seen without a tab. Keep scrapes polite (reasonable page counts and delays).
-Some sites are blocked by the user's safety settings (email, banking, password managers, local network); clicking/typing (page_action click/fill) and images_download only work if the user enabled 'Allow actions' in PullRows Settings AND approved that site there — if a tool says it's disabled or the site is not approved, tell the user how to enable it rather than retrying.`;
+Some sites are blocked by the user's safety settings (email, banking, password managers, local network); clicking/typing (page_action click/fill) and images_download only work if the user enabled 'Allow actions' in PullRows Settings AND approved that site there — if a tool says it's disabled or the site is not approved, tell the user how to enable it rather than retrying.
+If the user's browser is offline (laptop asleep, Chrome closed), tool calls are queued on the relay and run when it reconnects: tell the user the request is queued, and call queued_results later (or when they ask "what ran while I was away") to collect the results.`;

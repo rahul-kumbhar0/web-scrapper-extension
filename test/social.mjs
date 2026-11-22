@@ -40,6 +40,10 @@ async function tool(name, args = {}) {
   if (r.isError) throw new Error(`${name} → ${t}`);
   try { return JSON.parse(t); } catch { return t; }
 }
+async function rawTool(name, args = {}) {
+  const res = await fetch(MCP, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: ++rpcId, method: 'tools/call', params: { name, arguments: args } }) });
+  return (await res.json()).result; // { content, isError } — for steps that expect an error
+}
 const sorted = (a) => a.every((x, i) => i === 0 || a[i - 1] >= x);
 
 try {
@@ -92,15 +96,14 @@ try {
     assert.ok(ig.views > 5);
   });
 
-  await step('Claude: Reddit listing JSON → ranked by upvotes/momentum in the background', async () => {
-    const r = await tool('trends_find', { page_url: `${BASE}/social/r/aitools/top.json`, top: 5 });
-    console.log(`    scanned ${r.scanned} · tabs ${r.needed_a_tab} · #1: ${r.top[0].caption.split(' ').slice(0, 6).join(' ')}… — ${r.top[0].why}`);
-    assert.equal(r.scanned, 12);
-    assert.equal(r.needed_a_tab, 0);
-    assert.ok(sorted(r.top.map((p) => p.score)));
-    for (const p of r.top) assert.ok(p.platform === 'reddit' && p.likes > 0 && p.comments >= 0 && /^r\//.test(p.community) && /reddit\.com\/r\/.+\/comments\//.test(p.url), `reddit post ${p.url}`);
-    assert.match(r.top[0].why, /upvotes/);
-    assert.ok(r.patterns.some((x) => x.insight === 'Communities the winners were posted in'));
+  await step('Claude: a non-reddit.com .json URL is NOT treated as a Reddit listing (1.5.2 host check)', async () => {
+    // Before 1.5.2 any URL ending in .json (or an evilreddit.com lookalike) got the Reddit listing
+    // treatment; redditJsonUrl now requires a real reddit.com host, so this fixture must fail
+    // cleanly instead. Listing parsing, pagination and 403→old.reddit fallback are unit-tested in
+    // test/clean.mjs (findTrends with a mocked io), and ranking in test/monitors.mjs/clean.mjs.
+    const res = await rawTool('trends_find', { page_url: `${BASE}/social/r/aitools/top.json`, top: 5 });
+    assert.equal(res.isError, true);
+    assert.match(res.content[0].text, /No posts found/);
   });
 
   await step('Claude: old.reddit.com search page (the fallback when www refuses) → posts', async () => {

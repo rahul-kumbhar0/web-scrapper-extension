@@ -101,7 +101,7 @@ try {
     assert.equal(init.status, 200);
     assert.equal(init.body.result.serverInfo.name, 'pullrows');
     assert.equal(init.body.result.serverInfo.title, 'PullRows (Chrome)');
-    assert.equal(init.body.result.serverInfo.version, '1.0.0');
+    assert.equal(init.body.result.serverInfo.version, '1.1.0');
     assert.equal(init.body.result.protocolVersion, '2025-06-18');
     assert.match(init.body.result.instructions, /PullRows/);
     assert.match(init.body.result.instructions, /Allow actions/);
@@ -147,7 +147,7 @@ try {
     assert.equal(callText(await pending), 'genuine');
   });
 
-  await step('offline: unknown link fails immediately; known-but-offline browser fails in < 10 s', async () => {
+  await step('offline: unknown link fails immediately; known-but-offline browser queues in < 10 s', async () => {
     let t0 = Date.now();
     const r1 = await call(idForToken(newToken()), 'browser_tabs');
     assert.equal(r1.body.result.isError, true);
@@ -156,10 +156,12 @@ try {
     const token = newToken();
     await status(token); // seen once, never polls
     t0 = Date.now();
+    // A browser the relay HAS seen is treated as asleep, not gone: the call is queued for when it
+    // comes back (test/offline.mjs covers the queue end to end).
     const r2 = await call(idForToken(token), 'browser_tabs');
     const took = Date.now() - t0;
-    assert.equal(r2.body.result.isError, true);
-    assert.match(callText(r2), /not connected/);
+    assert.ok(!r2.body.result.isError, callText(r2));
+    assert.match(callText(r2), /offline.*queued as #/s);
     assert.ok(took < 10000, `took ${took} ms`);
   });
 
@@ -290,7 +292,7 @@ try {
     const big = await fetch(`${BASE}/mcp/${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping', params: { pad: 'x'.repeat(1100 * 1024) } }) }).catch((e) => ({ status: 'err:' + e.message }));
     assert.equal(big.status, 413);
     const h = await (await fetch(`${BASE}/health`)).json();
-    assert.deepEqual(h, { ok: true, version: '1.0.0' });
+    assert.deepEqual(h, { ok: true, version: '1.1.0' });
     const s = await (await fetch(`${BASE}/`)).text();
     assert.match(s, /PullRows MCP relay/);
   });

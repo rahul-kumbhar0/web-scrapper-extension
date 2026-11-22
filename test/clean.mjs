@@ -57,10 +57,13 @@ assert.equal(urlMatcher('/\\/p\\/\\d+/')('https://s.com/p/12'), true);
 // TSV headers can't smuggle formulas or extra columns
 assert.ok(!/^=/.test(toTSV([{ '=HYPERLINK("x")': 1 }]).split('\t')[0]));
 assert.equal(toTSV([{ 'a\tb': 1 }]).split('\n')[0].split('\t').length, 1);
-// The connector's fetch guard runs before any request
-setFetchGuard((u) => { const why = blockedReason(u); if (why) throw new Error(`Blocked by PullRows safety settings: ${why}`); });
-await assert.rejects(fetchWithTimeout('http://localhost./x'), /Blocked by PullRows/);
-setFetchGuard(null);
+// The connector's fetch guard runs before any request. Since 1.5.2 the guard is keyed by the
+// call's own AbortSignal (a module-global guard let parallel calls clear or re-arm each other's).
+{
+  const ctrl = new AbortController();
+  setFetchGuard(ctrl.signal, (u) => { const why = blockedReason(u); if (why) throw new Error(`Blocked by PullRows safety settings: ${why}`); });
+  await assert.rejects(fetchWithTimeout('http://localhost./x', { signal: ctrl.signal }), /Blocked by PullRows/);
+}
 console.log('All clean/trends unit checks passed');
 
 // Reddit blocks some JSON feeds on www.reddit.com (HTTP 403); the same feed is read from old.reddit.com.

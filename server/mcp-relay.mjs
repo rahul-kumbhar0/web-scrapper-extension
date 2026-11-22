@@ -51,8 +51,15 @@ const TRUST_PROXY = process.env.TRUST_PROXY === '1';
 const CALL_TIMEOUT_MS = Number(process.env.CALL_TIMEOUT_MS || 240000);
 const POLL_WAIT_MS = 25000;
 const ONLINE_WINDOW_MS = 5000; // seen this recently (or polling right now) = online
-const CONNECT_GRACE_MS = 8000; // queued calls fail after the browser has been offline this long
+const CONNECT_GRACE_MS = Number(process.env.CONNECT_GRACE_MS || 8000); // offline this long: calls are held instead of dispatched
 const LOST_AFTER_MS = 90000; // running calls fail after the browser has been offline this long
+// Offline queue: calls made while the browser is offline (laptop asleep, Chrome closed) are held
+// and run when it reconnects; results wait for a `queued_results` call. In-memory only — a relay
+// restart loses held work (completed rows always land in the extension's Data Table regardless).
+const HOLD_MAX = 10; // held commands per browser
+const HOLD_RESULTS_MAX = 10;
+const HOLD_TTL_MS = Number(process.env.HOLD_TTL_MS || 6 * 3600 * 1000);
+const HOLD_RESULT_CHARS = 150000; // stored text per held result
 const SWEEP_MS = 1000;
 const MAX_BATCH = 10;
 const MAX_PENDING = 6; // undelivered + in-flight commands per browser
@@ -66,7 +73,7 @@ const TOOL_CALLS_PER_MIN = 120; // per browser
 const OAUTH_REQ_PER_MIN = 30; // per IP: /register, /authorize, /token
 const BRIDGE_REQ_PER_MIN = 240; // per IP: /bridge status, DELETE, and anything that creates state
 const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 const TOKEN_RE = /^[A-Za-z0-9_-]{24,128}$/;
 const ID_RE = /^[A-Za-z0-9_-]{32}$/;
 
@@ -116,7 +123,7 @@ function clientIp(req) {
 const browsers = new Map();
 
 function idle(b) {
-  return !online(b) && !b.pending.size && !b.polls.size && b.queue.every((c) => c.tool === '__cancel');
+  return !online(b) && !b.pending.size && !b.polls.size && !b.held.length && !b.heldResults.length && b.queue.every((c) => c.tool === '__cancel');
 }
 
 // Only bridge routes (which prove knowledge of the token) create state.
@@ -128,7 +135,7 @@ function browserForToken(token) {
       for (const [k, v] of browsers) if (idle(v)) browsers.delete(k);
       if (browsers.size >= MAX_BROWSERS) return null;
     }
-    b = { id, queue: [], polls: new Set(), pending: new Map(), lastSeen: 0, rate: bucket(TOOL_CALLS_PER_MIN), uploads: 0, info: {} };
+    b = { id, queue: [], polls: new Set(), pending: new Map(), held: [], heldResults: [], disconnected: false, lastSeen: 0, rate: bucket(TOOL_CALLS_PER_MIN), uploads: 0, info: {} };
     browsers.set(id, b);
   }
   return b;
@@ -200,10 +207,65 @@ function dispatch(b, tool, args) {
         ? `The PullRows extension did not finish "${tool}" within ${Math.round(CALL_TIMEOUT_MS / 1000)}s. Try a smaller job (fewer pages/URLs).`
         : NOT_CONNECTED);
     }, CALL_TIMEOUT_MS);
-    b.pending.set(id, { resolve, timer, tool, delivered: false, at: Date.now() });
+    b.pending.set(id, { resolve, timer, tool, args, delivered: false, at: Date.now() });
     b.queue.push({ id, tool, args });
     pump(b);
   });
+}
+
+// ---------- offline queue ----------
+// Hold a call for an offline browser. Returns the ack Claude gets right away (not an error:
+// the request is accepted, it just runs later).
+function holdCall(b, tool, args) {
+  if (b.held.length >= HOLD_MAX) {
+    return toolError(`The user's browser is offline and its offline queue is full (${HOLD_MAX} requests). Call queued_results to see what is waiting, or try again once the browser is back.`);
+  }
+  const qid = crypto.randomUUID().slice(0, 8);
+  b.held.push({ qid, tool, args, at: Date.now() });
+  return { content: [{ type: 'text', text: `The user's browser is offline right now (laptop asleep or Chrome closed), so "${tool}" was queued as #${qid} and will run automatically as soon as the browser reconnects (queued requests are kept for up to ${Math.round(HOLD_TTL_MS / 3600000)} hours). Tell the user it is queued. To collect what ran, call the queued_results tool later — extracted rows are also saved to the PullRows Data Table in their browser.` }] };
+}
+
+// Store a finished held call so a later queued_results can return it.
+function pushHeldResult(b, e, result) {
+  let text = (result.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('\n');
+  if (text.length > HOLD_RESULT_CHARS) text = `${text.slice(0, HOLD_RESULT_CHARS)}\n…[truncated — the full rows are in the PullRows Data Table: call data_table_read]`;
+  b.heldResults.push({ qid: e.qid, tool: e.tool, at: e.at, doneAt: Date.now(), isError: !!result.isError, text });
+  if (b.heldResults.length > HOLD_RESULTS_MAX) b.heldResults.splice(0, b.heldResults.length - HOLD_RESULTS_MAX);
+}
+
+// Run held calls now that the browser is back, a few at a time (the extension caps parallel work).
+function drainHeld(b) {
+  b.disconnected = false;
+  while (b.held.length && b.pending.size < MAX_PENDING) {
+    const e = b.held.shift();
+    const id = crypto.randomUUID();
+    const timer = setTimeout(() => {
+      if (b.pending.get(id)) failCall(b, id, `The PullRows extension did not finish "${e.tool}" within ${Math.round(CALL_TIMEOUT_MS / 1000)}s. Try a smaller job (fewer pages/URLs).`);
+    }, CALL_TIMEOUT_MS);
+    b.pending.set(id, { resolve: (result) => { pushHeldResult(b, e, result); drainHeld(b); }, timer, tool: e.tool, args: e.args, heldEntry: e, delivered: false, at: Date.now() });
+    // queued: true lets the extension tell the user it ran work that waited for them.
+    b.queue.push({ id, tool: e.tool, args: e.args, queued: true });
+  }
+  pump(b);
+}
+
+// The queued_results tool is answered by the relay itself, so it works while the browser is offline.
+// Finished results are returned once, then dropped.
+function queuedResults(b) {
+  const lines = [];
+  const running = [...b.pending.values()].filter((c) => c.heldEntry).length;
+  if (b.held.length) {
+    lines.push(`Waiting for the user's browser to come back (${b.held.length}):`);
+    for (const e of b.held) lines.push(`- #${e.qid} ${e.tool} — queued ${new Date(e.at).toISOString()}`);
+  }
+  if (running) lines.push(`Running right now: ${running} queued request(s) — ask again in a minute.`);
+  if (b.heldResults.length) {
+    lines.push(`Finished (${b.heldResults.length}; each result is returned only once, and rows are also in the PullRows Data Table):`);
+    for (const r of b.heldResults) lines.push(`\n--- #${r.qid} ${r.tool} ${r.isError ? '✗ error' : '✓ ok'} (ran ${new Date(r.doneAt).toISOString()}) ---\n${r.text}`);
+    b.heldResults = [];
+  }
+  if (!lines.length) lines.push('The offline queue is empty: nothing is waiting and no stored results. (Held work does not survive a relay restart; rows from runs that completed are always in the PullRows Data Table — call data_table_read once the browser is online.)');
+  return { content: [{ type: 'text', text: lines.join('\n') }] };
 }
 
 // Fail calls stuck on an offline browser; forget idle browsers.
@@ -211,10 +273,23 @@ let lastCleanup = Date.now();
 setInterval(() => {
   const now = Date.now();
   for (const b of browsers.values()) {
+    // Expire held calls that waited too long; trim stale stored results.
+    if (b.held.length) {
+      for (const e of b.held.filter((x) => now - x.at > HOLD_TTL_MS)) pushHeldResult(b, e, toolError(`Expired: the user's browser did not come back within ${Math.round(HOLD_TTL_MS / 3600000)} hours, so "${e.tool}" never ran.`));
+      b.held = b.held.filter((x) => now - x.at <= HOLD_TTL_MS);
+    }
+    if (b.heldResults.length) b.heldResults = b.heldResults.filter((r) => now - r.doneAt <= HOLD_TTL_MS);
     if (!b.pending.size || b.polls.size) continue;
     for (const [id, call] of [...b.pending]) {
-      if (!call.delivered && offlineFor(b) > CONNECT_GRACE_MS) failCall(b, id, NOT_CONNECTED);
-      else if (call.delivered && offlineFor(b) > LOST_AFTER_MS) failCall(b, id, `The connection to the PullRows extension was lost while running ${call.tool}.`);
+      if (!call.delivered && offlineFor(b) > CONNECT_GRACE_MS) {
+        // The browser went away before the command was handed over: hold it instead of failing it —
+        // unless the user turned the connector off, which means "stop", not "later".
+        clearTimeout(call.timer);
+        b.pending.delete(id);
+        b.queue = b.queue.filter((c) => c.id !== id);
+        if (call.heldEntry) b.held.unshift(call.heldEntry); // back to the front of the queue, silently
+        else call.resolve(b.disconnected ? toolError(NOT_CONNECTED) : holdCall(b, call.tool, call.args));
+      } else if (call.delivered && offlineFor(b) > LOST_AFTER_MS) failCall(b, id, `The connection to the PullRows extension was lost while running ${call.tool}.`);
     }
   }
   if (now - lastCleanup > 60000) {
@@ -306,7 +381,12 @@ async function handleRpc(id, msg) {
       const b = browsers.get(id);
       if (!b) return reply(toolError(NOT_CONNECTED)); // never create state from /mcp
       if (!take(b.rate)) return { ...fail(-32000, 'Rate limit exceeded: too many PullRows tool calls this minute. Wait a moment and retry.'), rateLimited: true };
-      if (offlineFor(b) > CONNECT_GRACE_MS) return reply(toolError(NOT_CONNECTED));
+      if (name === 'queued_results') return reply(queuedResults(b)); // answered here: works while the browser is offline
+      if (offlineFor(b) > CONNECT_GRACE_MS) {
+        // Laptop asleep / Chrome closed: hold the call and run it when the browser is back.
+        // A connector the user turned OFF means "stop", so that still gets the plain error.
+        return reply(b.disconnected ? toolError(NOT_CONNECTED) : holdCall(b, name, args));
+      }
       if (b.pending.size >= MAX_PENDING) return reply(toolError(`PullRows is busy with ${b.pending.size} tasks — wait for them to finish.`));
       return reply(await dispatch(b, name, args));
     }
@@ -360,6 +440,7 @@ async function handleMcp(req, res, id) {
 function handleNext(req, res, b, url) {
   b.lastSeen = Date.now();
   b.info = { version: String(url.searchParams.get('v') || b.info.version || '').slice(0, 32) };
+  drainHeld(b); // the browser is back: start work that queued while it was offline
   const poll = { req, res, done: false, timer: null };
   const cmd = b.queue.shift();
   if (cmd) {
@@ -409,13 +490,16 @@ async function handleResult(req, res, b) {
   b.queue = b.queue.filter((c) => c.id !== body.id);
   const content = Array.isArray(body.content) ? body.content : [{ type: 'text', text: String(body.error || 'No result') }];
   call.resolve({ content, isError: !!body.isError });
+  drainHeld(b); // a slot freed up: continue queued offline work
   return send(res, 200, { ok: true });
 }
 
-// The connector was turned off: offline now, fail everything.
+// The connector was turned off: offline now, fail everything ("stop", not "run it later").
 function handleDisconnect(res, b) {
   for (const poll of [...b.polls]) { b.polls.delete(poll); endPoll(b, poll); }
   b.lastSeen = 0;
+  b.disconnected = true;
+  for (const e of b.held.splice(0)) pushHeldResult(b, e, toolError(`The PullRows connector was turned off before "${e.tool}" could run.`));
   for (const [id, call] of [...b.pending]) {
     failCall(b, id, call.delivered ? `The PullRows connector was turned off while running ${call.tool}.` : NOT_CONNECTED);
   }
@@ -500,6 +584,7 @@ async function onRequest(req, res) {
         if (!b) return send(res, 503, { error: 'Relay is at capacity, try again later' }, { 'retry-after': '30' });
         if (sub === 'next') return handleNext(req, res, b, url);
         b.lastSeen = Date.now();
+        drainHeld(b);
         return send(res, 200, { online: true, version: VERSION });
       }
       return send(res, 405, { error: 'Method not allowed' });

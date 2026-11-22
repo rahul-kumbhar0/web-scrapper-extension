@@ -106,7 +106,21 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (a.enabled && a.server && a.token) fetch(`${a.server.replace(/\/+$/, '')}/bridge/${encodeURIComponent(a.token)}`, { method: 'DELETE' }).catch(() => {});
     syncBridge(true);
   }
+  syncKeepAwake().catch(() => {});
 });
+
+// ---------- keep-awake: let the laptop work with the lid closed ----------
+// With "Keep this computer awake" on, the system never idle-sleeps while the connector is on, so
+// Claude (including the phone app) can keep using this browser. A keep-awake request persists
+// until released or the extension reloads, so re-asserting it on worker wake is enough. It cannot
+// override the OS lid-close action — Settings shows the user how to set "lid close → do nothing".
+async function syncKeepAwake() {
+  if (!chrome.power) return;
+  const { mcp } = await getSettings();
+  if (mcp?.enabled && mcp.consentAt && mcp.keepAwake) chrome.power.requestKeepAwake('system');
+  else chrome.power.releaseKeepAwake();
+}
+syncKeepAwake().catch(() => {});
 
 // ---------- offscreen bridge lifecycle ----------
 let syncing = Promise.resolve();
@@ -211,6 +225,20 @@ const OPS = {
   status: (patch) => setStatus(patch),
   log: (entry) => log(entry),
   busy: (n) => setBusy(n),
+  // A command that waited in the relay's offline queue (laptop asleep) just finished: tell the
+  // user work ran while they were away. One notification, updated as the count grows.
+  queuedDone: (() => {
+    let ran = 0;
+    return async ({ tool }) => {
+      ran++;
+      chrome.notifications?.create('mcp-queued', {
+        type: 'basic', iconUrl: 'icons/icon128.png', title: 'PullRows · ran queued Claude work',
+        message: `Finished ${ran} request${ran === 1 ? '' : 's'} queued while this computer was away (latest: ${tool}). Results are in your Claude chat (ask for queued results) and the Data Table.`,
+        priority: 1,
+      }, () => void chrome.runtime.lastError);
+      return true;
+    };
+  })(),
   async useMcpCall() {
     setStatus({ lastUsedAt: Date.now() }).catch(() => {});
     return useMcpCall();

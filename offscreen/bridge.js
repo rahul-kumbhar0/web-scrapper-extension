@@ -62,6 +62,8 @@ async function handle(cmd) {
   running.delete(cmd.id);
   sw('log', { tool: cmd.tool, args: JSON.stringify(cmd.args || {}).slice(0, 300), ok: !payload.isError, ms: Date.now() - t0 }).catch(() => {});
   if (!ctrl.signal.aborted) await deliver({ id: cmd.id, ...payload });
+  // This command waited in the relay's offline queue while the computer was away: notify the user.
+  if (cmd.queued && !ctrl.signal.aborted) sw('queuedDone', { tool: cmd.tool }).catch(() => {});
   pump();
 }
 
