@@ -36,16 +36,22 @@ export async function snapshotUnsaved() {
     pages: [d.url].filter(Boolean), results: Object.fromEntries(d.sheets.map((s) => [s.name, s.rows])) }, { keep: true });
   return true;
 }
+let lastChangeAt = 0; // when the user last changed the table here — also covers "Clear" (null dataset)
+
 async function persistNow() {
   clearTimeout(saveTimer);
   saveTimer = null;
-  // Never overwrite newer results Claude wrote while this edit was pending.
+  // Never overwrite newer results Claude wrote while this edit was pending. The comparison uses
+  // when the USER last acted, so an opened History entry, a cleared table or an edit always wins
+  // over an older Claude-written table (those used to carry no updatedAt and silently lose).
   const { dataset: cur } = await chrome.storage.local.get('dataset');
-  if (cur?.updatedBy === 'claude' && cur.updatedAt > (state.dataset?.updatedAt || 0)) return;
+  if (cur?.updatedBy === 'claude' && cur.updatedAt > Math.max(state.dataset?.updatedAt || 0, lastChangeAt)) return;
   await chrome.storage.local.set({ dataset: state.dataset });
 }
 
 export function changed({ persist = true } = {}) {
+  lastChangeAt = Date.now();
+  if (state.dataset && !state.dataset.updatedAt) state.dataset.updatedAt = lastChangeAt;
   for (const fn of state.listeners) fn();
   if (persist) {
     clearTimeout(saveTimer);
@@ -60,9 +66,8 @@ function persistOnUnload() {
   if (!saveTimer) return;
   clearTimeout(saveTimer);
   saveTimer = null;
-  const dataset = state.dataset;
-  if (!dataset) return;
-  try { chrome.runtime.sendMessage({ type: 'dataset:persist', dataset }, () => void chrome.runtime.lastError); } catch { /* worker gone */ }
+  const dataset = state.dataset; // may be null: a pending "Clear" must persist too
+  try { chrome.runtime.sendMessage({ type: 'dataset:persist', dataset, at: lastChangeAt }, () => void chrome.runtime.lastError); } catch { /* worker gone */ }
   chrome.storage.local.set({ dataset }).catch(() => {});
 }
 addEventListener('pagehide', persistOnUnload);

@@ -117,13 +117,15 @@ export default {
         h('label', { class: 'field' }, 'Pagination', mode),
         needsButton ? h('div', { class: 'row' }, sel,
           h('button', { type: 'button', class: 'btn secondary', onclick: async () => {
-            const r = await pick('element');
+            const r = await pick('element').catch((e) => { toast(e.message, 'error'); return null; });
             if (r) { pagination.selector = r.selector; pagination.redetect = false; sel.value = r.selector; toast(`Button set: “${r.text || r.selector}”`, 'ok'); }
           } }, 'Pick'),
           h('button', { type: 'button', class: 'btn secondary', title: 'Find it automatically', onclick: async () => {
-            const tab = await getActiveTab();
-            const found = await callInTab(tab.id, pagination.mode === 'next' ? 'findNextButton' : 'findLoadMoreButton');
-            if (found) { pagination.selector = found; pagination.redetect = true; sel.value = found; } else toast('No such button found — use Pick.', 'error');
+            try {
+              const tab = await getActiveTab();
+              const found = await callInTab(tab.id, pagination.mode === 'next' ? 'findNextButton' : 'findLoadMoreButton');
+              if (found) { pagination.selector = found; pagination.redetect = true; sel.value = found; } else toast('No such button found — use Pick.', 'error');
+            } catch (e) { toast(e.message, 'error'); }
           } }, 'Auto')) : null,
         pagination.mode !== 'none' ? h('div', { class: 'row' }, max.el, delay.el) : null);
     }

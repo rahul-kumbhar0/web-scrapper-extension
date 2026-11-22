@@ -104,7 +104,9 @@
     if (typeof x === 'number') return Number.isFinite(x) ? x : null;
     if (isObj(x)) return num(txt(x));
     const s = String(x).replace(/[  ]/g, ' ');
-    const m = s.match(/(\d[\d,.\s]*)\s*(k|m|b|万|萬|亿|億|mil|mio|lakh|cr)?\b/i) || s.match(/(\d[\d,.\s]*)\s*(万|萬|亿|億)/);
+    // CJK suffixes are checked separately: 万/亿 are not word characters, so a \b after them never
+    // matches and a combined regex silently dropped the multiplier ("1.2万" became 1, not 12,000).
+    const m = s.match(/(\d[\d,.\s]*)\s*(k|m|b|mil|mio|lakh|cr)\b/i) || s.match(/(\d[\d,.\s]*)\s*(万|萬|亿|億)/) || s.match(/(\d[\d,.\s]*)/);
     if (!m) return null;
     let d = m[1].trim().replace(/\s/g, '');
     const suffix = (m[2] || '').toLowerCase();
@@ -139,7 +141,7 @@
   // "1:02:03" / "0:45" / 45 → seconds
   function seconds(x) {
     if (x == null || x === '') return null;
-    if (typeof x === 'number') return x > 36000 ? Math.round(x / 1000) : Math.round(x); // ms or s
+    if (typeof x === 'number') return x > 86400 ? Math.round(x / 1000) : Math.round(x); // over 24h it can only be ms (a 10h stream in seconds is real)
     const s = txt(x);
     if (/^\d+(\.\d+)?$/.test(s)) return Math.round(Number(s));
     const m = s.match(/(?:(\d+):)?(\d{1,2}):(\d{2})/);
@@ -147,7 +149,7 @@
   }
 
   const HASHTAG = /(?:^|[^\p{L}\p{N}_&/])#([\p{L}\p{N}_][\p{L}\p{N}_.]*[\p{L}\p{N}_]|[\p{L}\p{N}_])/gu;
-  const MENTION = /(?:^|[^\p{L}\p{N}_@/])@([\w.]{2,30}\w)/gu;
+  const MENTION = /(?:^|[^\p{L}\p{N}_@/])@([\w.]{1,30}\w)/gu;
   const tagsIn = (s) => [...String(s || '').matchAll(HASHTAG)].map((m) => m[1]).filter((t) => /\p{L}/u.test(t)).map((t) => '#' + t);
   const mentionsIn = (s) => [...String(s || '').matchAll(MENTION)].map((m) => '@' + m[1]);
   const uniq = (a) => [...new Set(a.filter(Boolean).map((x) => String(x)))];

@@ -34,6 +34,7 @@ export default {
       state.dataset = {
         title: job.title, url: job.target || '', source: `Scan · ${job.kind}`,
         sheets: [makeSheet('Rows', job.rows, job.columns?.length ? job.columns : undefined)], active: 0,
+        updatedAt: Date.now(), // without this, persisting loses to any older Claude-written table
       };
       changed();
       ctx.go('table');

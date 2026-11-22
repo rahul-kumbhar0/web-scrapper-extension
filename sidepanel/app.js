@@ -142,9 +142,11 @@ async function startPopular(p) {
   }
   const res = await formDialog({ title: p.label, fields: [{ name: 'q', label: p.ask, placeholder: `e.g. ${p.example}` }], submit: 'Open & extract' });
   if (!res?.q?.trim()) return;
-  const tab = await getActiveTab();
   toast('Opening the page…', '', true);
-  await navigate(tab.id, p.url(res.q.trim()));
+  try {
+    const tab = await getActiveTab();
+    await navigate(tab.id, p.url(res.q.trim()));
+  } catch (e) { toast(e.message, 'error'); return; } // a failure must not leave the sticky toast up
   await new Promise((r) => setTimeout(r, 1500));
   go('list', { autoDetect: true });
 }
@@ -235,7 +237,8 @@ async function updateHost() {
     pageInfo = { host: '', title: '', url: '' };
     $('#host').textContent = '';
   }
-  if (currentId === 'home') go('home');
+  // A tab event can arrive before init below has loaded `settings`; rendering home then throws.
+  if (currentId === 'home' && settings) go('home');
 }
 
 // ---------- init ----------

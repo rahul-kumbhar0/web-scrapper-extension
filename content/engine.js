@@ -92,6 +92,9 @@
   // Shortest selector (built from tag+class chains) that matches exactly `targets` (or just `el`).
   function selectorFor(el, { unique = false } = {}) {
     const doc = el.ownerDocument;
+    // Both loops below start above `el`, so body/html would produce the invalid selector "body > ".
+    if (el === doc.body) return 'body';
+    if (el === doc.documentElement) return 'html';
     if (el.id && /^[a-z][\w-]*$/i.test(el.id) && !/\d{3,}/.test(el.id) && qsa(doc, '#' + esc(el.id)).length === 1) {
       return '#' + esc(el.id);
     }
@@ -269,22 +272,22 @@
     qsa(doc, 'table').forEach((table, ti) => {
       const trs = [...table.rows].filter((tr) => tr.cells.length);
       if (trs.length < 2) return;
-      const headRow = table.tHead?.rows[0] || ([...trs[0].cells].every((c) => c.tagName === 'TH') ? trs[0] : null);
+      // Columns come from the real visual layout (colspan AND rowspan, all header rows) via the
+      // same helpers the list extractor uses — walking cells by colSpan alone shifted every row
+      // after a rowspan one column left, putting values under the wrong headers.
+      const { names, rows: headRows } = headerNames(table);
       const headers = [];
-      if (headRow) {
-        [...headRow.cells].forEach((c, i) => {
-          let h = clean(c.innerText ?? c.textContent, 60) || `Column ${i + 1}`;
-          while (headers.includes(h)) h += '_';
-          for (let s = 0; s < (c.colSpan || 1); s++) headers.push(s ? `${h}_${s + 1}` : h);
-        });
-      }
+      names.forEach((n, i) => {
+        let h = n || `Column ${i + 1}`;
+        while (headers.includes(h)) h += '_';
+        headers[i] = h;
+      });
       for (const tr of trs) {
-        if (tr === headRow) continue;
+        if (headRows.has(tr)) continue;
         const row = { table: ti + 1 };
-        let col = 0;
         for (const c of tr.cells) {
+          const col = colOf(c);
           row[headers[col] || `Column ${col + 1}`] = clean(c.innerText ?? c.textContent, 500);
-          col += c.colSpan || 1;
         }
         rows.push(row);
       }
@@ -336,7 +339,9 @@
   }
 
   const CURRENCY = { '$': 'USD', '£': 'GBP', '€': 'EUR', '¥': 'JPY', '₹': 'INR', '₩': 'KRW', '₪': 'ILS', '₽': 'RUB', '₺': 'TRY' };
-  const PRICE_RE = /(?:(US\$|C\$|A\$|[$£€¥₹₩₪₽₺])\s?(\d{1,3}(?:[,.\s]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?))|(?:(\d{1,3}(?:[,.]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s?(USD|EUR|GBP|INR|JPY|CAD|AUD|€|zł|kr))\b/g;
+  // The suffix branch ends in a lookahead, not \b: € and ł are not word characters, so a \b after
+  // them never matched and "1.299,00 €" / "100 zł" (the standard Eurozone format) found nothing.
+  const PRICE_RE = /(?:(US\$|C\$|A\$|[$£€¥₹₩₪₽₺])\s?(\d{1,3}(?:[,.\s]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?))|(?:(\d{1,3}(?:[,.]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s?(USD|EUR|GBP|INR|JPY|CAD|AUD|zł|kr|€)(?![A-Za-z0-9]))/g;
   function prices(doc = document) {
     const seen = new Set();
     const rows = [];

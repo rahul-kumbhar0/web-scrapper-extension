@@ -74,7 +74,7 @@ export default {
     const openRun = async (m) => {
       const rows = (await getMonitorRows(m.id)) || [];
       const sheets = [makeSheet('Rows', rows), makeSheet('Runs', (m.runs || []).map((r) => ({ when: new Date(r.at).toLocaleString(), ok: r.ok ? 'yes' : 'no', rows: r.rows, summary: r.summary })), ['when', 'ok', 'rows', 'summary'])];
-      state.dataset = { title: `Monitor · ${m.name}`, url: '', source: 'Monitor', sheets, active: 0 };
+      state.dataset = { title: `Monitor · ${m.name}`, url: '', source: 'Monitor', sheets, active: 0, updatedAt: Date.now() };
       changed();
       ctx.go('table');
     };
@@ -96,7 +96,7 @@ export default {
         h('div', { class: 'actions' },
           h('button', { type: 'button', class: 'btn tiny primary', onclick: async (e) => {
             e.target.disabled = true; e.target.textContent = 'Running…';
-            try { await ask('monitor:run', { id: m.id }); toast('Run finished.', 'ok'); } catch (err) { toast(err.message, 'error'); }
+            try { await ask('monitor:run', { id: m.id }); toast('Run started — the result appears here when it finishes.', 'ok'); } catch (err) { toast(err.message, 'error'); }
             render();
           } }, '▶ Run now'),
           (m.hasRows || m.lastRows) ? h('button', { type: 'button', class: 'link-btn', onclick: () => openRun(m) }, 'Open rows') : null,

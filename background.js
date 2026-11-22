@@ -110,18 +110,20 @@ chrome.storage.onChanged.addListener((changes, area) => {
 
 // ---------- offscreen bridge lifecycle ----------
 let syncing = Promise.resolve();
-function syncBridge(restart = false) {
-  syncing = syncing.then(() => doSync(restart)).catch(console.error);
+function syncBridge(restart = false, needDoc = false) {
+  syncing = syncing.then(() => doSync(restart, needDoc)).catch(console.error);
   return syncing;
 }
 
-async function doSync(restart) {
+async function doSync(restart, needDoc = false) {
   const { mcp } = await getSettings();
   const contexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'] });
   const connector = !!(mcp?.enabled && mcp.consentAt && mcp.server && mcp.token);
   // The same offscreen document also runs scheduled monitors (it has DOMParser for fetched pages).
+  // needDoc: a manual "Run now" needs the document even when the connector is off and every
+  // monitor is paused.
   const monitors = (await getMonitors()).some((m) => !m.paused);
-  const want = connector || monitors;
+  const want = connector || monitors || needDoc;
   const connectorChanged = contexts.length && !!contexts[0].documentUrl?.includes('token=') !== connector;
   if (contexts.length && (restart || !want || connectorChanged)) await chrome.offscreen.closeDocument().catch(() => {});
   if (!connector) {
@@ -413,39 +415,52 @@ async function scheduleMonitors() {
 
 const updateMonitorBadge = () => renderBadge();
 
-const runningMonitors = new Set();
+// A run can take many minutes, and a pending sendMessage response does not keep this MV3 service
+// worker alive: awaiting the result here used to lose it whenever the worker idled out mid-run.
+// Instead the offscreen document ACKs the start at once and later sends 'monitor-result' as a
+// fresh message, which wakes this worker; finishMonitorRun below records it statelessly.
 async function runMonitor(id) {
-  if (runningMonitors.has(id)) return;
-  runningMonitors.add(id);
-  try {
-    let mon = (await getMonitors()).find((m) => m.id === id);
-    if (!mon) return;
-    await syncBridge();
-    let rows = [];
-    let error = '';
+  const mon = (await getMonitors()).find((m) => m.id === id);
+  if (!mon) return;
+  await syncBridge(false, true); // a manual run needs the document even with everything paused
+  let started = null;
+  for (let attempt = 0; attempt < 3 && !started?.started; attempt++) {
+    if (attempt) await sleep(700); // the document may still be wiring its listeners up
     try {
-      const res = await chrome.runtime.sendMessage({ type: 'monitor-run', recipeId: mon.recipeId });
-      if (!res) throw new Error('The background runner did not answer.');
-      if (res.error) throw new Error(res.error);
-      rows = res.rows || [];
-    } catch (e) { error = String(e.message || e); }
-    const diff = error ? null : diffRows(await getMonitorRows(id), rows);
-    mon = (await getMonitors()).find((m) => m.id === id) || mon; // may have been edited meanwhile
-    const next = recordRun(mon, { rows, diff, error });
-    await saveMonitor(next);
-    if (!error) {
-      await addHistory({ title: `Monitor · ${mon.name} — ${diff.summary}`, url: '', source: 'Monitor', pages: [], results: { Rows: rows, ...(diff.rows.length ? { Changes: diff.rows } : {}) } });
-      if (shouldAlert(diff, mon.alertOn)) {
-        chrome.notifications?.create(`mon-${id}-${Date.now()}`, { type: 'basic', iconUrl: 'icons/icon128.png', title: `PullRows · ${mon.name}`, message: diff.summary.slice(0, 250), priority: 1 }, () => void chrome.runtime.lastError);
-      }
-      const { settings: s = {} } = await chrome.storage.local.get('settings');
-      if (mon.pushToSheet && s.sheetUrl && isPro(await getLicense())) await pushToSheet(s.sheetUrl, mon.name, diff.first ? rows : diff.rows.length ? diff.rows : []).catch(() => {});
-    }
-    await updateMonitorBadge();
-  } finally {
-    runningMonitors.delete(id);
+      started = await chrome.runtime.sendMessage({ type: 'monitor-run', recipeId: mon.recipeId, monitorId: id });
+    } catch (e) { started = { error: String(e.message || e) }; }
+    if (!started) started = { error: 'The background runner did not answer.' };
   }
+  if (!started.started) await finishMonitorRun(id, [], started.error || 'The background runner did not answer.');
 }
+
+async function finishMonitorRun(id, rows, error) {
+  const mon = (await getMonitors()).find((m) => m.id === id);
+  if (!mon) return;
+  const diff = error ? null : diffRows(await getMonitorRows(id), rows);
+  const next = recordRun(mon, { rows, diff, error });
+  await saveMonitor(next);
+  if (!error) {
+    await addHistory({ title: `Monitor · ${mon.name} — ${diff.summary}`, url: '', source: 'Monitor', pages: [], results: { Rows: rows, ...(diff.rows.length ? { Changes: diff.rows } : {}) } });
+    if (shouldAlert(diff, mon.alertOn)) {
+      chrome.notifications?.create(`mon-${id}-${Date.now()}`, { type: 'basic', iconUrl: 'icons/icon128.png', title: `PullRows · ${mon.name}`, message: diff.summary.slice(0, 250), priority: 1 }, () => void chrome.runtime.lastError);
+    }
+    const { settings: s = {} } = await chrome.storage.local.get('settings');
+    if (mon.pushToSheet && s.sheetUrl && isPro(await getLicense())) await pushToSheet(s.sheetUrl, mon.name, diff.first ? rows : diff.rows.length ? diff.rows : []).catch(() => {});
+  }
+  await updateMonitorBadge();
+}
+
+// The offscreen document reports a finished scheduled run (this message wakes the worker).
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type !== 'monitor-result') return false;
+  if (sender.id !== chrome.runtime.id || sender.tab || !String(sender.url || '').startsWith(BRIDGE_URL)) {
+    sendResponse({ err: 'Not allowed' });
+    return false;
+  }
+  finishMonitorRun(msg.monitorId, msg.rows || [], msg.error || '').then(() => sendResponse({ ok: true }), (e) => sendResponse({ err: String(e.message || e) }));
+  return true;
+});
 
 // Google Sheets: the user's own Apps Script web app appends rows to a sheet tab (no Google sign-in
 // or OAuth scopes needed by the extension).
@@ -475,8 +490,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   (async () => {
     const { dataset: cur } = await chrome.storage.local.get('dataset');
-    // Never overwrite newer results Claude wrote while the edit was pending.
-    if (cur?.updatedBy === 'claude' && cur.updatedAt > (msg.dataset?.updatedAt || 0)) return false;
+    // Never overwrite newer results Claude wrote while the edit was pending. `at` is when the user
+    // last acted in the panel — it also covers a cleared (null) table, which must win too.
+    if (cur?.updatedBy === 'claude' && cur.updatedAt > Math.max(msg.dataset?.updatedAt || 0, msg.at || 0)) return false;
     await chrome.storage.local.set({ dataset: msg.dataset });
     return true;
   })().then((ok) => sendResponse({ ok }), (e) => sendResponse({ err: String(e.message || e) }));

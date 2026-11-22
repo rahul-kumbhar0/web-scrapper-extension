@@ -127,9 +127,15 @@ async function loop() {
 }
 
 // Scheduled monitors: the service worker asks this document to run a saved recipe in the
-// background (fetch + DOMParser are available here) and gets the rows back.
+// background (fetch + DOMParser are available here). The run can take many minutes and a pending
+// sendMessage response does not keep an MV3 service worker alive, so the start is ACKed at once
+// and the result goes back later as its own 'monitor-result' message (which wakes the worker).
+const monitorRuns = new Set(); // monitorIds running in this document
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg?.type !== 'monitor-run' || sender.id !== chrome.runtime.id) return false;
+  if (msg?.type !== 'monitor-run' || sender.id !== chrome.runtime.id || sender.tab) return false;
+  if (monitorRuns.has(msg.monitorId)) { sendResponse({ started: true, already: true }); return false; }
+  monitorRuns.add(msg.monitorId);
+  sendResponse({ started: true });
   const opts = { internal: true };
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 20 * 60000);
@@ -137,11 +143,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     .then((res) => {
       if (res?.isError) throw new Error(res.content?.[0]?.text?.replace(/^Error:\s*/, '') || 'Run failed');
       const sheets = opts.captured?.sheets || [];
-      sendResponse({ rows: sheets[0]?.rows || [], sheets: sheets.map((s) => s.name) });
+      return { monitorId: msg.monitorId, rows: sheets[0]?.rows || [] };
     })
-    .catch((e) => sendResponse({ error: String(e?.message || e) }))
-    .finally(() => clearTimeout(timer));
-  return true;
+    .catch((e) => ({ monitorId: msg.monitorId, rows: [], error: String(e?.message || e) }))
+    .then((result) => chrome.runtime.sendMessage({ type: 'monitor-result', ...result }).catch(() => {}))
+    .finally(() => { clearTimeout(timer); monitorRuns.delete(msg.monitorId); });
+  return false;
 });
 
 // Without a relay address this document only runs monitors (the Claude connector is off).

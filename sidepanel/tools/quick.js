@@ -78,7 +78,7 @@ export default {
     return h('div', { class: 'stack' },
       card('What to extract', grid),
       card('Custom selector', h('div', { class: 'row' }, selector, h('button', { type: 'button', class: 'btn secondary', onclick: async () => {
-        const r = await pick('selector');
+        const r = await pick('selector').catch((e) => { toast(e.message, 'error'); return null; });
         if (r) { selector.value = r.selector; toast(`${plural(r.count, 'match', 'matches')}.`, 'ok'); }
       } }, 'Pick'))),
       card('Options', scroll.el, follow.el, maxPages.el),

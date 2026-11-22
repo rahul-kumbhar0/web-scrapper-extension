@@ -20,15 +20,22 @@ const HINTS = {
 };
 
 // Resolves with the picker result, or null if cancelled/failed.
+// Rejects when the picker cannot start on this page (chrome://, Web Store, PDFs…) — callers toast it.
 export async function pick(mode) {
   const tab = await getActiveTab();
+  let waiter;
   const result = new Promise((resolve) => {
-    const w = (msg, fromTab) => {
-      if (msg.any || (msg.mode === mode && fromTab === tab.id)) { waiters.delete(w); resolve(msg); }
+    waiter = (msg, fromTab) => {
+      if (msg.any || (msg.mode === mode && fromTab === tab.id)) { waiters.delete(waiter); resolve(msg); }
     };
-    waiters.add(w);
+    waiters.add(waiter);
   });
-  await callInTab(tab.id, 'startPicker', mode);
+  try {
+    await callInTab(tab.id, 'startPicker', mode);
+  } catch (e) {
+    waiters.delete(waiter); // a pick that never started must not leave its waiter behind
+    throw e;
+  }
   toast(`${HINTS[mode]} (Esc to cancel)`, '', true);
   const msg = await result;
   toast('');

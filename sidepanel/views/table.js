@@ -44,7 +44,7 @@ export default {
       if (!d) { fill(tabs); return; }
       fill(tabs, ...d.sheets.map((s, i) => h('button', {
         type: 'button', class: `sheet-tab ${i === d.active ? 'on' : ''}`,
-        onclick: () => { d.active = i; page = 0; sortState = null; renderAll(); },
+        onclick: () => { d.active = i; page = 0; sortState = null; changed({ persist: true }); renderAll(); },
         title: 'Right-click (or double-click) for sheet options',
         oncontextmenu: (e) => { e.preventDefault(); sheetMenu(e.currentTarget, i); },
         ondblclick: (e) => sheetMenu(e.currentTarget, i),
@@ -300,10 +300,16 @@ export default {
       if (!rows.length) { toast('No rows to send.', 'error'); return; }
       const tab = `${fileStem(d.title)}-${s.name}`.slice(0, 90);
       await runJob('Sending to Google Sheets…', async (signal, progress) => {
+        let sent = 0;
         for (let i = 0; i < rows.length; i += 2000) {
           if (signal.aborted) break;
           progress(`${Math.min(i + 2000, rows.length)} / ${rows.length} rows`, i, rows.length);
           await askWorker('monitor:sheet-push', { url: ctx.settings.sheetUrl, tab, rows: rows.slice(i, i + 2000) });
+          sent += Math.min(2000, rows.length - i);
+        }
+        if (sent < rows.length) {
+          toast(`Stopped — ${plural(sent, 'row')} of ${rows.length} reached the “${tab}” tab of your Google Sheet.`, 'error');
+          return;
         }
         toast(`Sent ${plural(rows.length, 'row')} to the “${tab}” tab of your Google Sheet.`, 'ok');
         recordWin('export');

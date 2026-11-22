@@ -27,7 +27,7 @@ export default {
               e.target.disabled = false;
               const sheets = Object.entries(results).map(([name, rows]) => makeSheet(name, rows));
               if (!sheets.length) { toast('That result is no longer stored.', 'error'); return; }
-              state.dataset = { title: item.title, url: item.url, source: item.source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)) };
+              state.dataset = { title: item.title, url: item.url, source: item.source, sheets, active: Math.max(0, sheets.findIndex((s) => s.rows.length)), updatedAt: Date.now() };
               changed();
               ctx.go('table');
             } }, 'Open'),
