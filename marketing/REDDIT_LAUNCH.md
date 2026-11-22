@@ -13,10 +13,36 @@ Site: https://pullrows.vercel.app
 6. **No upvotes from friends or second accounts.** Reddit detects vote rings and shadow-bans the account and the link.
 7. Lead with what it does for the reader; the link goes at the end.
 
-## Suggested order
+## Channel plan (researched Nov 2026; check each sidebar before posting, rules change)
 
-| Day | Subreddit | Angle | Notes |
-|---|---|---|---|
+| Day | Where | Self-promo rule | Image | Post |
+|---|---|---|---|---|
+| 1 | r/SideProject | Allowed; it's what the sub is for | `reddit-sideproject.png` | Short post below |
+| 2 | r/chrome_extensions | Allowed, links OK; needs substance | `reddit-chrome-extensions.png` | Section 2 |
+| 3 | r/ClaudeAI | Unclear; check sidebar and flair list, ask mods if unsure | `reddit-claude.png` | Section 3 |
+| 4 | r/indiehackers | One post per product, "Self Promotion" flair, framed as a feedback request | `reddit-sideproject.png` | Ask for feedback on pricing / first users |
+| 5 | r/IMadeThis | Allowed; explain how you built it | `reddit-chrome-extensions.png` | Build story |
+| 6 | r/socialmedia or r/InstagramMarketing | Unknown; read rules, many use a weekly thread | `reddit-trends.png` | Section 4 |
+| 7 | r/webscraping | Only in the monthly self-promotion thread (ask mods first) | none, text only | Section 6 |
+| later | r/GrowthHacking | Stories only, no pitching, needs 100+ karma in the sub | none | A growth-experiment story once you have install numbers |
+
+**Skip:** r/leadgeneration (bans self-promotion outright, permanent-ban risk), r/InternetIsBeautiful (bans extensions/downloads), r/SaaS (launches only in weekly threads), r/chrome (needs mod approval; message mods first if you want to try).
+
+### Short r/SideProject post (use this one)
+
+**Title:** I built a free Chrome extension that turns any website into a spreadsheet
+
+I'm the developer. I got tired of copy-pasting lists into Google Sheets, so I built PullRows.
+
+Click "Auto-detect" on any page (shop, Google Maps, job board) and every item becomes a row, across all pages. It can also search any site for you, find emails, and alert you when prices drop.
+
+Free, no account, data stays in your browser.
+
+What site should I test it on? Tell me where it breaks.
+
+https://chromewebstore.google.com/detail/pullrows/lkdikgfkdacljfeedaacgbmeajknoibg
+
+---|---|---|---|
 | 1 | r/SideProject | Launch story | Self-promo welcome |
 | 2 | r/chrome_extensions | What it does | Self-promo welcome |
 | 3 | r/ClaudeAI | Claude connector (MCP) | Check the flair for "Built with Claude" / showcase |

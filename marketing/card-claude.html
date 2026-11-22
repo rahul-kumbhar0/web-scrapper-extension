@@ -1,0 +1,58 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+body{width:1600px;height:1000px;font-family:Inter,system-ui,sans-serif;background:#0d0f1a;color:#fff;overflow:hidden;position:relative}
+.glow{position:absolute;inset:0;background:radial-gradient(800px 500px at 8% 0%,#3b2fb8 0%,transparent 60%),radial-gradient(700px 500px at 100% 100%,#0f8f86 0%,transparent 60%);opacity:.75}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:28px}
+.brand img{width:44px;height:44px;border-radius:10px}
+h1{font-size:58px;line-height:1.05;font-weight:800;letter-spacing:-2px}
+.grad{background:linear-gradient(90deg,#8b80ff,#2fd3c3);-webkit-background-clip:text;color:transparent}
+.sub{font-size:22px;color:#b8bdd6}
+.pill{display:inline-block;padding:10px 18px;border-radius:999px;font-size:17px;font-weight:600;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);margin-right:10px}
+.pill.g{background:linear-gradient(90deg,#6a5cff,#1fb5a6);border:0}
+.card{border-radius:18px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.12)}
+</style></head><body><div class="glow"></div>
+<style>
+.left{position:absolute;left:72px;top:50%;transform:translateY(-50%);width:560px}
+.left h1{margin:26px 0 18px}
+.pts{margin-top:30px;display:flex;flex-direction:column;gap:14px}
+.pt{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:15px 18px;font-size:18px;color:#d6d9ea}
+.pt b{color:#fff}
+.chat{position:absolute;right:72px;top:50%;transform:translateY(-50%);width:820px;background:#f7f5f0;color:#1f1e1c;padding:34px 36px;font-size:20px}
+.u{margin-left:auto;max-width:560px;background:#e9e4d8;border-radius:18px;padding:16px 20px;line-height:1.4}
+.c{margin-top:26px;line-height:1.5}
+.tool{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2ddd1;border-radius:10px;padding:8px 12px;font-family:"JetBrains Mono",monospace;font-size:15px;color:#5b5750;margin:12px 0}
+.ran{font-size:15px;color:#6f6a60;background:#efeae0;border-radius:10px;padding:10px 14px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:18px;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px #e2ddd1}
+th{background:#f1ede4;text-align:left;padding:10px 14px;font-weight:600;color:#5b5750}
+td{padding:13px 14px;border-top:1px solid #efeae0}
+.star{color:#d58a00}
+.av{display:flex;align-items:center;gap:10px;font-weight:700;margin-bottom:8px}
+.dot{width:26px;height:26px;border-radius:50%;background:#d97757}
+</style>
+<div class="left"><div class="brand"><img src="../icons/icon128.png">PullRows × Claude</div>
+<h1>Ask Claude.<br><span class="grad">It scrapes in your browser.</span></h1>
+<div class="sub">An MCP connector for the PullRows Chrome extension</div>
+<div class="pts">
+<div class="pt"><b>25 tools</b>: search any site, extract lists, find emails, rank trending Reels</div>
+<div class="pt"><b>Runs in the background</b>: no tab takes over your screen</div>
+<div class="pt"><b>Works from the Claude phone app</b> while your Chrome is open</div>
+<div class="pt"><b>Safe by default</b>: banking, webmail and local sites blocked</div>
+</div></div>
+<div class="card chat">
+<div class="u">Find cafés in Pune rated 4.5+ and put them in a sheet</div>
+<div class="c"><div class="av"><span class="dot"></span>Claude</div>
+<div class="tool">⚙ site_search · cityguide · “cafés in Pune”</div>
+<div class="ran">Read the page in the background, no tab opened · 16 places found · filtered to rating ≥ 4.5</div>
+<table><tr><th>Café</th><th>Rating</th><th>Reviews</th><th>Area</th></tr>
+<tr><td>Monsoon Roastery</td><td><span class="star">★</span> 4.8</td><td>505</td><td>Koregaon Park</td></tr>
+<tr><td>The Reading Room</td><td><span class="star">★</span> 4.8</td><td>999</td><td>Baner</td></tr>
+<tr><td>Third Wave House</td><td><span class="star">★</span> 4.7</td><td>364</td><td>Koregaon Park</td></tr>
+<tr><td>Ghat Street Coffee</td><td><span class="star">★</span> 4.6</td><td>1,744</td><td>Viman Nagar</td></tr>
+<tr><td>Kopi Corner</td><td><span class="star">★</span> 4.6</td><td>889</td><td>FC Road</td></tr>
+<tr><td>Fig &amp; Filter</td><td><span class="star">★</span> 4.5</td><td>665</td><td>Shivaji Nagar</td></tr>
+</table>
+<p style="margin-top:16px">Done: 6 cafés are in your PullRows Data Table. Export them to CSV, Excel or Google Sheets from there.</p>
+</div></div>
+</body></html>
